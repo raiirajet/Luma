@@ -1,22 +1,39 @@
 rules_version = '2';
+
+// Public vehicle photos are stored only below:
+// listings/{ownerUid}/{listingId}/{0..5}.(jpg|png|webp)
+// Writes require the verified owner, a supported content type and a size below
+// 5 MiB. All other paths are denied.
 service firebase.storage {
   match /b/{bucket}/o {
     match /listings/{userId}/{listingId}/{fileName} {
-      function canManage() {
-        return request.auth != null && request.auth.uid == userId
+      function isVerifiedOwner() {
+        return request.auth != null
+          && request.auth.uid == userId
           && request.auth.token.email_verified == true;
       }
-      function allowedFile() {
-        return fileName.matches('[0-5]\\.(jpg|png|webp)')
+
+      function isValidListingId() {
+        return listingId.size() >= 1
+          && listingId.size() <= 128
+          && listingId.matches('[A-Za-z0-9_-]+');
+      }
+
+      function isValidImage() {
+        return isValidListingId()
+          && fileName.matches('[0-5]\\.(jpg|png|webp)')
           && request.resource.size > 0
           && request.resource.size < 5 * 1024 * 1024
           && request.resource.contentType.matches('image/(jpeg|png|webp)');
       }
-      allow read: if true; // Published vehicle photos are public.
-      allow create: if canManage() && allowedFile();
-      allow update: if canManage() && allowedFile(); // Editing photos requires ownership.
-      allow delete: if canManage();
+
+      allow read: if true;
+      allow create, update: if isVerifiedOwner() && isValidImage();
+      allow delete: if isVerifiedOwner() && isValidListingId();
     }
-    match /{allPaths=**} { allow read, write: if false; }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
   }
 }

@@ -1,93 +1,280 @@
 rules_version = '2';
+
+// ===============================================================
+// Assumed data model
+// ===============================================================
+// listings/{listingId}: public vehicle data. Required fields are validated by
+// isValidListing(). Ownership and createdAt never change. contactEmail is kept
+// as an empty compatibility field so no personally identifiable information is
+// exposed in a publicly readable document. There are 1..6 project-owned image
+// URLs, each scoped to listings/{uid}/{listingId}/{0..5}.(jpg|png|webp).
+// users/{uid}/favorites/{listingId}: owner-only {createdAt: timestamp}.
+// users/{uid}/data/searches: owner-only {items: list}, maximum 20 validated
+// search maps. users/{uid}/data/preferences: owner-only country list.
+// reports/{uid_listingId}: one immutable, owner-authored report per listing.
+// All unspecified paths are denied.
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function verified() { return signedIn() && request.auth.token.email_verified == true; }
-    function owner(uid) { return signedIn() && request.auth.uid == uid; }
-    function validImage(url, uid, id) {
-      // Each image must belong to the authenticated owner and the listing ID.
-      return url is string && url.size() <= 2048
-        && url.matches('https://firebasestorage[.]googleapis[.]com/v0/b/[A-Za-z0-9._-]+/o/listings%2F'
-          + uid + '%2F' + id + '%2F[0-5][.](jpg|png|webp)[?].*');
+    // =============================================================
+    // Authentication and ownership helpers
+    // =============================================================
+    function isAuthenticated() {
+      return request.auth != null;
     }
-    function validImages(d, id) {
-      return d.images is list && d.images.size() >= 1 && d.images.size() <= 6
-        && d.image == d.images[0]
-        && validImage(d.images[0], d.uid, id)
-        && (d.images.size() < 2 || validImage(d.images[1], d.uid, id))
-        && (d.images.size() < 3 || validImage(d.images[2], d.uid, id))
-        && (d.images.size() < 4 || validImage(d.images[3], d.uid, id))
-        && (d.images.size() < 5 || validImage(d.images[4], d.uid, id))
-        && (d.images.size() < 6 || validImage(d.images[5], d.uid, id));
+
+    function isVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
     }
-    function validListing(d, id) {
-      return d.keys().hasAll(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType','accidentStatus','conditionNote'])
-        && d.keys().hasOnly(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType','accidentStatus','conditionNote'])
-        && d.uid is string && d.uid == request.auth.uid
-        && d.title is string && d.title.size() >= 5 && d.title.size() <= 110
-        && d.description is string && d.description.size() >= 15 && d.description.size() <= 3000
-        && d.city is string && d.city.size() >= 1 && d.city.size() <= 90
-        && d.contactEmail is string && d.contactEmail.size() <= 180
-        && d.price is int && d.price >= 1 && d.price <= 999999999
-        && d.category == 'vehicles'
-        && d.country in ['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']
-        && d.condition in ['new','used']
-        && d.status in ['active','sold','paused']
-        && d.make is string && d.make.size() >= 2 && d.make.size() <= 35
-        && d.model is string && d.model.size() >= 1 && d.model.size() <= 65
-        && d.accidentStatus in ['yes','no','unknown']
-        && d.conditionNote is string && d.conditionNote.size() <= 240
-        && d.year is int && d.year >= 1950 && d.year <= 2100
-        && d.mileage is int && d.mileage >= 0 && d.mileage <= 1500000
-        && d.power is int && d.power >= 1 && d.power <= 2000
-        && d.fuel in ['petrol','diesel','hybrid','electric']
-        && d.transmission in ['manual','automatic']
-        && d.body in ['suv','sedan','wagon','hatchback','coupe']
-        && d.sellerType in ['privateSeller','dealer']
-        && d.image is string && validImages(d, id)
-        && d.createdAt is timestamp;
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
     }
+
+    function uidUnchanged() {
+      return request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return request.resource.data.uid == resource.data.uid;
+    }
+
+    // =============================================================
+    // Listing validators
+    // =============================================================
+    function isValidImageUrl(url, uid, listingId) {
+      return url is string
+        && url.size() <= 2048
+        && url.matches('https://firebasestorage[.]googleapis[.]com/v0/b/limba-auto[.]firebasestorage[.]app/o/listings%2F'
+          + uid + '%2F' + listingId + '%2F[0-5][.](jpg|png|webp)[?].*');
+    }
+
+    function isValidImages(data, listingId) {
+      return data.images is list
+        && data.images.size() >= 1
+        && data.images.size() <= 6
+        && data.image == data.images[0]
+        && isValidImageUrl(data.images[0], data.uid, listingId)
+        && (data.images.size() < 2 || isValidImageUrl(data.images[1], data.uid, listingId))
+        && (data.images.size() < 3 || isValidImageUrl(data.images[2], data.uid, listingId))
+        && (data.images.size() < 4 || isValidImageUrl(data.images[3], data.uid, listingId))
+        && (data.images.size() < 5 || isValidImageUrl(data.images[4], data.uid, listingId))
+        && (data.images.size() < 6 || isValidImageUrl(data.images[5], data.uid, listingId));
+    }
+
+    function isValidListing(data, listingId) {
+      return data.keys().hasAll([
+          'title', 'description', 'price', 'country', 'category', 'city',
+          'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
+          'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
+          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
+        ])
+        && data.keys().hasOnly([
+          'title', 'description', 'price', 'country', 'category', 'city',
+          'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
+          'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
+          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
+        ])
+        && data.uid is string
+        && data.uid.size() >= 1
+        && data.uid.size() <= 128
+        && data.title is string
+        && data.title == data.make + ' ' + data.model
+        && data.title.size() >= 5
+        && data.title.size() <= 110
+        && data.description is string
+        && data.description.size() >= 15
+        && data.description.size() <= 3000
+        && data.city is string
+        && data.city.size() >= 1
+        && data.city.size() <= 90
+        && data.contactEmail == ''
+        && data.price is int
+        && data.price >= 1
+        && data.price <= 999999999
+        && data.category == 'vehicles'
+        && data.country in ['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']
+        && data.condition in ['new', 'used']
+        && data.status in ['active', 'sold', 'paused']
+        && data.make is string
+        && data.make.size() >= 2
+        && data.make.size() <= 35
+        && data.model is string
+        && data.model.size() >= 1
+        && data.model.size() <= 65
+        && data.accidentStatus in ['yes', 'no', 'unknown']
+        && data.conditionNote is string
+        && data.conditionNote.size() <= 240
+        && data.year is int
+        && data.year >= 1950
+        && data.year <= 2100
+        && data.mileage is int
+        && data.mileage >= 0
+        && data.mileage <= 1500000
+        && data.power is int
+        && data.power >= 1
+        && data.power <= 2000
+        && data.fuel in ['petrol', 'diesel', 'hybrid', 'electric']
+        && data.transmission in ['manual', 'automatic']
+        && data.body in ['suv', 'sedan', 'wagon', 'hatchback', 'coupe']
+        && data.sellerType in ['privateSeller', 'dealer']
+        && data.createdAt is timestamp
+        && isValidImages(data, listingId);
+    }
+
+    // =============================================================
+    // Owner-only account data validators
+    // =============================================================
+    function isValidFavorite(data, listingId) {
+      return listingId.size() >= 1
+        && listingId.size() <= 128
+        && data.keys().hasAll(['createdAt'])
+        && data.keys().hasOnly(['createdAt'])
+        && data.createdAt is timestamp
+        && data.createdAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(listingId))
+        && get(/databases/$(database)/documents/listings/$(listingId)).data.status == 'active';
+    }
+
+    function isValidSearchFilters(filters) {
+      return filters is map
+        && filters.keys().hasAll([
+          'keyword', 'make', 'model', 'priceTo', 'yearFrom', 'mileageTo',
+          'fuel', 'transmission', 'body', 'sellerType', 'priceFrom', 'yearTo'
+        ])
+        && filters.keys().hasOnly([
+          'keyword', 'make', 'model', 'priceTo', 'yearFrom', 'mileageTo',
+          'fuel', 'transmission', 'body', 'sellerType', 'priceFrom', 'yearTo'
+        ])
+        && filters.keyword is string && filters.keyword.size() <= 120
+        && filters.make is string && filters.make.size() <= 35
+        && filters.model is string && filters.model.size() <= 65
+        && filters.priceTo is string && filters.priceTo.size() <= 12
+        && filters.yearFrom is string && filters.yearFrom.size() <= 4
+        && filters.mileageTo is string && filters.mileageTo.size() <= 12
+        && filters.fuel is string && filters.fuel.size() <= 16
+        && filters.transmission is string && filters.transmission.size() <= 16
+        && filters.body is string && filters.body.size() <= 16
+        && filters.sellerType is string && filters.sellerType.size() <= 20
+        && filters.priceFrom is string && filters.priceFrom.size() <= 12
+        && filters.yearTo is string && filters.yearTo.size() <= 4;
+    }
+
+    function isValidSearchItem(item) {
+      return item is map
+        && item.keys().hasAll(['name', 'filters', 'countries'])
+        && item.keys().hasOnly(['name', 'filters', 'countries'])
+        && item.name is string
+        && item.name.size() >= 1
+        && item.name.size() <= 120
+        && isValidSearchFilters(item.filters)
+        && item.countries is list
+        && item.countries.size() <= 12
+        && item.countries.hasOnly(['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']);
+    }
+
+    function areValidSearchItems(items) {
+      return items is list
+        && items.size() <= 20
+        && (items.size() < 1 || isValidSearchItem(items[0]))
+        && (items.size() < 2 || isValidSearchItem(items[1]))
+        && (items.size() < 3 || isValidSearchItem(items[2]))
+        && (items.size() < 4 || isValidSearchItem(items[3]))
+        && (items.size() < 5 || isValidSearchItem(items[4]))
+        && (items.size() < 6 || isValidSearchItem(items[5]))
+        && (items.size() < 7 || isValidSearchItem(items[6]))
+        && (items.size() < 8 || isValidSearchItem(items[7]))
+        && (items.size() < 9 || isValidSearchItem(items[8]))
+        && (items.size() < 10 || isValidSearchItem(items[9]))
+        && (items.size() < 11 || isValidSearchItem(items[10]))
+        && (items.size() < 12 || isValidSearchItem(items[11]))
+        && (items.size() < 13 || isValidSearchItem(items[12]))
+        && (items.size() < 14 || isValidSearchItem(items[13]))
+        && (items.size() < 15 || isValidSearchItem(items[14]))
+        && (items.size() < 16 || isValidSearchItem(items[15]))
+        && (items.size() < 17 || isValidSearchItem(items[16]))
+        && (items.size() < 18 || isValidSearchItem(items[17]))
+        && (items.size() < 19 || isValidSearchItem(items[18]))
+        && (items.size() < 20 || isValidSearchItem(items[19]));
+    }
+
+    function isValidSearches(data) {
+      return data.keys().hasAll(['items'])
+        && data.keys().hasOnly(['items'])
+        && areValidSearchItems(data.items);
+    }
+
+    function isValidPreferences(data) {
+      return data.keys().hasAll(['countries'])
+        && data.keys().hasOnly(['countries'])
+        && data.countries is list
+        && data.countries.size() <= 12
+        && data.countries.hasOnly(['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']);
+    }
+
+    function isValidReport(data, reportId) {
+      return data.keys().hasAll(['listingId', 'reporterUid', 'reason', 'createdAt'])
+        && data.keys().hasOnly(['listingId', 'reporterUid', 'reason', 'createdAt'])
+        && data.listingId is string
+        && data.listingId.size() >= 1
+        && data.listingId.size() <= 128
+        && data.reporterUid is string
+        && data.reporterUid == request.auth.uid
+        && reportId == request.auth.uid + '_' + data.listingId
+        && data.reason in ['fraud', 'duplicate', 'inappropriate', 'other']
+        && data.createdAt is timestamp
+        && data.createdAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(data.listingId))
+        && get(/databases/$(database)/documents/listings/$(data.listingId)).data.status == 'active';
+    }
+
+    // =============================================================
+    // Access rules
+    // =============================================================
     match /listings/{listingId} {
+      // Public marketplace reads are explicitly limited to active listings.
       allow get, list: if resource.data.status == 'active'
-        || (signedIn() && resource.data.uid == request.auth.uid);
-      allow create: if verified() && request.resource.data.uid == request.auth.uid
+        || (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow create: if isVerified()
+        && uidUnchanged()
         && request.resource.data.status == 'active'
         && request.resource.data.createdAt == request.time
-        && validListing(request.resource.data, listingId);
-      allow update: if verified() && owner(resource.data.uid)
-        && request.resource.data.uid == resource.data.uid
+        && isValidListing(request.resource.data, listingId);
+      allow update: if isVerified()
+        && isOwner(resource.data.uid)
+        && uidNotModified()
         && request.resource.data.createdAt == resource.data.createdAt
-        && validListing(request.resource.data, listingId);
-      allow delete: if verified() && owner(resource.data.uid);
+        && isValidListing(request.resource.data, listingId);
+      allow delete: if isVerified() && isOwner(resource.data.uid);
     }
+
     match /users/{uid}/favorites/{listingId} {
-      allow read: if owner(uid);
-      allow create, update: if owner(uid)
-        && request.resource.data.keys().hasOnly(['createdAt'])
-        && request.resource.data.createdAt == request.time;
-      allow delete: if owner(uid);
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && isValidFavorite(request.resource.data, listingId);
+      allow delete: if isOwner(uid);
     }
+
     match /users/{uid}/data/{dataId} {
-      allow read: if owner(uid);
-      allow create, update: if owner(uid) && dataId == 'searches'
-        && request.resource.data.keys().hasOnly(['items'])
-        && request.resource.data.items is list && request.resource.data.items.size() <= 20;
-      allow create, update: if owner(uid) && dataId == 'preferences'
-        && request.resource.data.keys().hasOnly(['countries'])
-        && request.resource.data.countries is list && request.resource.data.countries.size() <= 12
-        && request.resource.data.countries.hasOnly(['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']);
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && dataId == 'searches'
+        && isValidSearches(request.resource.data);
+      allow create, update: if isOwner(uid)
+        && dataId == 'preferences'
+        && isValidPreferences(request.resource.data);
+      allow delete: if isOwner(uid) && dataId in ['searches', 'preferences'];
     }
+
     match /reports/{reportId} {
-      allow create: if verified()
-        && request.resource.data.keys().hasOnly(['listingId','reporterUid','reason','createdAt'])
-        && request.resource.data.listingId is string
-        && request.resource.data.listingId.size() <= 128
-        && request.resource.data.reporterUid == request.auth.uid
-        && request.resource.data.reason in ['fraud','duplicate','inappropriate','other']
-        && request.resource.data.createdAt == request.time;
-      // Reports are reviewed through trusted admin tooling, not client SDKs.
+      allow create: if isVerified()
+        && isValidReport(request.resource.data, reportId);
+      // Reports are immutable and reviewed only through trusted tooling.
       allow read, update, delete: if false;
     }
-    match /{document=**} { allow read, write: if false; }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

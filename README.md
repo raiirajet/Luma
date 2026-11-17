@@ -1,18 +1,18 @@
 # Limba Auto · Autoverkaufsportal für Südosteuropa
 
-## Limba 1.4 · gemeinsames Firebase-MVP für Website und Android
+## Limba 1.4.1 · gemeinsames Firebase-MVP für Website und Android
 
-**Installation und Aktivierung:** [FIREBASE_LIMBA_SETUP.md](FIREBASE_LIMBA_SETUP.md) beschreibt Schritt für Schritt, wie ein neues Firebase-Projekt namens **Limba** mit beiden Apps verbunden wird. Das Skript `python3 scripts/prepare_config.py limba-web.json google-services.json` bereitet die beiden öffentlichen Client-Konfigurationen und GitHub-Secrets vor.
+**Produktionsprojekt:** Website und Android sind mit Firebase `limba-auto` verbunden. Authentication und Firestore sind eingerichtet; die Website wird unter [limba-auto.web.app](https://limba-auto.web.app) veröffentlicht. Der genaue Betriebsstand und die noch notwendige Storage-/Billing-Freigabe stehen in [FIREBASE_LIMBA_SETUP.md](FIREBASE_LIMBA_SETUP.md).
 
 - **Demo ohne Firebase:** Website und APK können ohne Zugangsdaten weiterhin mit lokalen Testdaten verwendet werden; `limba/demo` bleibt ausschliesslich ein öffentlicher Demo-Zugang.
 - **Firebase mit Konfiguration:** gemeinsames Auth-System mit E-Mail-Verifizierung und Passwort-Reset; synchronisierte öffentliche Fahrzeuge und Favoriten; Eigentümeransicht für aktive, pausierte und verkaufte Inserate.
 - **Native Android-App:** echte Firebase-SDKs, Kamera-/Galerie-Auswahl über das Android-Dokument-Auswahlsystem, Upload bis 6 Bilder, Bearbeiten, Statuswechsel, Löschen und Fahrzeugmeldungen.
-- **Web:** Bearbeiten, Verkauft/Pausiert/Reaktivieren, opt-in Kontakt-E-Mail, separater Kontospeicher und Meldungen. Mobile Darstellung korrigiert.
-- **Sicherheit:** Firestore- und Storage-Regeln mit Eigentümer- und Verifizierungsprüfung; Firebase-Emulator-Tests und Web-/APK-CI. **Die Regeln werden nicht automatisch auf eine fremde/produktive Firebase-Datenbank ausgerollt.**
-- **GitHub Actions:** GitHub Pages und Android lesen optionale GitHub-Secrets `LIMBA_WEB_CONFIG_B64` und `LIMBA_ANDROID_CONFIG_B64`. Für stabil signierte Release-APKs können zusätzlich die vier Keystore-Secrets hinterlegt werden.
+- **Web:** Bearbeiten, Verkauft/Pausiert/Reaktivieren, separater Kontospeicher und Meldungen. Kontakt-E-Mails werden nicht öffentlich gespeichert.
+- **Sicherheit:** gehärtete Firestore-/Storage-Regeln mit Eigentümer-, Verifizierungs-, Schema-, Größen- und Bildpfadprüfung; erweiterte Emulator-Angriffstests und Web-/APK-CI.
+- **GitHub Actions:** Die öffentlichen Firebase-Clientwerte sind reproduzierbar im Quellcode enthalten. Eine Release-APK wird nur mit den vier privaten Keystore-Secrets veröffentlicht; ohne sie entsteht ausschließlich ein Debug-Testartefakt.
 - **Sprachen & Marken:** 14 Sprachversionen und die bestehende Markenliste bleiben erhalten.
 
-**Wichtige Betriebsgrenzen:** Ohne echte Firebase-Konfigurationsdaten und manuell freigegebene Dienste werden keine öffentlichen Fahrzeuge oder Nutzerkonten angelegt. Vor öffentlicher Veröffentlichung sind reale End-to-End-Tests mit zwei Konten und echten Bildern, Datenschutz-/Rechtsprüfung und Anti-Spam-Massnahmen erforderlich. Die aktuelle Firestore-Suche lädt max. 300 aktive Inserate; serverseitige Pagination und ein Moderator-Dashboard sind weiterhin geplant.
+**Wichtige Betriebsgrenzen:** Cloud Storage benötigt seit Februar 2026 den Blaze-Tarif und ist bis zur bewussten Billing-Freigabe nicht nutzbar. Vor öffentlicher Veröffentlichung sind reale End-to-End-Tests mit zwei Konten und echten Bildern, Datenschutz-/Rechtsprüfung und Anti-Spam-Maßnahmen erforderlich. Die aktuelle Firestore-Suche lädt maximal 300 aktive Inserate; serverseitige Pagination und ein Moderator-Dashboard sind weiterhin geplant.
 
 
 Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwagen-Marktplatz** umgestaltet. Das Design ist eigenständig und orientiert sich bei den Suchabläufen an gängigen Fahrzeugbörsen, ohne Branding oder Gestaltung eines konkreten Wettbewerbers zu kopieren.
@@ -33,18 +33,17 @@ Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwa
 
 ## Firebase aktivieren
 
-1. Firebase-Projekt und Web-App anlegen. Die **öffentliche** Konfiguration in `config.js` eintragen. Keine Service-Account-Schlüssel einchecken.
-2. Firebase Authentication → E-Mail/Passwort aktivieren, E-Mail-Verifizierung einstellen und die GitHub-Pages-Domain autorisieren.
-3. Firestore und Storage aufsetzen und Regeln `firestore.rules` und `storage.rules` nach Emulator-Tests anwenden.
+1. Firebase-Projekt `limba-auto`, Web-App und Android-App sind bereits angelegt; die **öffentliche** Client-Konfiguration ist eingecheckt. Keine Service-Account-Schlüssel einchecken.
+2. Firebase Authentication mit E-Mail/Passwort und Firestore `(default)` in Zürich sind bereits aktiviert.
+3. Cloud Storage nach bewusster Blaze-/Billing-Freigabe provisionieren und erst danach `storage.rules` deployen.
 4. **Wichtig:** Firestore-Regeln schränken neue Anzeigen auf Kategorie `vehicles` und Fahrzeugdaten ein. Bestehende Nicht-Auto-Anzeigen aus älteren Luma-Versionen werden in der neuen Oberfläche ausgefiltert. Daten werden nicht gelöscht.
 5. Erst nach Moderation, Rechts- und Datenschutzprüfung sowie Schutz gegen Betrug öffentlich zum Handel freigeben.
 
 **CLI zum späteren Aktivieren der Sicherheitsregeln:**
 
 ```bash
-firebase login
-firebase use YOUR_PROJECT_ID
-firebase deploy --only firestore:rules,storage
+npx -y firebase-tools@latest login:list
+npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes --project limba-auto
 ```
 
 Mit GitHub Actions ist das statische Frontend für GitHub Pages konfiguriert (`.github/workflows/pages.yml`). Ein Push nach `main` löst die Veröffentlichung aus.
@@ -82,7 +81,7 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 
 ## Grenzen
 
-- Keine funktionierende Benutzerregistrierung und keine realen Uploads, solange `config.js` ohne Firebase-Konfiguration bleibt.
+- Registrierung und Firestore sind produktiv konfiguriert; Foto-Uploads bleiben bis zur Cloud-Storage-/Blaze-Freigabe gesperrt.
 - Keine echte Händlerprüfung, Finanzierung, Zahlungsabwicklung, Fahrzeughistorie oder automatische Angebotsübersetzung. Für diese Funktionen sind Dienste und Rechtsprüfung notwendig.
 - Suche basiert aktuell auf den geladenen Inseraten (bis 300 Firestore-Dokumente); für Produktion werden serverseitige Pagination, Suche und Anti-Spam-Moderation benötigt.
 - Originaltexte von Nutzern sind bewusst unverändert; ein Übersetzungsdienst wäre eine zukünftige Option.

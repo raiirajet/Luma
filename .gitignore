@@ -4,8 +4,16 @@ node_modules/
 .env.*
 !.env.example
 firebase-debug.log
-# Android Firebase runtime configuration (use example file; do not accidentally publish project settings)
-android/app/src/main/assets/firebase-config.json
+*-debug.log
+.firebase/
+__pycache__/
+*.pyc
+_preview_combo.js
+qa_*.png
+work-auth-export.json
+# Firebase client identifiers are public and intentionally checked in for the
+# Limba production project. Service-account keys remain forbidden.
+!android/app/src/main/assets/firebase-config.json
 *.keystore
 *.jks
 android/keystore.properties

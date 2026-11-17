@@ -155,9 +155,11 @@ class LimbaFirebase(private val activity: Activity) {
     private fun data(car: JSONObject): MutableMap<String, Any> {
         val fields = mutableMapOf<String,Any>()
         for (key in listOf("make","model","description","city","country","fuel","transmission",
-            "body","condition","accidentStatus","conditionNote","sellerType","contactEmail")) {
+            "body","condition","accidentStatus","conditionNote","sellerType")) {
             fields[key] = car.optString(key)
         }
+        // Public listing documents never contain seller PII.
+        fields["contactEmail"] = ""
         fields["title"] = (car.optString("make")+" "+car.optString("model")).take(110)
         fields["category"] = "vehicles"
         for (key in listOf("year","mileage","power","price")) fields[key] = car.optInt(key)
@@ -265,8 +267,11 @@ class LimbaFirebase(private val activity: Activity) {
     fun report(listingId: String, reason: String, done: (String?) -> Unit) {
         val user = auth?.currentUser ?: return done("Sign in required")
         if (!user.isEmailVerified) return done("Verify your email first")
-        db?.collection("reports")?.add(mapOf("listingId" to listingId,
-            "reporterUid" to user.uid, "reason" to reason,
+        val reportId = "${user.uid}_$listingId"
+        db?.collection("reports")?.document(reportId)?.set(mapOf(
+            "listingId" to listingId,
+            "reporterUid" to user.uid,
+            "reason" to reason,
             "createdAt" to FieldValue.serverTimestamp()))
             ?.addOnSuccessListener { done(null) }
             ?.addOnFailureListener { done(it.localizedMessage) } ?: done("Firestore unavailable")

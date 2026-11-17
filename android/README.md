@@ -1,8 +1,12 @@
+# Limba Android 1.4.1
 
-## Version 1.3.0 (native Demo-Inserate)
+- Paketname `ch.luma.auto`, `versionCode 6`, `versionName 1.4.1`.
+- Dieselbe Firebase-Produktionskonfiguration wie die Website (`limba-auto`).
+- E-Mail-/Passwort-Anmeldung, Registrierung, E-Mail-Verifizierung und Passwort-Reset.
+- Synchronisierte Inserate, Favoriten, Eigentümeransicht, Meldungen und Statuswechsel.
+- Auswahl, Komprimierung und Upload von 1 bis 6 Bildern, sobald Cloud Storage nach der notwendigen Blaze-Freigabe provisioniert wurde.
+- Der lokale Zugang `limba/demo` bleibt strikt vom produktiven Firebase-Datenbestand getrennt.
+- Verkäufer-E-Mail-Adressen werden nicht öffentlich im Inserat gespeichert.
+- Debug-APKs sind Testartefakte. Ein GitHub Release wird nur mit dem dauerhaft gesicherten privaten Release-Keystore erzeugt.
 
-- Floating-Plus-Schaltfläche mit originalem Limba-3D-Icon auf den regulären App-Seiten, unterhalb der Systemleisten und oberhalb der App-Navigation.
-- Sprachauswahl beim ersten Start (14 Sprachen), später in den Einstellungen veränderbar.
-- Testanmeldung `limba` / `demo`, zusätzlich **nur lokale** Testregistrierung mit gesalzenem PBKDF2-Prüfwert im privaten App-Speicher. Es gibt noch **keine produktive Firebase-Anbindung für Android**.
-- Lokale Fahrzeugerfassung mit umfassendem Steckbrief inklusive Unfallstatus (`yes`, `no`, `unknown`), Zustandsnotiz und Fahrzeugbeschreibung. Private Testanzeigen erscheinen in Suche, «Meine Inserate» und Swipe und können gelöscht werden. Sie werden nicht ins Internet hochgeladen oder zwischen Geräten synchronisiert.
-- Diese APK ist debug-signiert. Zur späteren echten Veröffentlichung sind Firebase-Android-Konfiguration, Authentifizierung, Storage und ein sicherer dauerhafter Release-Key notwendig.
+Die öffentliche Firebase-Clientkonfiguration liegt in `app/src/main/assets/firebase-config.json`. Sie enthält keine Administrator- oder Service-Account-Zugangsdaten.

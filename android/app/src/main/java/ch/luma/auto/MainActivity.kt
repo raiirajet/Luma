@@ -1134,13 +1134,6 @@ class MainActivity : Activity() {
         val sellerTypes=listOf("privateSeller","dealer")
         val seller=spinner(t("sellerType"),sellerTypes.map { it to t(it) })
         existing?.let {seller.setSelection(sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0))}
-        val contact=if(!isPreview)editField(col,t("contactEmail"),
-            existing?.optString("contactEmail") ?: "",t("email"))else null
-        val contactConsent = if(!isPreview)CheckBox(this).apply {
-            text=t("contactPublic");isChecked=existing?.optString("contactEmail")?.isNotBlank()==true
-            setTextColor(muted);textSize=12f
-            col.addView(this,lp(-1,-2))
-        }else null
         col.addView(label(t("vehicleDescription")))
         val desc=EditText(this).apply { setTextColor(ink);minLines=3;maxLines=6;setPadding(px(13),px(10),px(13),px(10));background=c(paper,12,border) }
         desc.setText(existing?.optString("description") ?: "")
@@ -1167,9 +1160,6 @@ class MainActivity : Activity() {
                     val mk=canonicalBrand(makeField.text.toString());val mdl=modelField.text.toString().trim()
                     val yr=year.text.toString().toIntOrNull();val km=mileage.text.toString().toIntOrNull();val hp=power.text.toString().toIntOrNull();val eur=price.text.toString().toIntOrNull()
                     val town=city.text.toString().trim();val description=desc.text.toString().trim()
-                    if(contact?.text?.toString()?.isNotBlank()==true && contactConsent?.isChecked!=true){
-                        toast(t("contactPublic"));return@setOnClickListener
-                    }
                     if(mk.length !in 2..35||mdl.length !in 1..65||yr==null||yr !in 1950..(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)+1)||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
                     val car=JSONObject().put("id",existing?.optString("id") ?: "preview-"+System.currentTimeMillis())
                         .put("uid",if(isPreview)previewUser else cloudUser?.uid ?: "")
@@ -1179,7 +1169,7 @@ class MainActivity : Activity() {
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
                         .put("conditionNote",note.text.toString().trim().take(240)).put("description",description.take(3000))
                         .put("sellerType",sellerTypes[seller.selectedItemPosition])
-                        .put("contactEmail",contact?.text?.toString()?.trim() ?: "")
+                        .put("contactEmail","")
                     if (isPreview) {
                         existing?.let { previewCars.remove(it) }
                         previewCars.add(0,car);savePreviewCars();dlg.dismiss();navigate("mine")

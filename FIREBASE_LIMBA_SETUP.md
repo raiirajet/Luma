@@ -1,75 +1,77 @@
-# Limba Auto 1.4 – Firebase verbinden
+# Limba Auto 1.4.1 – Firebase-Betriebsstand
 
-Die Website und die native Android-App verwenden **dasselbe** Firestore-Projekt. Ohne Konfiguration laufen beide weiterhin als **lokale Demo**. Die Anmeldung `limba/demo` ist keine produktive Identität. Öffentliche Firebase-App-IDs und API-Schlüssel sind **Client-Konfiguration**, keine Administrator-Zugangsdaten. Niemals Service-Account-JSON, private Schlüssel oder Zugangstokens einchecken.
+Website und native Android-App verwenden dasselbe Firebase-Projekt. Die Anmeldung `limba/demo` bleibt eine vollständig lokale Vorschau und ist keine produktive Identität. Firebase-App-IDs und API-Schlüssel in diesem Repository sind öffentliche Client-Konfiguration. Service-Account-Dateien, private Schlüssel und Zugangstokens dürfen niemals eingecheckt werden.
 
-## 1. Firebase-Projekt Limba erstellen
+## Bereits eingerichtet
 
-1. In [Firebase Console](https://console.firebase.google.com/) ein neues Projekt anlegen, Anzeigename **Limba**. Die automatisch vergebene `projectId` notieren.
-2. **Authentication** > **Sign-in method** > **Email/Password** aktivieren. E-Mail-Bestätigung verwenden. Unter **Settings > Authorized domains** `raiirajet.github.io` eintragen; weitere eigene Domains erst nach Einrichtung hinzufügen.
-3. **Firestore Database** in der gewünschten Region erstellen (Standarddatenbank **(default)**). Die Region vorab bewusst wählen; Änderungen sind später aufwendig.
-4. **Cloud Storage** für dasselbe Projekt aktivieren, ebenso die erforderliche Abrechnung, falls Firebase sie verlangt. Nur nach Tests die im Repository vorbereiteten Regeln deployen.
-5. Unter **Project settings > Your apps** eine **Web-App** registrieren. Den öffentlichen `firebaseConfig`-Block als reines JSON in eine lokale Datei `limba-web.json` kopieren.
-6. Eine **Android-App** registrieren mit Paketname **`ch.luma.auto`** (unbedingt beibehalten, wenn bestehende Apps Updates erhalten sollen). `google-services.json` herunterladen. Ein Google-Services-Gradle-Plugin ist hier nicht nötig, da Limba FirebaseOptions aus sicheren Client-Settings aufbaut.
+| Bereich | Wert / Status |
+|---|---|
+| Firebase-Projekt | `limba-auto` (Anzeigename **Limba**) |
+| Projekt-Nummer | `190623494655` |
+| Hosting | `https://limba-auto.web.app` |
+| Web-App | `1:190623494655:web:92f21575e57de7a4a077ca` |
+| Android-App | `1:190623494655:android:f0b231d0bdd196d1a077ca` |
+| Android-Paket | `ch.luma.auto` |
+| Authentication | E-Mail/Passwort aktiviert |
+| Firestore | `(default)`, Standard Edition, Native Mode, `europe-west6` (Zürich) |
+| Löschschutz | aktiviert |
+| Client-Konfiguration | `config.js` und `android/app/src/main/assets/firebase-config.json` |
 
-## 2. Beide Apps mit einem einzigen Hilfsskript vorbereiten
+Die gewünschte globale Hosting-ID `limba` ist bereits von einem anderen Firebase-Projekt reserviert. Sie kann nicht in dieses Projekt übertragen werden. Die verfügbare Produktionsadresse ist deshalb `limba-auto.web.app`.
 
-Im geklonten Repository:
+## Noch erforderliche Cloud-Storage-Freigabe
 
-```bash
-python3 scripts/prepare_config.py limba-web.json google-services.json
-```
+Seit dem 3. Februar 2026 verlangt Cloud Storage for Firebase für neue und bestehende Buckets den Blaze-Tarif. Das Projekt hat aktuell keine verknüpfte Abrechnung. Ohne diese Freigabe sind Foto-Uploads absichtlich nicht produktiv möglich.
 
-Das Programm validiert, dass beide Apps dieselbe `projectId` besitzen, und erzeugt:
-
-- `config.js` – öffentliche Firebase-Konfiguration für die Website.
-- `android/app/src/main/assets/firebase-config.json` – öffentliche Konfiguration für die native APK (durch `.gitignore` ausgeschlossen).
-- Zwei **Base64-Werte** für GitHub-Repository-Secrets: `LIMBA_WEB_CONFIG_B64` und `LIMBA_ANDROID_CONFIG_B64`.
-
-Unter GitHub > Repository > **Settings > Secrets and variables > Actions > New repository secret** beide Werte hinterlegen. Beim nächsten automatischen Deployment baut GitHub Pages die Web-Konfiguration ein; der Android-Build integriert die passende native Konfiguration. Änderungen an Secrets lösen selbst keinen Build aus: über **Actions > Deploy Limba website > Run workflow** und **Build Limba Android APK > Run workflow** neu veröffentlichen.
-
-**Wichtig:** Eine bereits installierte Debug-APK aus einer anderen GitHub-Actions-Session ist unter Umständen nicht updatefähig. Für dauerhafte Updates muss die App mit demselben privaten Release-Keystore signiert werden.
-
-## 3. Release-APK dauerhaft signieren (optional, vor öffentlicher Veröffentlichung verpflichtend)
-
-Einmalig einen **privaten** Android-Release-Schlüssel erstellen und sicher offline aufbewahren. In GitHub folgende Secrets hinterlegen:
-
-- `LIMBA_RELEASE_KEYSTORE_B64` – Base64 des vollständigen Keystore-Binärinhalts
-- `LIMBA_KEYSTORE_PASSWORD` – Keystore-Passwort
-- `LIMBA_KEY_ALIAS` – Schlüsselalias
-- `LIMBA_KEY_PASSWORD` – Schlüsselpasswort
-
-Der Build erzeugt dann auf `main` eine signierte Release-APK. **Den privaten Keystore niemals ins Repository laden.** Die erste Migration von einer anders signierten Debug-APK kann eine Deinstallation benötigen.
-
-## 4. Regeln testen und Firebase aktivieren
-
-Firebase CLI installieren und anmelden:
+1. In der [Firebase Console für `limba-auto`](https://console.firebase.google.com/project/limba-auto/overview) den Blaze-Tarif mit einem eigenen Cloud-Billing-Konto verknüpfen.
+2. Ein Kostenbudget und Budgetwarnungen festlegen.
+3. Den Standard-Bucket `limba-auto.firebasestorage.app` in einer bewusst gewählten Region provisionieren.
+4. Erst danach die bereits getesteten Storage-Regeln deployen:
 
 ```bash
-npm install -g firebase-tools
-firebase login
-firebase use --add
-# Limba / deine projectId auswählen
-firebase emulators:start --only firestore,auth,storage
+npx -y firebase-tools@latest deploy --only storage --project limba-auto
 ```
 
-Im Emulator zunächst Registrierung, Verifizierung, Inserat erstellen/bearbeiten/verkaufen/löschen, Foto-Uploads und gesperrte Fremdzugriffe prüfen. **Erst danach**:
+Das Verknüpfen eines zahlungsfähigen Kontos ist eine finanzielle Entscheidung und wird nicht automatisiert.
+
+## Regeln prüfen und deployen
 
 ```bash
-firebase deploy --only firestore:rules,firestore:indexes,storage
+npx -y firebase-tools@latest login:list
+npm install --no-save firebase@12.6.0 @firebase/rules-unit-testing@5.0.0
+npx -y firebase-tools@latest emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs"
+npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes --dry-run --project limba-auto
+npx -y firebase-tools@latest deploy --only auth,firestore,hosting --project limba-auto
 ```
 
-Dieser Deploy ändert **nur die Regeln und Indexdefinitionen** im ausgewählten Projekt, keine bestehenden Datensätze. Die Regeln müssen zur tatsächlich eingesetzten Firebase-Datenbank passen. Nicht versehentlich auf ein anderes Projekt oder eine zweite Datenbank deployen.
+Die Regeln erzwingen unter anderem:
 
-## 5. Funktionsabnahme nach Einrichtung
+- öffentliche Lesezugriffe nur auf aktive Inserate;
+- verifizierte Eigentümer für Erstellen, Bearbeiten, Statuswechsel und Löschen;
+- vollständige Typ-, Feld-, Größen-, Status- und Bildpfadvalidierung bei Create und Update;
+- keine öffentlich lesbare Kontakt-E-Mail im Inserat;
+- strikt benutzergetrennte Favoriten, Suchfilter und Ländereinstellungen;
+- genau eine unveränderliche Meldung pro Benutzer und Inserat;
+- standardmäßig gesperrte, nicht definierte Collections und Storage-Pfade.
 
-- Gleiche E-Mail auf Website und Android nutzen; Anmeldung, Verifizierungs-E-Mail und Passwort-Reset prüfen.
-- Ein Foto-Inserat auf Android erstellen und auf der Website anzeigen, dann umgekehrt.
-- Als Eigentümer bearbeiten, pausieren, verkaufen, reaktivieren und löschen.
-- Mit einem zweiten Konto versuchen, fremde Inserate/Fotos/Favoriten zu ändern: **Zugriff muss abgelehnt werden**.
-- Jede der 14 Sprachen auf kleinem und grossem Bildschirm testen. Echte Android-App-Geräte inklusive Statusleiste, Gestennavigation und Rotationswechsel prüfen.
-- Optionalen Kontakt-E-Mail-Hinweis beachten: Wer eine E-Mail angibt, veröffentlicht diese im öffentlichen Inserat.
-- Reports im Firebase-Admin-Bereich beobachten. Eine geschützte Moderationsoberfläche ist noch nicht enthalten.
+## Dauerhaft signierte Android-Releases
 
-## Grenzen der Vorbereitung
+Für updatefähige Produktions-APKs einmalig einen privaten Android-Release-Keystore erstellen, offline sichern und als GitHub-Actions-Secrets hinterlegen:
 
-Diese Schritte **erstellen kein Firebase-Projekt automatisch**, aktivieren keine Abrechnung und ersetzen keine Rechteprüfung, rechtliche Freigabe oder Server-seitige Moderation. Die GitHub-Secrets können nur von einem Repository-Administrator gesetzt werden. Die aktuellen Regeln, Indexe und Client-Konfiguration liegen aber vollständig als Quellcode vor.
+- `LIMBA_RELEASE_KEYSTORE_B64`
+- `LIMBA_KEYSTORE_PASSWORD`
+- `LIMBA_KEY_ALIAS`
+- `LIMBA_KEY_PASSWORD`
+
+Der Workflow veröffentlicht ohne diese vier Werte keine GitHub Release-APK mehr. Ein Debug-Build wird nur als kurzlebiges Workflow-Artefakt bereitgestellt. Den privaten Keystore niemals in Git oder in ein öffentliches Ticket laden.
+
+## Abnahme vor Marktstart
+
+- Mit zwei real verifizierten Konten Website und Android gegeneinander testen.
+- Inserat mit 1 bis 6 Fotos erstellen, bearbeiten, pausieren, verkaufen, reaktivieren und löschen.
+- Fremdzugriff auf Inserat, Favoriten, Suchdaten und Fotos muss abgelehnt werden.
+- Passwort-Reset und Bestätigungs-E-Mail auf realen Postfächern prüfen.
+- Alle 14 Sprachen auf kleinem und großem Bildschirm kontrollieren.
+- App Check, Spam-/Rate-Limits, Moderationswerkzeug, Monitoring und rechtliche Texte vor einem offenen Marktstart ergänzen bzw. freigeben.
+
+Kontakt-E-Mails werden nicht mehr öffentlich im Inserat gespeichert. Für direkte Käufer-Verkäufer-Kommunikation ist später ein geschützter interner Nachrichtenkanal vorgesehen.
