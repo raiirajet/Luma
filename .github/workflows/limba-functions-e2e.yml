@@ -1,0 +1,30 @@
+name: Limba 1.5 Functions emulated transaction lifecycle
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firebase.json'
+      - '.github/workflows/limba-functions-e2e.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transaction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: functions
+        run: npm install --no-audit --no-fund
+      - name: Exercise complete marketplace transaction in emulators
+        run: npx -y firebase-tools@latest emulators:exec --project demo-limba --only auth,firestore,functions "cd functions && node --test tests/marketplace.e2e.test.mjs"
