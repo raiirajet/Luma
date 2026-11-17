@@ -1,4 +1,4 @@
-name: Deploy Luma website
+name: Deploy Limba website
 on:
   push:
     branches: [main]
@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Regenerate offline preview from current source
+        run: python3 build_preview.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static files
