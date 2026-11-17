@@ -4,3 +4,8 @@ node_modules/
 .env.*
 !.env.example
 firebase-debug.log
+# Android Firebase runtime configuration (use example file; do not accidentally publish project settings)
+android/app/src/main/assets/firebase-config.json
+*.keystore
+*.jks
+android/keystore.properties
