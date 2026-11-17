@@ -1,0 +1,78 @@
+name: Build Luma Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout Luma
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Download Creative Commons Nissan GT-R photograph
+        run: |
+          # Image by Joshua Spence, CC BY-SA 4.0, Wikimedia Commons.
+          # The app includes a clear attribution link in vehicle details.
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 60 \
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Nissan_GT-R_R35_Black_Edition.JPG/960px-Nissan_GT-R_R35_Black_Edition.JPG' \
+            --output android/app/src/main/assets/gtr.jpg || rm -f android/app/src/main/assets/gtr.jpg
+          if [ -f android/app/src/main/assets/gtr.jpg ]; then file android/app/src/main/assets/gtr.jpg; fi
+
+      - name: Compile native APK
+        working-directory: android
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Prepare download
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Luma-Auto-Android-v1.0.0.apk
+          sha256sum Luma-Auto-Android-v1.0.0.apk
+
+      - name: Upload installable APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Luma-Auto-Android-APK
+          path: Luma-Auto-Android-v1.0.0.apk
+          retention-days: 30
+
+      - name: Publish APK direct download in GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view android-v1.0.0 >/dev/null 2>&1; then
+            gh release create android-v1.0.0 \
+              --title 'Luma Auto Android 1.0.0 (native preview)' \
+              --notes 'Installable Android APK built in Kotlin (not a WebView). Preview contains one fictional Nissan GT-R listing. Local search, 435 marques, country settings, favourites, saved searches, swipe and detailed specifications are available. Firebase account registration and publishing are not enabled.' \
+              --prerelease
+          fi
+          gh release upload android-v1.0.0 Luma-Auto-Android-v1.0.0.apk --clobber
