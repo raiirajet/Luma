@@ -192,7 +192,7 @@ class MainActivity : Activity() {
         main.addView(nav, lp(-1, 66))
     }
     private fun body(main: LinearLayout, content: LinearLayout) {
-        val scroll = ScrollView(this).apply { fillViewport = true; isVerticalScrollBarEnabled = false }
+        val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }
         scroll.addView(content)
         main.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
     }
