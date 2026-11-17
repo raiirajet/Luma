@@ -259,6 +259,9 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
         '<small>'+esc(tr('asSeller'))+' · '+esc(String(data.sellerRatingCount||0))+'</small></div>'+
         '<div>★ '+esc(String(data.buyerRatingAverage||'—'))+
         '<small>'+esc(tr('asBuyer'))+' · '+esc(String(data.buyerRatingCount||0))+'</small></div></div>'+
+        '<div class="profile-stats"><div>'+esc(tr('completedSales'))+': <b>'+esc(String(data.completedSales||0))+'</b></div>'+
+        '<div>'+esc(tr('completedPurchases'))+': <b>'+esc(String(data.completedPurchases||0))+'</b></div>'+
+        '<div>'+esc(tr('responseRate'))+': <b>'+esc(String(data.responseRate||0))+'%</b></div></div>'+
         '<div class="profile-tools"><button class="outline-btn" id="profilePhone">'+esc(tr('phoneTitle'))+
         '</button><button class="outline-btn" id="profilePush">'+esc(tr('push'))+'</button></div>'+
         '<div class="profile-tabs"><button class="outline-btn" data-role="seller">'+esc(tr('asSeller'))+

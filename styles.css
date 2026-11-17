@@ -168,3 +168,10 @@ button.card-heart{width:44px;height:44px}
 @media(max-width:760px){.car-img{height:190px}.mobile-nav{display:flex}.site-footer{padding-bottom:105px}.result-ops{flex-wrap:wrap}.detail-cta{position:sticky;bottom:0;padding:10px;background:#eaf4fb;border-radius:12px;z-index:3}}
 @media(max-width:390px){.wrap{width:calc(100% - 22px)}.head-row{gap:4px}.brand{min-width:0;max-width:112px}.limba-wordmark{max-width:90px}.language-select{width:66px;min-width:0}.header-right{gap:3px}.header-right #settingsBtn{display:inline-flex}.header-right #loginBtn{width:44px;min-width:44px;max-width:44px;padding:4px}.header-right #loginText{display:none}.header-right .limba-3d-icon{width:25px;height:25px}.search-panel{padding:13px}.search-top{flex-wrap:wrap}.filter-ext{flex-wrap:wrap}.car-grid{gap:10px}.car-card .card-body{padding:10px}.car-price{font-size:17px}.car-location{font-size:9px}.trust-line{font-size:9px;gap:5px}.offer-form{grid-template-columns:1fr}}
 @media(max-width:350px){.car-grid{grid-template-columns:1fr}.car-img{height:230px}.search-grid{grid-template-columns:1fr}.search-field{grid-column:1}.market-sell small{font-size:8px}}
+
+.network-banner{position:fixed;left:12px;right:12px;top:88px;z-index:110;background:#182c38;color:#fff;border:1px solid #557488;padding:12px;text-align:center;border-radius:10px;box-shadow:0 8px 24px #0002;font-size:13px}
+.profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.profile-stats>div{background:#eef4f8;border-radius:12px;padding:12px;font-size:12px}
+.profile-stats b{display:block;font-size:21px;color:#0d4e82}
+@media(max-width:1100px){.main-nav .nav-link{padding-left:7px;padding-right:7px;font-size:11px}.main-nav{margin-left:10px;gap:0}}
+@media(max-width:390px){.profile-stats{grid-template-columns:1fr 1fr}.mobile-nav small{letter-spacing:-.2px}}
