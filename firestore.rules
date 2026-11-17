@@ -42,6 +42,11 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['items'])
         && request.resource.data.items is list
         && request.resource.data.items.size() <= 20;
+      allow write: if owner(uid) && dataId == 'preferences'
+        && request.resource.data.keys().hasOnly(['countries'])
+        && request.resource.data.countries is list
+        && request.resource.data.countries.size() <= 12
+        && request.resource.data.countries.hasOnly(['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']);
     }
     match /{document=**} { allow read, write: if false; }
   }

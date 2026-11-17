@@ -1,3 +1,4 @@
+import {EXTRA, localizedDemo, REQUIRED_EXTRA_KEYS} from './translations-extra.js';
 // Human-reviewed interface labels should be expanded before production launch.
 // Every supported language has marketplace navigation, actions and category names.
 export const LANGS=[
@@ -62,6 +63,8 @@ const tutorialLabels={
 const tutorialKeys=['swipeShowTutorial','swipeTutorialIntro','swipeStart','swipeOnce'];
 for(const [code,labels] of Object.entries(tutorialLabels)){tutorialKeys.forEach((key,i)=>dictionary[code][key]=labels[i])}
 dictionary['sr-Cyrl']=Object.fromEntries(Object.entries(dictionary['sr-Latn']).map(([k,v])=>[k,toCyr(v)]));
+for(const [locale,pack] of Object.entries(EXTRA)){Object.assign(dictionary[locale]||(dictionary[locale]={}),pack)}
+export function demoText(id,locale='de'){return localizedDemo(id,locale)}
 export function t(key,locale='de'){return dictionary[locale]?.[key]??(locale==='de'?textDe[key]:dictionary.en?.[key])??textDe[key]??key}
 export function catName(key,locale='de'){const index=CAT_KEYS.indexOf(key);return categories[locale]?.[index]??categories.de[index]??key}
 export function tCatList(locale){return CAT_KEYS.map((id,i)=>({id,icon:CAT_ICONS[i],name:catName(id,locale)}))}

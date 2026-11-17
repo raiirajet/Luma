@@ -26,3 +26,47 @@
 .swipe-tutorial-start{display:block;width:100%;font-size:14px;min-height:52px}
 .swipe-tutorial-tip{display:block;font-size:11px;color:#89988b;text-align:center;margin-top:15px}
 @media(max-width:760px){.banner-photo{display:none}.swipe-card{height:min(62vh,510px);min-height:330px}.swipe-tutorial-panel{padding:22px 16px}.swipe-tutorial-grid{gap:8px}.swipe-tutorial-direction{padding:10px 8px;gap:7px}.swipe-tutorial-arrow{width:38px;height:42px}.swipe-tutorial-direction strong{font-size:12px}.swipe-tutorial-direction small{font-size:9px}}
+
+/* Luma v1.2 — personal search countries and immersive swipe */
+.account-settings{display:grid;place-items:center;width:44px;height:44px;background:#f1f5ef;border:1px solid #e2ebe1;border-radius:12px;color:var(--forest);font-size:23px;flex-shrink:0}
+.dashboard-card{background:#fafbf8;border:1px solid #e1e9df;padding:clamp(18px,3vw,32px);border-radius:22px;max-width:950px;margin:0 auto}
+.dashboard-heading{display:flex;align-items:start;justify-content:space-between;gap:20px}
+.dashboard-heading h3{font-size:clamp(19px,2.3vw,26px);margin:0 0 9px}
+.dashboard-heading p{font-size:14px;color:#697d6e;max-width:610px;line-height:1.6}
+.dashboard-globe{font-size:34px}
+.dashboard-all{background:#edf3eb;border:1px solid #d9e4d7;padding:11px 18px;border-radius:14px;color:var(--forest);font-weight:800;min-height:48px;margin:12px 0 18px}
+.dashboard-all.selected{background:var(--forest);color:white}
+.dashboard-countries{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dashboard-country{min-height:64px;border:1.5px solid #e0e6dc;background:white;border-radius:14px;padding:12px;display:flex;align-items:center;gap:11px;cursor:pointer;font-size:13px;font-weight:750}
+.dashboard-country.selected{background:#eaf5e9;border-color:#7da68b}
+.dashboard-country input{position:absolute;opacity:0;width:1px;height:1px}
+.dashboard-country:focus-within{outline:3px solid #f8ab91;outline-offset:2px}
+.dashboard-flag{font-size:24px;flex-shrink:0}
+.dashboard-check{margin-left:auto;display:grid;place-items:center;width:23px;height:23px;border:1px solid #c5d3c4;border-radius:7px;color:transparent;font-size:15px}
+.dashboard-country.selected .dashboard-check{background:var(--forest);color:white;border-color:var(--forest)}
+.dashboard-actions{display:flex;align-items:center;gap:16px;margin-top:24px;flex-wrap:wrap}
+.dashboard-actions p{font-size:13px;color:#4f785e;margin:0}
+.dashboard-hint{font-size:12px;color:#768779;margin:17px 0 0;line-height:1.55}
+body.swipe-active{overflow:hidden;padding-bottom:0!important}
+.swipe-fullscreen{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;padding:0!important;margin:0!important;z-index:85;overflow:hidden;background:#061710;color:white}
+.swipe-fullscreen .swipe-card{position:absolute;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden;touch-action:none;user-select:none;cursor:grab}
+.swipe-fullscreen .swipe-card:active{cursor:grabbing}
+.swipe-fullscreen .swipe-card>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.swipe-fullscreen .swipe-gradient{position:absolute;inset:0;background:linear-gradient(180deg,#081b1560 0%,transparent 35%,#06170a88 60%,#03120be8 100%);pointer-events:none}
+.swipe-fullscreen .swipe-top{position:absolute;top:max(24px,env(safe-area-inset-top));left:clamp(16px,4vw,65px);background:#07190fa6;color:#f5faf4;border:1px solid #ffffff29;backdrop-filter:blur(10px);padding:9px 15px;border-radius:25px;font-size:13px;pointer-events:none}
+.swipe-fullscreen .swipe-content{position:absolute;bottom:max(50px,calc(env(safe-area-inset-bottom) + 30px));left:clamp(20px,6vw,92px);right:clamp(98px,12vw,230px);pointer-events:none;color:white;text-shadow:0 2px 20px #09170c66}
+.swipe-fullscreen .swipe-content p{font-size:clamp(13px,1.7vw,18px);margin:0 0 10px;color:#eff7ed}
+.swipe-fullscreen .swipe-content h3{font-size:clamp(27px,4.4vw,65px);line-height:1.15;max-width:850px;margin:10px 0;overflow-wrap:anywhere}
+.swipe-overlay-home,.swipe-overlay-favorite,.swipe-overlay-help{position:absolute;z-index:4;display:grid;place-items:center;border:1px solid #ffffff60;color:white;background:#09231cc7;backdrop-filter:blur(14px);box-shadow:0 6px 30px #0003;cursor:pointer}
+.swipe-overlay-home{right:max(21px,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));height:52px;width:52px;border-radius:16px}
+.swipe-overlay-home svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.swipe-overlay-favorite{right:max(22px,env(safe-area-inset-right));bottom:max(36px,calc(env(safe-area-inset-bottom) + 25px));width:70px;height:70px;border-radius:50%;font-size:45px;line-height:1;color:white}
+.swipe-overlay-favorite.liked{color:#ff927e;background:#421b1bd9}
+.swipe-overlay-help{left:max(22px,env(safe-area-inset-left));bottom:max(33px,calc(env(safe-area-inset-bottom) + 22px));width:44px;height:44px;border-radius:50%;font-size:22px;opacity:.77}
+.swipe-empty{display:grid;place-items:center;width:100%;height:100%}
+.swipe-fullscreen .swipe-tutorial{z-index:7}
+.swipe-fullscreen .swipe-tutorial-panel{color:var(--forest)}
+.modal-overlay{z-index:110}
+.toast{z-index:130}
+@media(max-width:760px){.dashboard-countries{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-country{min-height:61px;padding:9px;font-size:12px;gap:7px}.dashboard-flag{font-size:21px}.swipe-fullscreen .swipe-content{left:20px;right:85px;bottom:calc(env(safe-area-inset-bottom) + 60px)}.swipe-fullscreen .swipe-content h3{font-size:clamp(25px,6.6vw,38px)}.swipe-overlay-favorite{width:62px;height:62px;font-size:41px}.swipe-overlay-home{right:15px;top:max(15px,env(safe-area-inset-top))}.swipe-overlay-help{bottom:15px;left:18px}.account-settings{height:42px;width:42px}}
+@media(max-width:380px){.dashboard-countries{grid-template-columns:1fr}.account-settings{width:39px;height:39px}.lang-select{max-width:88px}.dashboard-country{font-size:13px}}
