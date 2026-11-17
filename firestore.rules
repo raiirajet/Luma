@@ -4,7 +4,23 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function verified() { return signedIn() && request.auth.token.email_verified == true; }
     function owner(uid) { return signedIn() && request.auth.uid == uid; }
-    function validListing(d) {
+    function validImage(url, uid, id) {
+      // Each image must belong to the authenticated owner and the listing ID.
+      return url is string && url.size() <= 2048
+        && url.matches('https://firebasestorage[.]googleapis[.]com/v0/b/[A-Za-z0-9._-]+/o/listings%2F'
+          + uid + '%2F' + id + '%2F[0-5][.](jpg|png|webp)[?].*');
+    }
+    function validImages(d, id) {
+      return d.images is list && d.images.size() >= 1 && d.images.size() <= 6
+        && d.image == d.images[0]
+        && validImage(d.images[0], d.uid, id)
+        && (d.images.size() < 2 || validImage(d.images[1], d.uid, id))
+        && (d.images.size() < 3 || validImage(d.images[2], d.uid, id))
+        && (d.images.size() < 4 || validImage(d.images[3], d.uid, id))
+        && (d.images.size() < 5 || validImage(d.images[4], d.uid, id))
+        && (d.images.size() < 6 || validImage(d.images[5], d.uid, id));
+    }
+    function validListing(d, id) {
       return d.keys().hasAll(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType','accidentStatus','conditionNote'])
         && d.keys().hasOnly(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType','accidentStatus','conditionNote'])
         && d.uid is string && d.uid == request.auth.uid
@@ -16,48 +32,61 @@ service cloud.firestore {
         && d.category == 'vehicles'
         && d.country in ['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']
         && d.condition in ['new','used']
-        && d.status in ['active','sold']
+        && d.status in ['active','sold','paused']
         && d.make is string && d.make.size() >= 2 && d.make.size() <= 35
         && d.model is string && d.model.size() >= 1 && d.model.size() <= 65
         && d.accidentStatus in ['yes','no','unknown']
         && d.conditionNote is string && d.conditionNote.size() <= 240
-        && d.year is int && d.year >= 1950 && d.year <= 2027
+        && d.year is int && d.year >= 1950 && d.year <= 2100
         && d.mileage is int && d.mileage >= 0 && d.mileage <= 1500000
         && d.power is int && d.power >= 1 && d.power <= 2000
         && d.fuel in ['petrol','diesel','hybrid','electric']
         && d.transmission in ['manual','automatic']
         && d.body in ['suv','sedan','wagon','hatchback','coupe']
         && d.sellerType in ['privateSeller','dealer']
-        && d.image is string && d.image.size() > 0 && d.image.size() <= 2048
-        && d.images is list && d.images.size() >= 1 && d.images.size() <= 6
+        && d.image is string && validImages(d, id)
         && d.createdAt is timestamp;
     }
     match /listings/{listingId} {
-      allow read: if resource.data.status == 'active' || (signedIn() && resource.data.uid == request.auth.uid);
+      allow get, list: if resource.data.status == 'active'
+        || (signedIn() && resource.data.uid == request.auth.uid);
       allow create: if verified() && request.resource.data.uid == request.auth.uid
         && request.resource.data.status == 'active'
         && request.resource.data.createdAt == request.time
-        && validListing(request.resource.data);
+        && validListing(request.resource.data, listingId);
       allow update: if verified() && owner(resource.data.uid)
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.createdAt == resource.data.createdAt
-        && validListing(request.resource.data);
+        && validListing(request.resource.data, listingId);
       allow delete: if verified() && owner(resource.data.uid);
     }
     match /users/{uid}/favorites/{listingId} {
-      allow read, write: if owner(uid);
+      allow read: if owner(uid);
+      allow create, update: if owner(uid)
+        && request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.createdAt == request.time;
+      allow delete: if owner(uid);
     }
     match /users/{uid}/data/{dataId} {
       allow read: if owner(uid);
-      allow write: if owner(uid) && dataId == 'searches'
+      allow create, update: if owner(uid) && dataId == 'searches'
         && request.resource.data.keys().hasOnly(['items'])
-        && request.resource.data.items is list
-        && request.resource.data.items.size() <= 20;
-      allow write: if owner(uid) && dataId == 'preferences'
+        && request.resource.data.items is list && request.resource.data.items.size() <= 20;
+      allow create, update: if owner(uid) && dataId == 'preferences'
         && request.resource.data.keys().hasOnly(['countries'])
-        && request.resource.data.countries is list
-        && request.resource.data.countries.size() <= 12
+        && request.resource.data.countries is list && request.resource.data.countries.size() <= 12
         && request.resource.data.countries.hasOnly(['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']);
+    }
+    match /reports/{reportId} {
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['listingId','reporterUid','reason','createdAt'])
+        && request.resource.data.listingId is string
+        && request.resource.data.listingId.size() <= 128
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.reason in ['fraud','duplicate','inappropriate','other']
+        && request.resource.data.createdAt == request.time;
+      // Reports are reviewed through trusted admin tooling, not client SDKs.
+      allow read, update, delete: if false;
     }
     match /{document=**} { allow read, write: if false; }
   }

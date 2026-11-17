@@ -9,10 +9,10 @@ class Quiet(SimpleHTTPRequestHandler):
 handler=functools.partial(Quiet,directory=str(root))
 server=ThreadingHTTPServer(('127.0.0.1',0),handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
-base=f'http://127.0.0.1:{server.server_port}/index.html'
+base=f'http://127.0.0.1:{server.server_port}/preview.html'
 
 with sync_playwright() as p:
- browser=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+ browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
  for width,height in [(1440,970),(390,844)]:
   context=browser.new_context(viewport={'width':width,'height':height},device_scale_factor=1,has_touch=width<500,is_mobile=width<500)
   page=context.new_page()
@@ -20,13 +20,9 @@ with sync_playwright() as p:
   errors=[]; page.on('pageerror',lambda err:errors.append(str(err)))
   page.route('https://upload.wikimedia.org/**',lambda route:route.abort())
   page.route('https://images.unsplash.com/**',lambda route:route.abort())
-  # This environment blocks localhost/file navigations. Execute the self-contained preview
-  # in about:blank, preserving synthetic history in the same document.
-  page.evaluate("""() => { const origPush=history.pushState.bind(history), origReplace=history.replaceState.bind(history);
-    history.pushState=(s,t,u)=>origPush(s,t);history.replaceState=(s,t,u)=>origReplace(s,t);
-    const values={};Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=>(k in values?values[k]:null),setItem:(k,v)=>{values[k]=String(v)},removeItem:k=>delete values[k]}})
-  }""")
-  page.set_content((root/'preview.html').read_text(),wait_until='domcontentloaded')
+  # A real HTTP origin is required for accurate mobile viewport, touch events
+  # and ES-module loading. about:blank set_content distorts mobile hit-testing.
+  page.goto(base,wait_until='domcontentloaded')
   page.locator('#carGrid .car-card').first.wait_for()
   assert page.locator('#carGrid .car-card').count()==1,'expected exactly one demo car'
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
@@ -69,6 +65,8 @@ with sync_playwright() as p:
   # heart and favorite page
   page.locator('.car-card .card-heart').first.click()
   fav_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="favorites"]'
+  if width<500:
+   print('NAV_HITTEST',page.evaluate("""() => { const n=document.querySelector('.mobile-nav [data-view="favorites"]');const r=n.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;const el=document.elementFromPoint(x,y);return {rect:[r.x,r.y,r.width,r.height],viewport:[innerWidth,innerHeight],visual:[visualViewport.width,visualViewport.height,visualViewport.offsetTop],hit:el?.outerHTML?.slice(0,160),z:getComputedStyle(n.closest('nav')).zIndex,navDisplay:getComputedStyle(n.closest('nav')).display};}"""),flush=True)
   page.locator(fav_nav).click()
   assert page.locator('#favoritesGrid .car-card').count()==1
   home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'

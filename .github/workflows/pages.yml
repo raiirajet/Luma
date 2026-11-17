@@ -1,4 +1,4 @@
-name: Deploy Luma website
+name: Deploy Limba website
 on:
   push:
     branches: [main]
@@ -19,6 +19,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Inject optional public Firebase Web configuration
+        env:
+          LIMBA_WEB_CONFIG_B64: ${{ secrets.LIMBA_WEB_CONFIG_B64 }}
+        run: |
+          python3 - <<'PY'
+          import base64,json,os,pathlib
+          payload=os.environ.get('LIMBA_WEB_CONFIG_B64','')
+          if payload:
+              data=json.loads(base64.b64decode(payload).decode('utf-8'))
+              required=('apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId')
+              if not all(isinstance(data.get(x),str) and data[x].strip() for x in required):
+                  raise SystemExit('Invalid Limba web configuration')
+              pathlib.Path('config.js').write_text(
+                  'window.LIMBA_FIREBASE_CONFIG='+json.dumps({k:data[k] for k in required})+
+                  ';window.LUMA_FIREBASE_CONFIG=window.LIMBA_FIREBASE_CONFIG;\n',
+                  encoding='utf-8'
+              )
+          PY
+      - name: Regenerate offline preview from current source
+        run: python3 build_preview.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static files
