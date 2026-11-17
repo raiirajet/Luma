@@ -14,25 +14,31 @@ Website und native Android-App verwenden dasselbe Firebase-Projekt. Die Anmeldun
 | Android-Paket | `ch.luma.auto` |
 | Authentication | E-Mail/Passwort aktiviert |
 | Firestore | `(default)`, Standard Edition, Native Mode, `europe-west6` (Zürich) |
+| Abrechnung | Blaze-Tarif aktiv und Cloud-Billing-Konto verknüpft |
+| Cloud Storage | `limba-auto.firebasestorage.app`, regional, `europe-west6` (Zürich) |
 | Löschschutz | aktiviert |
 | Client-Konfiguration | `config.js` und `android/app/src/main/assets/firebase-config.json` |
 
 Die gewünschte globale Hosting-ID `limba` ist bereits von einem anderen Firebase-Projekt reserviert. Sie kann nicht in dieses Projekt übertragen werden. Die verfügbare Produktionsadresse ist deshalb `limba-auto.web.app`.
 
-## Noch erforderliche Cloud-Storage-Freigabe
+## Cloud Storage produktiv aktiviert
 
-Seit dem 3. Februar 2026 verlangt Cloud Storage for Firebase für neue und bestehende Buckets den Blaze-Tarif. Das Projekt hat aktuell keine verknüpfte Abrechnung. Ohne diese Freigabe sind Foto-Uploads absichtlich nicht produktiv möglich.
+Cloud Storage ist seit dem 17. November 2026 produktiv eingerichtet. Der Blaze-Tarif wurde live bestätigt, der Standard-Bucket `limba-auto.firebasestorage.app` bewusst regional in `europe-west6` (Zürich) provisioniert und ausschließlich `storage.rules` deployt (Deployment-Job `1794930781377`).
 
-1. In der [Firebase Console für `limba-auto`](https://console.firebase.google.com/project/limba-auto/overview) den Blaze-Tarif mit einem eigenen Cloud-Billing-Konto verknüpfen.
-2. Ein Kostenbudget und Budgetwarnungen festlegen.
-3. Den Standard-Bucket `limba-auto.firebasestorage.app` in einer bewusst gewählten Region provisionieren.
-4. Erst danach die bereits getesteten Storage-Regeln deployen:
+Erfolgreich geprüft wurden:
+
+- unverifizierte Eigentümer können nicht hochladen;
+- verifizierte Eigentümer können gültige JPEG-, PNG- und WebP-Dateien unter ihrem eigenen Pfad hochladen und löschen;
+- fremde Benutzer können Dateien weder überschreiben noch löschen;
+- ungültige Inhaltstypen und nicht definierte Pfade werden abgelehnt;
+- freigegebene Inseratsbilder sind öffentlich lesbar;
+- Testdateien und temporäre Testkonten wurden nach der Prüfung vollständig entfernt.
+
+Ein späteres gezieltes Storage-Regel-Deployment erfolgt mit:
 
 ```bash
 npx -y firebase-tools@latest deploy --only storage --project limba-auto
 ```
-
-Das Verknüpfen eines zahlungsfähigen Kontos ist eine finanzielle Entscheidung und wird nicht automatisiert.
 
 ## Regeln prüfen und deployen
 
@@ -41,7 +47,7 @@ npx -y firebase-tools@latest login:list
 npm install --no-save firebase@12.6.0 @firebase/rules-unit-testing@5.0.0
 npx -y firebase-tools@latest emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs"
 npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes --dry-run --project limba-auto
-npx -y firebase-tools@latest deploy --only auth,firestore,hosting --project limba-auto
+npx -y firebase-tools@latest deploy --only storage --dry-run --project limba-auto
 ```
 
 Die Regeln erzwingen unter anderem:

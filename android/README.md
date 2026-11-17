@@ -4,7 +4,7 @@
 - Dieselbe Firebase-Produktionskonfiguration wie die Website (`limba-auto`).
 - E-Mail-/Passwort-Anmeldung, Registrierung, E-Mail-Verifizierung und Passwort-Reset.
 - Synchronisierte Inserate, Favoriten, Eigentümeransicht, Meldungen und Statuswechsel.
-- Auswahl, Komprimierung und Upload von 1 bis 6 Bildern, sobald Cloud Storage nach der notwendigen Blaze-Freigabe provisioniert wurde.
+- Auswahl, Komprimierung und produktiver Upload von 1 bis 6 Bildern über Cloud Storage in `europe-west6` (Zürich).
 - Der lokale Zugang `limba/demo` bleibt strikt vom produktiven Firebase-Datenbestand getrennt.
 - Verkäufer-E-Mail-Adressen werden nicht öffentlich im Inserat gespeichert.
 - Debug-APKs sind Testartefakte. Ein GitHub Release wird nur mit dem dauerhaft gesicherten privaten Release-Keystore erzeugt.

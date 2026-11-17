@@ -2,7 +2,7 @@
 
 ## Limba 1.4.1 · gemeinsames Firebase-MVP für Website und Android
 
-**Produktionsprojekt:** Website und Android sind mit Firebase `limba-auto` verbunden. Authentication und Firestore sind eingerichtet; die Website wird unter [limba-auto.web.app](https://limba-auto.web.app) veröffentlicht. Der genaue Betriebsstand und die noch notwendige Storage-/Billing-Freigabe stehen in [FIREBASE_LIMBA_SETUP.md](FIREBASE_LIMBA_SETUP.md).
+**Produktionsprojekt:** Website und Android sind mit Firebase `limba-auto` verbunden. Authentication, Firestore und Cloud Storage sind eingerichtet; die Website wird unter [limba-auto.web.app](https://limba-auto.web.app) veröffentlicht. Der genaue Betriebsstand steht in [FIREBASE_LIMBA_SETUP.md](FIREBASE_LIMBA_SETUP.md).
 
 - **Demo ohne Firebase:** Website und APK können ohne Zugangsdaten weiterhin mit lokalen Testdaten verwendet werden; `limba/demo` bleibt ausschliesslich ein öffentlicher Demo-Zugang.
 - **Firebase mit Konfiguration:** gemeinsames Auth-System mit E-Mail-Verifizierung und Passwort-Reset; synchronisierte öffentliche Fahrzeuge und Favoriten; Eigentümeransicht für aktive, pausierte und verkaufte Inserate.
@@ -12,7 +12,7 @@
 - **GitHub Actions:** Die öffentlichen Firebase-Clientwerte sind reproduzierbar im Quellcode enthalten. Eine Release-APK wird nur mit den vier privaten Keystore-Secrets veröffentlicht; ohne sie entsteht ausschließlich ein Debug-Testartefakt.
 - **Sprachen & Marken:** 14 Sprachversionen und die bestehende Markenliste bleiben erhalten.
 
-**Wichtige Betriebsgrenzen:** Cloud Storage benötigt seit Februar 2026 den Blaze-Tarif und ist bis zur bewussten Billing-Freigabe nicht nutzbar. Vor öffentlicher Veröffentlichung sind reale End-to-End-Tests mit zwei Konten und echten Bildern, Datenschutz-/Rechtsprüfung und Anti-Spam-Maßnahmen erforderlich. Die aktuelle Firestore-Suche lädt maximal 300 aktive Inserate; serverseitige Pagination und ein Moderator-Dashboard sind weiterhin geplant.
+**Wichtige Betriebsgrenzen:** Der Blaze-Tarif und Cloud Storage in Zürich sind aktiv; Eigentümer-Upload, öffentliches Lesen, Fremdzugriffsschutz und Löschung wurden live mit zwei temporären Konten geprüft. Vor öffentlicher Veröffentlichung bleiben ein realer Website-/Android-Gerätetest, Datenschutz-/Rechtsprüfung und Anti-Spam-Maßnahmen erforderlich. Die aktuelle Firestore-Suche lädt maximal 300 aktive Inserate; serverseitige Pagination und ein Moderator-Dashboard sind weiterhin geplant.
 
 
 Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwagen-Marktplatz** umgestaltet. Das Design ist eigenständig und orientiert sich bei den Suchabläufen an gängigen Fahrzeugbörsen, ohne Branding oder Gestaltung eines konkreten Wettbewerbers zu kopieren.
@@ -35,7 +35,7 @@ Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwa
 
 1. Firebase-Projekt `limba-auto`, Web-App und Android-App sind bereits angelegt; die **öffentliche** Client-Konfiguration ist eingecheckt. Keine Service-Account-Schlüssel einchecken.
 2. Firebase Authentication mit E-Mail/Passwort und Firestore `(default)` in Zürich sind bereits aktiviert.
-3. Cloud Storage nach bewusster Blaze-/Billing-Freigabe provisionieren und erst danach `storage.rules` deployen.
+3. Cloud Storage ist im Blaze-Tarif regional in Zürich provisioniert; `storage.rules` sind produktiv deployt.
 4. **Wichtig:** Firestore-Regeln schränken neue Anzeigen auf Kategorie `vehicles` und Fahrzeugdaten ein. Bestehende Nicht-Auto-Anzeigen aus älteren Luma-Versionen werden in der neuen Oberfläche ausgefiltert. Daten werden nicht gelöscht.
 5. Erst nach Moderation, Rechts- und Datenschutzprüfung sowie Schutz gegen Betrug öffentlich zum Handel freigeben.
 
@@ -81,7 +81,7 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 
 ## Grenzen
 
-- Registrierung und Firestore sind produktiv konfiguriert; Foto-Uploads bleiben bis zur Cloud-Storage-/Blaze-Freigabe gesperrt.
+- Registrierung, Firestore und Cloud Storage sind produktiv konfiguriert; Foto-Uploads sind für verifizierte Eigentümer freigeschaltet.
 - Keine echte Händlerprüfung, Finanzierung, Zahlungsabwicklung, Fahrzeughistorie oder automatische Angebotsübersetzung. Für diese Funktionen sind Dienste und Rechtsprüfung notwendig.
 - Suche basiert aktuell auf den geladenen Inseraten (bis 300 Firestore-Dokumente); für Produktion werden serverseitige Pagination, Suche und Anti-Spam-Moderation benötigt.
 - Originaltexte von Nutzern sind bewusst unverändert; ein Übersetzungsdienst wäre eine zukünftige Option.
@@ -99,7 +99,7 @@ Das Markendesign verwendet die 18 vom Betreiber gelieferten transparenten 3D-PNG
 - Dezent sichtbarer Floating-Plus-Button für die Fahrzeuginserierung auf Desktop/Mobilgeräten; Swipe bleibt ungestört.
 - **Demo-Zugang:** Benutzername `limba`, Passwort `demo` (ausschliesslich Testmodus; weder Firebase-Konto noch echte Verkäuferidentität). Der Zugang ist öffentlich und DARF NICHT als Admin- oder Produktionskonto verwendet werden.
 - Lokale Testkonten lassen sich in der Browser-Vorschau registrieren und mit PBKDF2-SHA256-Prüfwert wieder anmelden; die Daten bleiben **nur im Browser**. Es werden keine Klartextpasswörter gespeichert. Diese Demo-Accounts sind kein Ersatz für einen serverseitig geschützten Login.
-- Echte E-Mail-Registrierung, Verifizierungs-E-Mail, Passwort-Zurücksetzen und Inseratserstellung sind im Webcode vorhanden, **aber erst nach Eintrag einer echten öffentlichen Firebase-Konfiguration in `config.js`, Aktivierung der Dienste sowie Deployment getesteter Firestore-/Storage-Regeln produktiv nutzbar**. Die Client-Konfiguration enthält bis zur Einrichtung bewusst leere Felder; mit den GitHub-Secrets wird sie beim Build eingesetzt.
+- Echte E-Mail-Registrierung, Verifizierungs-E-Mail, Passwort-Zurücksetzen, Inseratserstellung und Fotoupload sind produktiv mit Firebase `limba-auto` verbunden. Die öffentlichen Client-Konfigurationen sind eingecheckt; Administrator- und Signing-Schlüssel bleiben außerhalb des Repositorys.
 - Demo-Nutzer können lokale Test-Inserate erstellen und löschen; sie sind weder öffentlich noch zwischen Website und Android synchronisiert. Im Browser ist ein optionales kleines Foto möglich; bei fehlendem Bild wird ein neutrales Fahrzeugsymbol angezeigt. Testbilder/Anzeigen liegen nur im lokalen Speicher des Browsers bzw. des jeweiligen Android-Geräts.
 - Das Formular zeigt einen strukturierten Fahrzeug-Steckbrief mit Unfallfahrzeug (Ja/Nein/Keine Angabe), kurzer Zustandsnotiz, freier Beschreibung und technischen Daten.
 - Das vorgeschlagene Backend-Schema `firestore.rules` wurde um `accidentStatus` und `conditionNote` erweitert, die Regeln müssen **gesondert getestet und deployed** werden. Neue Datensätze nach diesen Regeln müssen beide Felder liefern; bisherige veröffentlichte Fahrzeuge bleiben lesbar.
