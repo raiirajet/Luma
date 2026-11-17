@@ -1,4 +1,4 @@
-# Luma Auto · native Android app
+# Limba Auto · native Android app
 
 Android source code: `android/` · Package `ch.luma.auto` · Kotlin & Android Views (no WebView). Android 8.0+ (`minSdk=26`).
 
@@ -37,4 +37,11 @@ Image: [Joshua Spence, Nissan GT-R R35 Black Edition](https://commons.wikimedia.
 - Android zeigt die **Statusleiste und Navigations-/Gestenleiste** weiterhin an. Die native Oberfläche nutzt `WindowInsets` und die Displayaussparung, damit die Bedienelemente auch auf Android 15/16 nicht verdeckt werden. Kein immersiver Modus.
 - 20+ skalierbare Android-VectorDrawables für Navigation, Swipe, Details und Aktionen – ohne ASCII-/Emoji-Symbole als Menü-Icons. Die Website verwendet dazu passende SVG-Icons.
 - 435 Marken im lokalen `brands.json`; für über 85 Hersteller sind hunderte Modellvorschläge hinterlegt. Unbekannte Modelle können eingegeben werden, ohne dass ein Server oder eine API nötig ist.
-- **Installationshinweis:** Diese Test-APK wird in GitHub Actions mit einem kurzlebigen Debug-Schlüssel signiert. Bei einer älteren Luma-Test-APK kann deshalb eine Deinstallation vor der Installation nötig sein. Für datenerhaltende Updates braucht die App eine dauerhafte Release-Signatur.
+- **Installationshinweis:** Diese Test-APK wird in GitHub Actions mit einem kurzlebigen Debug-Schlüssel signiert. Bei einer älteren Limba-Test-APK kann deshalb eine Deinstallation vor der Installation nötig sein. Für datenerhaltende Updates braucht die App eine dauerhafte Release-Signatur.
+
+## Android 1.2 – Limba-Branding und 3D-Iconpaket
+
+- Die sichtbare Android-App heisst **Limba**; die App-ID `ch.luma.auto` bleibt aus Kompatibilitätsgründen unverändert.
+- 18 originale transparente 3D-PNG-Icons sowie Limba-Wortmarke, Logo-Symbol und offizielles Launcher-App-Icon sind als Android-Ressourcen integriert. Diese Bitmap-Ressourcen werden **nicht eingefärbt**, damit die Originalfarben erhalten bleiben. Aktionen ohne passende 3D-Grafik verwenden weiterhin VectorDrawables.
+- Website und native App benutzen dieselben gelieferten Grafiken, eine blau/schwarz/weisse Markengestaltung und einen konsistenten Namen.
+- Version 1.2.0 ist eine debug-signierte Vorabversion; bei einer anderen Signatur muss die bisherige APK vor der Installation entfernt werden. Daten gehen dabei verloren, sofern keine Cloud-Synchronisation eingerichtet ist.

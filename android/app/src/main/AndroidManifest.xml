@@ -4,10 +4,10 @@
     <application
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
-        android:label="Luma Auto"
+        android:label="Limba"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:icon="@drawable/ic_luma"
-        android:roundIcon="@drawable/ic_luma"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true">
         <activity
             android:name=".MainActivity"

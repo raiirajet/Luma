@@ -1,4 +1,4 @@
-# Luma Auto · Autoverkaufsportal für Südosteuropa
+# Limba Auto · Autoverkaufsportal für Südosteuropa
 
 Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwagen-Marktplatz** umgestaltet. Das Design ist eigenständig und orientiert sich bei den Suchabläufen an gängigen Fahrzeugbörsen, ohne Branding oder Gestaltung eines konkreten Wettbewerbers zu kopieren.
 
@@ -75,3 +75,7 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 ## Markenverzeichnis aktualisieren
 
 `car-brands.js` enthält die lokalen Marken- und Modellvorschläge. Eine Automarke wird nicht blockiert, nur weil sie noch nicht auf der Liste steht: Marken können bei der Inseratserstellung unter Beachtung der Länge/Zeichenvalidierung selbst eingetragen werden. Suchen akzeptieren Teilnamen und Akzentvarianten. Für verlässliche Datenqualität sind künftig Moderation und Marken-Alias-Prüfungen sinnvoll.
+
+## Limba Designsystem (November 2026)
+
+Das Markendesign verwendet die 18 vom Betreiber gelieferten transparenten 3D-PNG-Funktionsicons plus Wortmarke, Symbol und App-Icon. Text- und Bedienoberflächen tragen den Namen **Limba**. Die GitHub-Repository-URL und die Android-App-ID `ch.luma.auto` bleiben bewusst bestehen, damit die bestehende Installation / Web-URL erhalten bleiben; die APK bleibt eine debug-signierte Vorabversion.

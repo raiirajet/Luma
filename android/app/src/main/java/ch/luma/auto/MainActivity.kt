@@ -36,7 +36,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 /**
- * Luma Auto — native Android proof-of-concept.
+ * Limba Auto — native Android proof-of-concept.
  * This Activity uses Android Views throughout: no WebView, website frame or remote UI.
  * It deliberately does not emulate a Firebase login: the production backend has
  * not been configured. Demo listing information is fictional and identified as such.
@@ -44,7 +44,7 @@ import java.util.Locale
 class MainActivity : Activity() {
     private val ink = Color.rgb(16, 43, 58)
     private val navy = Color.rgb(12, 40, 56)
-    private val orange = Color.rgb(244, 119, 77)
+    private val orange = Color.rgb(20, 121, 237)
     private val paper = Color.WHITE
     private val mist = Color.rgb(243, 247, 248)
     private val muted = Color.rgb(100, 124, 137)
@@ -163,9 +163,19 @@ class MainActivity : Activity() {
         minimumHeight = px(46)
         setOnClickListener { action() }
     }
+    private val limbaRasterIds: Set<Int> by lazy { setOf(
+        R.drawable.limba_home, R.drawable.limba_vehicle_cards, R.drawable.limba_search,
+        R.drawable.limba_filter, R.drawable.limba_favorites, R.drawable.limba_add_car,
+        R.drawable.limba_messages, R.drawable.limba_notifications, R.drawable.limba_profile,
+        R.drawable.limba_car, R.drawable.limba_location, R.drawable.limba_settings,
+        R.drawable.limba_info, R.drawable.limba_back, R.drawable.limba_camera,
+        R.drawable.limba_security, R.drawable.limba_lock, R.drawable.limba_map,
+        R.drawable.limba_logo_symbol, R.drawable.limba_logo_wordmark
+    ) }
     private fun drawableIcon(res: Int, color: Int = ink, size: Int = 24): ImageView = ImageView(this).apply {
         setImageResource(res)
-        imageTintList = ColorStateList.valueOf(color)
+        // Tinting a PNG discards the requested blue/black/white 3D appearance.
+        imageTintList = if (res in limbaRasterIds) null else ColorStateList.valueOf(color)
         scaleType = ImageView.ScaleType.FIT_CENTER
         layoutParams = lp(size, size)
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -214,27 +224,27 @@ class MainActivity : Activity() {
     private fun toolbar(main: LinearLayout, section: String, back: (() -> Unit)? = null) {
         val line = row(paper)
         line.setPadding(px(14), px(7), px(14), px(7))
-        val left = iconButton(if (back != null) R.drawable.ic_arrow_left else R.drawable.ic_luma,
-            if (back != null) t("backToMarket") else "Luma Auto", if (back != null) ink else orange,
+        val left = iconButton(if (back != null) R.drawable.limba_back else R.drawable.ic_luma,
+            if (back != null) t("backToMarket") else "Limba Auto", if (back != null) ink else orange,
             paper) { if (back != null) back() else navigate("home") }
         left.background = null
         line.addView(left, lp(48, 48))
         val headline = col()
-        headline.addView(text("luma.", 25f, ink, true))
+        headline.addView(drawableIcon(R.drawable.limba_logo_wordmark, ink, 135), lp(135, 38))
         headline.addView(text(section, 10f, muted, true))
         line.addView(headline, LinearLayout.LayoutParams(0, -2, 1f))
         if (section != t("settings")) {
-            line.addView(iconButton(R.drawable.ic_settings, t("settings")) { navigate("settings") }, lp(48, 48))
+            line.addView(iconButton(R.drawable.limba_settings, t("settings")) { navigate("settings") }, lp(48, 48))
         }
         main.addView(line, lp(-1, 65))
     }
     private fun navigation(main: LinearLayout) {
         val nav = row(paper).apply { gravity = Gravity.CENTER }
         val routes = listOf(
-            Triple("home", R.drawable.ic_search, t("carsNav")),
-            Triple("swipe", R.drawable.ic_layers, "Swipe"),
-            Triple("favorites", R.drawable.ic_heart, t("saved")),
-            Triple("settings", R.drawable.ic_settings, t("settings"))
+            Triple("home", R.drawable.limba_search, t("carsNav")),
+            Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
+            Triple("favorites", R.drawable.limba_favorites, t("saved")),
+            Triple("settings", R.drawable.limba_settings, t("settings"))
         )
         routes.forEach { (route, icon, name) ->
             val selected = screen == route
@@ -281,7 +291,7 @@ class MainActivity : Activity() {
             val img = ImageView(this).apply { setImageBitmap(carPhoto); scaleType = ImageView.ScaleType.CENTER_CROP }
             frame.addView(img, fp())
         } else {
-            frame.addView(drawableIcon(R.drawable.ic_car, paper, 90), fp(90, 90, Gravity.CENTER))
+            frame.addView(drawableIcon(R.drawable.limba_car, paper, 90), fp(90, 90, Gravity.CENTER))
         }
         frame.layoutParams = lp(-1, height)
         frame.clipToOutline = true
@@ -353,9 +363,9 @@ class MainActivity : Activity() {
         val content = col()
         val hero = col(navy).apply { setPadding(px(22), px(29), px(22), px(28)) }
         val heroBrand = row()
-        heroBrand.addView(drawableIcon(R.drawable.ic_car, orange, 18), lp(18, 18))
+        heroBrand.addView(drawableIcon(R.drawable.limba_car, orange, 18), lp(18, 18))
         heroBrand.addView(spaceHorizontal(9))
-        heroBrand.addView(text("LUMA AUTO", 12f, orange, true))
+        heroBrand.addView(text("LIMBA AUTO", 12f, orange, true))
         hero.addView(heroBrand)
         hero.addView(space(13))
         hero.addView(text(t("heroTitle1"), 30f, paper, true))
@@ -401,7 +411,7 @@ class MainActivity : Activity() {
         form.addView(space(17))
         form.addView(search)
         form.addView(space(8))
-        form.addView(iconText(R.drawable.ic_sliders, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
+        form.addView(iconText(R.drawable.limba_filter, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
         val actions = row()
         actions.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() }, LinearLayout.LayoutParams(0, px(46), 1f))
         actions.addView(spaceHorizontal(8))
@@ -438,12 +448,12 @@ class MainActivity : Activity() {
         block.addView(space(11))
         val priced = row()
         priced.addView(text(euro(68900), 23f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
-        priced.addView(iconButton(R.drawable.ic_heart, t("saveFavourites"), if (starred) orange else ink) {
+        priced.addView(iconButton(R.drawable.limba_favorites, t("saveFavourites"), if (starred) orange else ink) {
             setFavorite(!starred); renderHome()
         }, lp(56, 48))
         block.addView(priced)
         block.addView(space(9))
-        block.addView(iconText(R.drawable.ic_info,t("vehicleDetails"),{
+        block.addView(iconText(R.drawable.limba_info,t("vehicleDetails"),{
             openDetails(if(screen == "favorites") "favorites" else "home")
         }, true))
         block.addView(space(6))
@@ -453,7 +463,7 @@ class MainActivity : Activity() {
     }
     private fun emptyState(parent: LinearLayout, msg: String) {
         val box = col(paper).apply { gravity = Gravity.CENTER; setPadding(px(18), px(38), px(18), px(38)); background = c(paper, 15, border) }
-        box.addView(drawableIcon(R.drawable.ic_search, orange, 36), lp(36, 36))
+        box.addView(drawableIcon(R.drawable.limba_search, orange, 36), lp(36, 36))
         box.addView(text(msg, 14f, muted).apply { gravity = Gravity.CENTER })
         parent.addView(box)
     }
@@ -493,7 +503,11 @@ class MainActivity : Activity() {
     private fun renderSavedSearches() {
         val main = container();toolbar(main, t("yourSavedSearch"), {navigate("home")})
         val content = col().apply { setPadding(px(17),px(20),px(17),px(20)) }
-        content.addView(text(t("yourSavedSearch"), 22f, ink, true));content.addView(space(18))
+        val savedHeader = row()
+        savedHeader.addView(drawableIcon(R.drawable.limba_notifications, orange, 29), lp(29,29))
+        savedHeader.addView(spaceHorizontal(10))
+        savedHeader.addView(text(t("yourSavedSearch"), 22f, ink, true))
+        content.addView(savedHeader);content.addView(space(18))
         val stored = runCatching { JSONArray(prefs.getString("searches","[]")) }.getOrElse { JSONArray() }
         if (stored.length()==0) emptyState(content,t("noSearches"))
         for (i in 0 until stored.length()) {
@@ -501,7 +515,7 @@ class MainActivity : Activity() {
             val summary = (listOf(item.optString("make"),item.optString("model"),item.optString("keyword")).filter { it.isNotBlank() }.joinToString(" ")).ifBlank { t("allCars") }
             val cell = col(paper).apply { setPadding(px(14),px(12),px(14),px(12));background=c(paper,14,border) }
             val rowTitle = row()
-            rowTitle.addView(drawableIcon(R.drawable.ic_search, orange, 21), lp(21, 21))
+            rowTitle.addView(drawableIcon(R.drawable.limba_search, orange, 21), lp(21, 21))
             rowTitle.addView(spaceHorizontal(9))
             rowTitle.addView(text(summary,16f,ink,true))
             cell.addView(rowTitle)
@@ -535,7 +549,11 @@ class MainActivity : Activity() {
             }
         }
         content.addView(spinner,lp(-1,52));content.addView(space(25))
-        content.addView(text(t("searchCountries"),20f,ink,true));content.addView(space(7))
+        val countryHeader = row()
+        countryHeader.addView(drawableIcon(R.drawable.limba_map, orange, 28), lp(28,28))
+        countryHeader.addView(spaceHorizontal(9))
+        countryHeader.addView(text(t("searchCountries"),20f,ink,true))
+        content.addView(countryHeader);content.addView(space(7))
         content.addView(text(t("searchCountriesDesc"),13f,muted));content.addView(space(14))
         countries.forEach { (code,flag,name) ->
             val box=CheckBox(this).apply { text="$flag  $name";isChecked=code in activeCountry;setTextColor(ink);textSize=15f;buttonTintList=android.content.res.ColorStateList.valueOf(orange)
@@ -547,7 +565,7 @@ class MainActivity : Activity() {
         content.addView(btn(t("saveSettings"),true) {
             prefs.edit().putStringSet("countries",activeCountry.toSet()).apply();navigate("home")
         });content.addView(space(19))
-        content.addView(btn(t("yourSavedSearch"),false){navigate("searches")})
+        content.addView(iconText(R.drawable.limba_notifications, t("yourSavedSearch"), {navigate("searches")}))
         body(main,content);navigation(main)
     }
 
@@ -583,11 +601,11 @@ class MainActivity : Activity() {
         })
         full.addView(View(this).apply {background=gradient();isClickable=false},fp())
         val top=row().apply {setPadding(px(16),px(12),px(16),0)}
-        top.addView(iconButton(R.drawable.ic_info, t("learnSwipeAgain"), paper, 0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_info, t("learnSwipeAgain"), paper, 0x99213449.toInt()) {
             showSwipeTutorial()
         }, lp(48,48))
         top.addView(View(this),LinearLayout.LayoutParams(0,1,1f))
-        top.addView(iconButton(R.drawable.ic_home, t("backToMarket"), paper, 0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_home, t("backToMarket"), paper, 0x99213449.toInt()) {
             navigate("home")
         }, lp(48,48))
         full.addView(top,fp(-1,-2,Gravity.TOP))
@@ -601,10 +619,10 @@ class MainActivity : Activity() {
         overlay.addView(text("2013   ·   49.500 km   ·   550 PS   ·   🇭🇷 Zagreb",13f,paper))
         overlay.addView(space(16))
         val buttons=row()
-        buttons.addView(iconText(R.drawable.ic_info,t("swipeDetails"), {openDetails("swipe")}),
+        buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"), {openDetails("swipe")}),
             LinearLayout.LayoutParams(0,px(50),1f))
         buttons.addView(spaceHorizontal(10))
-        buttons.addView(iconButton(R.drawable.ic_heart,t("saveFavourites"),
+        buttons.addView(iconButton(R.drawable.limba_favorites,t("saveFavourites"),
             if(starred)orange else ink){setFavorite(!starred);renderSwipe()},lp(56,52))
         overlay.addView(buttons)
         full.addView(overlay,fp(-1,-2,Gravity.BOTTOM))
@@ -612,8 +630,13 @@ class MainActivity : Activity() {
     }
     private fun showSwipeTutorial() {
         val tutorial=col().apply {setPadding(px(20),px(10),px(20),px(10))}
+        val intro = row()
+        intro.addView(drawableIcon(R.drawable.limba_info, orange, 30), lp(30,30))
+        intro.addView(spaceHorizontal(10))
+        intro.addView(text(t("swipeTeach"), 14f, ink, true))
+        tutorial.addView(intro);tutorial.addView(space(8))
         val items=listOf(
-            Triple(R.drawable.ic_arrow_left,"swipeNext","swipeNextSub"),
+            Triple(R.drawable.limba_back,"swipeNext","swipeNextSub"),
             Triple(R.drawable.ic_arrow_right,"swipeOpen","swipeOpenSub"),
             Triple(R.drawable.ic_arrow_up,"swipeDetails","swipeDetailsSub"),
             Triple(R.drawable.ic_arrow_down,"swipeSimilar","swipeSimilarSub")
@@ -641,10 +664,14 @@ class MainActivity : Activity() {
         info.addView(space(8))
         info.addView(text("Nissan GT-R R35 Black Edition",26f,ink,true))
         info.addView(space(9));info.addView(text(euro(68900),28f,orange,true))
-        info.addView(space(7));info.addView(text("🇭🇷 Zagreb · "+t("conditionUsed"),13f,muted))
+        info.addView(space(7));val locationRow = row()
+        locationRow.addView(drawableIcon(R.drawable.limba_location, orange, 20), lp(20, 20))
+        locationRow.addView(spaceHorizontal(5))
+        locationRow.addView(text("🇭🇷 Zagreb · "+t("conditionUsed"),13f,muted))
+        info.addView(locationRow)
         info.addView(space(17))
         val actions=row()
-        actions.addView(iconText(R.drawable.ic_heart,t("saved"),{setFavorite(!starred);renderDetails()}),LinearLayout.LayoutParams(0,px(49),1f))
+        actions.addView(iconText(R.drawable.limba_favorites,t("saved"),{setFavorite(!starred);renderDetails()}),LinearLayout.LayoutParams(0,px(49),1f))
         actions.addView(spaceHorizontal(9))
         actions.addView(iconText(R.drawable.ic_share,t("shareCar"),{shareWebsite()}),LinearLayout.LayoutParams(0,px(49),1f))
         info.addView(actions);info.addView(space(24))
@@ -664,7 +691,11 @@ class MainActivity : Activity() {
             ln.addView(text(v,13f,ink,true),LinearLayout.LayoutParams(0,-2,1.25f))
             info.addView(ln)
         }
-        info.addView(space(22));info.addView(text(t("vehicleDescription"),22f,ink,true));info.addView(space(10))
+        info.addView(space(22));val descriptionRow = row()
+        descriptionRow.addView(drawableIcon(R.drawable.limba_info, orange, 24), lp(24,24))
+        descriptionRow.addView(spaceHorizontal(8))
+        descriptionRow.addView(text(t("vehicleDescription"),22f,ink,true))
+        info.addView(descriptionRow);info.addView(space(10))
         info.addView(text(t("description"),14f,ink).apply {setLineSpacing(px(5).toFloat(),1f)})
         info.addView(space(20))
         info.addView(btn(t("photoCredit")+" Joshua Spence · CC BY-SA 4.0",false) {
@@ -675,14 +706,14 @@ class MainActivity : Activity() {
         content.addView(info);body(main,content)
     }
     private fun shareWebsite() {
-        val i=Intent(Intent.ACTION_SEND).apply {type="text/plain";putExtra(Intent.EXTRA_TEXT,"Luma Auto · https://raiirajet.github.io/Luma/")}
+        val i=Intent(Intent.ACTION_SEND).apply {type="text/plain";putExtra(Intent.EXTRA_TEXT,"Limba Auto · https://raiirajet.github.io/Luma/")}
         startActivity(Intent.createChooser(i,t("shareCar")))
     }
     private fun renderMine() {
         val main=container();toolbar(main,t("myAds"),{navigate("home")})
         val content=col().apply {setPadding(px(19),px(30),px(19),px(30))}
         emptyState(content,t("noOwnCars"));content.addView(space(18))
-        content.addView(btn(t("sellCar"),true){showBackendInfo()})
+        content.addView(iconText(R.drawable.limba_add_car, t("sellCar"), {showBackendInfo()}, true))
         body(main,content);navigation(main)
     }
     private fun showBackendInfo() {

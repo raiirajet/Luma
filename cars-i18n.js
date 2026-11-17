@@ -21,7 +21,7 @@ ro:`Găsește mașini|Vinde o mașină|PIAȚA TA AUTO DIN EUROPA DE SUD-EST|Urm�
 export const CAR_LOCALES={};
 for(const [locale,row] of Object.entries(RAW)){
  const parts=row.split('|');
- if(parts.length!==KEYS.length)throw new Error(`Luma Auto translation mismatch: ${locale} has ${parts.length}, expected ${KEYS.length}`);
+ if(parts.length!==KEYS.length)throw new Error(`Limba Auto translation mismatch: ${locale} has ${parts.length}, expected ${KEYS.length}`);
  CAR_LOCALES[locale]=Object.fromEntries(KEYS.map((key,i)=>[key,parts[i]]));
 }
 export const CAR_KEYS=KEYS;
