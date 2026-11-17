@@ -95,7 +95,7 @@ service cloud.firestore {
         && data.category == 'vehicles'
         && data.country in ['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']
         && data.condition in ['new', 'used']
-        && data.status in ['active', 'sold', 'paused']
+        && data.status in ['active', 'sold', 'paused', 'reserved']
         && data.make is string
         && data.make.size() >= 2
         && data.make.size() <= 35
@@ -244,8 +244,13 @@ service cloud.firestore {
         && isOwner(resource.data.uid)
         && uidNotModified()
         && request.resource.data.createdAt == resource.data.createdAt
-        && isValidListing(request.resource.data, listingId);
-      allow delete: if isVerified() && isOwner(resource.data.uid);
+        && isValidListing(request.resource.data, listingId)
+        // Reservation and sale are server-authoritative. Legacy owners may still
+        // pause/reactivate and edit unsold vehicle details.
+        && resource.data.status in ['active', 'paused']
+        && request.resource.data.status in ['active', 'paused'];
+      allow delete: if isVerified() && isOwner(resource.data.uid)
+        && resource.data.status in ['active', 'paused'];
     }
 
     match /users/{uid}/favorites/{listingId} {
@@ -273,6 +278,70 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // Public identity contains no phone number or email. All trust values,
+    // role badges, verification indicators and counters are server owned.
+    function profileMetadataValid(data) {
+      return data.keys().hasAll(['alias', 'memberSince'])
+        && data.keys().hasOnly(['alias', 'photoUrl', 'memberSince'])
+        && data.alias is string && data.alias.size() >= 2 && data.alias.size() <= 60
+        && (!('photoUrl' in data) || data.photoUrl == '')
+        && data.memberSince is timestamp && data.memberSince == request.time;
+    }
+    match /profiles/{uid} {
+      allow get, list: if true;
+      allow create: if isOwner(uid) && profileMetadataValid(request.resource.data);
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['alias','photoUrl'])
+        && request.resource.data.alias is string
+        && request.resource.data.alias.size() >= 2
+        && request.resource.data.alias.size() <= 60
+        && (!('photoUrl' in request.resource.data) || request.resource.data.photoUrl == '');
+      allow delete: if false;
+    }
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow list, create, update, delete: if false;
+    }
+    match /users/{uid}/blocked/{otherUid} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+    match /users/{uid}/deviceTokens/{tokenId} {
+      allow read, write: if false;
+    }
+    function canReadConversation(conversationId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/conversations/$(conversationId))
+        && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantUids;
+    }
+    match /conversations/{conversationId} {
+      allow get, list: if isAuthenticated() && request.auth.uid in resource.data.participantUids;
+      allow create, update, delete: if false;
+      match /messages/{messageId} {
+        allow get, list: if canReadConversation(conversationId);
+        allow create, update, delete: if false;
+      }
+      match /offers/{offerId} {
+        allow get, list: if canReadConversation(conversationId);
+        allow create, update, delete: if false;
+      }
+    }
+    match /transactions/{transactionId} {
+      allow get, list: if isAuthenticated() &&
+        request.auth.uid in [resource.data.sellerUid, resource.data.buyerUid];
+      allow create, update, delete: if false;
+    }
+    match /reviews/{reviewId} {
+      allow get, list: if resource.data.status == 'visible'
+        || (isAuthenticated() && request.auth.uid == resource.data.reviewerUid);
+      allow create, update, delete: if false;
+    }
+    match /appConfig/{configId} {
+      allow get: if configId == 'marketplace';
+      allow list, create, update, delete: if false;
+    }
+    match /notificationEvents/{eventId} {
+      allow read, write: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
