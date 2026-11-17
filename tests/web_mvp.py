@@ -20,7 +20,7 @@ try:
    page.on('pageerror',lambda e:errors.append(str(e)))
    page.goto(f'http://127.0.0.1:{server.server_port}/preview.html',wait_until='domcontentloaded')
    page.locator('#carGrid .car-card').first.wait_for()
-   page.locator('#accountBtn').click()
+   page.locator('#loginBtn').click()
    page.locator('#demoQuick').click()
    assert page.locator('#modal').is_hidden()
    page.locator('#fabAdd').click()
@@ -35,7 +35,7 @@ try:
    form.locator('[name="city"]').fill('Sarajevo')
    form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
    form.locator('#sellSubmit').click()
-   page.locator('#modal.hidden').wait_for()
+   page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
    page.locator('#mineGrid [data-edit]').click()
    form=page.locator('#sellForm')
@@ -44,7 +44,7 @@ try:
    form.locator('[name="city"]').fill('Tirana')
    form.locator('[name="price"]').fill('14500')
    form.locator('#sellSubmit').click()
-   page.locator('#modal.hidden').wait_for()
+   page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
    page.locator('#mineGrid [data-status="sold"]').click()
