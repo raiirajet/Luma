@@ -129,6 +129,29 @@ const detailPair=(name,val)=>`<div><small>${h(F(name)!==name?F(name):T(name))}</
 function showDetails(id,{focusSpecs=false,fromHistory=false}={}){const x=state.listings.find(v=>v.id===id);if(!x)return;state.photoIndex=0;const returnTo=state.view==='swipe'?'swipe':'home';
  const images=(x.images||[x.image]).map(safeURL).filter(Boolean);const src=images[0]||safeURL(x.image);
  modal(`<button type="button" class="detail-back outline-btn" id="detailBack">${icon('arrow_left')} ${h(D(returnTo==='swipe'?'backToSwipe':'backToListing'))}</button><div class="detail-head"><div><span class="overline">${h(T('vehicleDetails'))}</span><h2 id="modalTitle">${h(x.title)}</h2><p>${flag(x.country)} ${h(x.city)}, ${h(countryLabel(x.country))}</p></div><div class="detail-price">${price(x.price)}</div></div><img class="details-image" id="detailImage" src="${h(src)}" alt="${h(x.title)}"/><div class="detail-actions" id="photoControls"><button class="outline-btn" id="photoPrev" aria-label="${h(T('photoPrevious'))}">${icon('arrow_left')}</button><button class="outline-btn" id="photoNext" aria-label="${h(T('photoNext'))}">${icon('arrow_right')}</button><button class="outline-btn" id="detailLike">${icon('heart')} ${h(T('saved'))}</button></div><h3 id="specsHeading">${h(T('technicalData'))}</h3><div class="spec-table">${detailPair('make',x.make)}${detailPair('model',x.model)}${detailPair('firstReg',String(x.year))}${detailPair('mileage',`${number(x.mileage)} ${T('kmUnit')}`)}${detailPair('fuel',T(x.fuel))}${detailPair('transmission',T(x.transmission))}${detailPair('body',T(x.body))}${detailPair('power',`${number(x.power)} ${T('powerUnit')}`)}${detailPair('sellerType',T(x.sellerType))}${detailPair('carCondition',T(x.condition==='new'?'conditionNew':'conditionUsed'))}${detailPair('accidentHistory',F(x.accidentStatus==='yes'?'accidentYes':x.accidentStatus==='no'?'accidentNo':'accidentUnknown'))}${x.conditionNote?detailPair('conditionShort',x.conditionNote):''}${isSample(x)?`${detailPair('color',D('black'))}${detailPair('engine','VR38DETT · 3.8 l V6 Bi-Turbo')}${detailPair('drive',D('awd'))}${detailPair('seats',D('fourSeats'))}`:''}</div><h3>${h(T('vehicleDescription'))}</h3><p class="vehicle-description">${h(isSample(x)?D('description'):(x.description||'—'))}</p>${isSample(x)?`<div class="sample-note">${h(D('singleDemoNotice'))}</div><p class="photo-credit">${h(D('photoCredit'))} <a href="${h(GTR_PHOTO_PAGE)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons · Joshua Spence · CC BY-SA 4.0</a></p>`:''}<div class="detail-actions"><button class="primary-btn" id="detailContact">${icon('messages')} ${h(T('askSeller'))}</button><button class="outline-btn" id="detailShare">${icon('share')} ${h(T('shareCar'))}</button></div>`);
+ if(!isDemo(x)){
+  const panel=document.createElement('div');panel.className='listing-report';
+  const select=document.createElement('select');select.id='reportReason';select.setAttribute('aria-label',W('reportCar'));
+  for(const reason of ['fraud','duplicate','inappropriate','other']){
+   const option=document.createElement('option');option.value=reason;
+   option.textContent=W({fraud:'reportFraud',duplicate:'reportDuplicate',inappropriate:'reportInappropriate',other:'reportOther'}[reason]);
+   select.appendChild(option);
+  }
+  const button=document.createElement('button');button.className='outline-btn';button.type='button';
+  button.textContent=W('reportCar');
+  button.addEventListener('click',async()=>{
+   if(!state.user||!state.fb){openAuth();return}
+   if(!state.user.emailVerified){toast(W('verifiedRequired'));return}
+   button.disabled=true;
+   try{
+    const m=state.fb.modules;
+    await m.addDoc(m.collection(state.fb.db,'reports'),{listingId:x.id,reporterUid:state.user.uid,reason:select.value,createdAt:m.serverTimestamp()});
+    toast(W('reportSent'));
+   }catch(e){console.error('report failed',e);toast(T('uploadFailed'))}
+   finally{button.disabled=false}
+  });
+  panel.append(select,button);$('detailShare').parentElement.insertAdjacentElement('afterend',panel);
+ }
  if(!fromHistory)history.pushState({lumaView:state.view,lumaDetail:x.id},'',`#ad=${encodeURIComponent(x.id)}`);
  $('detailBack').addEventListener('click',()=>closeModal());
  if(focusSpecs)requestAnimationFrame(()=>$('specsHeading')?.scrollIntoView({block:'start',behavior:'smooth'}));
