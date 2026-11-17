@@ -93,7 +93,7 @@ with sync_playwright() as p:
   assert page.locator('#carGrid .car-card').count()==1
   page.locator('#clearAll').click()
   # Swipe first-run tutorial and returning from info
-  swipe_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="swipe"]'
+  swipe_nav='.swipe-inline'
   page.locator(swipe_nav).click()
   assert page.locator('#swipeView').is_visible()
   assert page.locator('#swipeTutorial').is_visible()

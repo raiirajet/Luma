@@ -8,6 +8,6 @@ Aufruf-Beispiele: `createConversation({listingId})`, `sendMessage({conversationI
 
 `offerId` ist die von `createOffer` gelieferte zusammengesetzte ID `conversationId~offerDocumentId`. Verkäufer-/Käuferbewertungen werden über `revieweeRole` getrennt gezählt. Der asynchrone Trigger `closeOtherOffers` schliesst übrige Angebote; zweite Annahmen sind bereits synchron durch den Listing-Status gesperrt.
 
-Lokal: `cd functions && npm ci && npm run check`; Emulatoren über Firebase CLI im Repo-Stamm. Deployment nur auf das bestätigte `limba-auto`-Projekt, ausdrücklich mit Auswahl der Functions und nach Sicherheitsprüfungen.
+Lokal: `cd functions && npm install && npm run check`; Emulatoren über Firebase CLI im Repo-Stamm. Deployment nur auf das bestätigte `limba-auto`-Projekt, ausdrücklich mit Auswahl der Functions und nach Sicherheitsprüfungen.
 
 Noch nicht live: Telefonnummern-Länderkonfiguration, SMS-Billing/Quoten, App Check Enforcement, VAPID und Android Release-Zertifikat sowie Datenschutztexte.

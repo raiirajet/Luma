@@ -23,7 +23,7 @@ try:
    page.locator('#loginBtn').click()
    page.locator('#demoQuick').click()
    assert page.locator('#modal').is_hidden()
-   page.locator('#fabAdd').click()
+   page.locator('#mobileSell' if width<500 else '#sellBtn').click()
    form=page.locator('#sellForm')
    assert form.is_visible()
    form.locator('[name="make"]').fill('Toyota')
@@ -47,15 +47,17 @@ try:
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
-   page.locator('#mineGrid [data-status="sold"]').click()
+   # Listings cannot be marked sold without a verified two-party transaction.
+   assert page.locator('#mineGrid [data-status="sold"]').count()==0
+   page.locator('#mineGrid [data-status="paused"]').click()
    assert page.locator('#mineGrid [data-status="active"]').count()==1
    page.locator('#mineGrid [data-status="active"]').click()
-   assert page.locator('#mineGrid [data-status="sold"]').count()==1
+   assert page.locator('#mineGrid [data-status="paused"]').count()==1
    page.once('dialog',lambda dialog:dialog.accept())
    page.locator('#mineGrid [data-delete]').click()
    assert page.locator('#mineGrid [data-edit]').count()==0
    assert errors==[],errors
-   print(f'PASS MVP {width}px: demo login, create, edit, sold, reactivate, delete')
+   print(f'PASS MVP {width}px: demo login, create, edit, pause, reactivate, delete')
    ctx.close()
   browser.close()
 finally:
