@@ -65,6 +65,8 @@ with sync_playwright() as p:
   # heart and favorite page
   page.locator('.car-card .card-heart').first.click()
   fav_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="favorites"]'
+  if width<500:
+   print('NAV_HITTEST',page.evaluate("""() => { const n=document.querySelector('.mobile-nav [data-view="favorites"]');const r=n.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;const el=document.elementFromPoint(x,y);return {rect:[r.x,r.y,r.width,r.height],viewport:[innerWidth,innerHeight],visual:[visualViewport.width,visualViewport.height,visualViewport.offsetTop],hit:el?.outerHTML?.slice(0,160),z:getComputedStyle(n.closest('nav')).zIndex,navDisplay:getComputedStyle(n.closest('nav')).display};}"""),flush=True)
   page.locator(fav_nav).click()
   assert page.locator('#favoritesGrid .car-card').count()==1
   home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'
