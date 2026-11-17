@@ -76,6 +76,14 @@ class MainActivity : Activity() {
     private var saveCount = 0
     private var previewUser = ""
     private val previewCars = mutableListOf<JSONObject>()
+    private val cloudCars = mutableListOf<JSONObject>()
+    private val ownCars = mutableListOf<JSONObject>()
+    private var cloudStars = mutableSetOf<String>()
+    private var cloudUser: com.google.firebase.auth.FirebaseUser? = null
+    private lateinit var backend: LimbaFirebase
+    private val pickedImages = mutableListOf<Uri>()
+    private var pickedImagesLabel: TextView? = null
+    private val pickPhotosRequest = 1414
     private var activePreviewCar: JSONObject? = null
     private var swipeIndex = 0
     private var previewStars = mutableSetOf<String>()
@@ -137,6 +145,22 @@ class MainActivity : Activity() {
         previewStars = (prefs.getStringSet("previewStars", emptySet()) ?: emptySet()).toMutableSet()
         saveCount = prefs.getString("searches", "[]")?.let { runCatching { JSONArray(it).length() }.getOrDefault(0) } ?: 0
         try { assets.open("gtr.jpg").use { carPhoto = BitmapFactory.decodeStream(it) } } catch (_: Exception) { }
+        backend = LimbaFirebase(this)
+        if (backend.ready) {
+            backend.watchAuth { user ->
+                cloudUser = user
+                backend.watchOwned(user?.uid) { cars ->
+                    ownCars.clear();ownCars.addAll(cars);render()
+                }
+                backend.watchFavorites(user?.uid) { ids ->
+                    cloudStars = ids.toMutableSet();render()
+                }
+                render()
+            }
+            backend.watchPublic({ cars ->
+                cloudCars.clear();cloudCars.addAll(cars);render()
+            }, { error -> toast(error) })
+        }
         render()
         if (!prefs.contains("language")) root.post { chooseFirstLanguage() }
     }
@@ -467,6 +491,7 @@ class MainActivity : Activity() {
         results.addView(text(t("singleDemoNotice"), 12f, muted))
         results.addView(space(17))
         var listed = false
+        cloudCars.filter { matchesCar(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
         previewCars.filter { matchesPreview(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
         if (listingAvailable()) { results.addView(carCard());listed = true }
         if (!listed) emptyState(results,t("emptyCars"))
@@ -512,8 +537,11 @@ class MainActivity : Activity() {
         previewCars.forEach { arr.put(it) }
         prefs.edit().putString("previewCars",arr.toString()).apply()
     }
-    private fun matchesPreview(x: JSONObject): Boolean {
-        if (previewUser.isBlank() || x.optString("uid") != previewUser) return false
+    private fun matchesPreview(x: JSONObject): Boolean =
+        previewUser.isNotBlank() && x.optString("uid") == previewUser && matchesCar(x)
+
+    private fun matchesCar(x: JSONObject): Boolean {
+        if (x.optString("status","active") != "active") return false
         val country = x.optString("country")
         if (activeCountry.isNotEmpty() && country !in activeCountry) return false
         if (keyword.isNotBlank() && !(x.optString("make")+" "+x.optString("model")+" "+x.optString("city")+" "+x.optString("description")).contains(keyword,ignoreCase=true)) return false
@@ -530,7 +558,13 @@ class MainActivity : Activity() {
     private fun previewCard(car: JSONObject): LinearLayout {
         val view=col(paper).apply { background=c(paper,16,border);setPadding(px(15),px(14),px(15),px(17)) }
         val badge=row();badge.addView(drawableIcon(R.drawable.limba_car,orange,35),lp(35,35));badge.addView(spaceHorizontal(9))
-        badge.addView(text(t("previewOnly"),12f,orange,true));view.addView(badge)
+        val live = car.optString("id") !in previewCars.map { it.optString("id") }
+        badge.addView(text(if(live)t("privateSeller")else t("previewOnly"),12f,orange,true));view.addView(badge)
+        if (live && car.optString("image").isNotBlank()) {
+            val photo = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+            view.addView(photo, lp(-1, 160))
+            com.bumptech.glide.Glide.with(this).load(car.optString("image")).centerCrop().into(photo)
+        }
         view.addView(space(8))
         view.addView(text(car.optString("make")+" "+car.optString("model"),20f,ink,true))
         view.addView(space(5))
@@ -539,10 +573,17 @@ class MainActivity : Activity() {
         view.addView(space(8))
         view.addView(text(euro(car.optInt("price")),23f,orange,true))
         view.addView(space(10))
-        val liked=car.optString("id") in previewStars
+        val liked=if(live)car.optString("id") in cloudStars else car.optString("id") in previewStars
         view.addView(iconText(R.drawable.limba_favorites,t("saveFavourites"),{
-            val id=car.optString("id");if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
-            prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply();render()
+            val id=car.optString("id")
+            if (live) {
+                if(cloudUser==null){showAccount()} else backend.toggleFavorite(id,id !in cloudStars) { error ->
+                    if(error!=null)toast(error)
+                }
+            } else {
+                if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
+                prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply();render()
+            }
         },liked))
         view.addView(space(7))
         view.addView(iconText(R.drawable.limba_info,t("vehicleProfile"),{
@@ -586,7 +627,15 @@ class MainActivity : Activity() {
         val content = col().apply { setPadding(px(17), px(20), px(17), px(20)) }
         content.addView(text(t("savedCars"), 22f, ink, true))
         content.addView(space(18))
-        if (starred) content.addView(carCard()) else emptyState(content, t("noCarsSaved"))
+        var any = false
+        cloudCars.filter { it.optString("id") in cloudStars }.forEach {
+            content.addView(previewCard(it));content.addView(space(11));any = true
+        }
+        previewCars.filter { it.optString("id") in previewStars && matchesPreview(it) }.forEach {
+            content.addView(previewCard(it));content.addView(space(11));any = true
+        }
+        if (starred) { content.addView(carCard());any=true }
+        if (!any) emptyState(content, t("noCarsSaved"))
         body(main, content);navigation(main)
     }
     private fun renderSavedSearches() {
@@ -659,7 +708,8 @@ class MainActivity : Activity() {
     }
 
     private fun swipeCandidates(): List<JSONObject?> {
-        val cars=previewCars.filter { matchesPreview(it) }.map { it as JSONObject? }.toMutableList()
+        val cars=(cloudCars.filter { matchesCar(it) } + previewCars.filter { matchesPreview(it) })
+            .map { it as JSONObject? }.toMutableList()
         if (listingAvailable()) cars.add(null) // null identifies the built-in Nissan GT-R sample
         return cars
     }
@@ -679,7 +729,11 @@ class MainActivity : Activity() {
         root.addView(full,fp())
         val placeholder=if(current==null) image() else FrameLayout(this).apply {
             setBackgroundColor(navy)
-            addView(drawableIcon(R.drawable.limba_car,paper,170),fp(170,170,Gravity.CENTER))
+            if(current.optString("image").startsWith("https://")) {
+                val photo=ImageView(this@MainActivity).apply { scaleType=ImageView.ScaleType.CENTER_CROP }
+                addView(photo,fp())
+                com.bumptech.glide.Glide.with(this@MainActivity).load(current.optString("image")).centerCrop().into(photo)
+            } else addView(drawableIcon(R.drawable.limba_car,paper,170),fp(170,170,Gravity.CENTER))
         }
         full.addView(placeholder,fp())
         fun details(){activePreviewCar=current;openDetails("swipe")}
@@ -717,7 +771,8 @@ class MainActivity : Activity() {
         },lp(48,48))
         full.addView(top,fp(-1,-2,Gravity.TOP))
         val overlay=col().apply {setPadding(px(19),0,px(19),px(24))}
-        overlay.addView(text(t("previewOnly").uppercase()+"  ·  "+(swipeIndex+1)+"/"+all.size,11f,orange,true))
+        val live=current!=null && current.optString("id") !in previewCars.map{it.optString("id")}
+        overlay.addView(text((if(live)t("carsNav")else t("previewOnly")).uppercase()+"  ·  "+(swipeIndex+1)+"/"+all.size,11f,orange,true))
         overlay.addView(space(7))
         val title=if(current==null)"Nissan GT-R R35 Black Edition"else current.optString("make")+" "+current.optString("model")
         overlay.addView(text(title,27f,paper,true));overlay.addView(space(5))
@@ -728,12 +783,17 @@ class MainActivity : Activity() {
         val buttons=row()
         buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"),{details()}),LinearLayout.LayoutParams(0,px(50),1f))
         buttons.addView(spaceHorizontal(10))
-        val liked=if(current==null)starred else current.optString("id") in previewStars
+        val liked=if(current==null)starred else if(live)current.optString("id") in cloudStars else current.optString("id") in previewStars
         buttons.addView(iconButton(R.drawable.limba_favorites,t("saveFavourites"),if(liked)orange else ink){
             if(current==null)setFavorite(!starred)else {
                 val id=current.optString("id")
-                if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
-                prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply()
+                if(live){
+                    if(cloudUser==null)showAccount()
+                    else backend.toggleFavorite(id,id !in cloudStars){err->if(err!=null)toast(err)}
+                }else{
+                    if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
+                    prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply()
+                }
             };renderSwipe()
         },lp(56,52))
         overlay.addView(buttons)
@@ -771,7 +831,15 @@ class MainActivity : Activity() {
         val car=activePreviewCar ?: return
         val main=container();toolbar(main,t("vehicleProfile"),{activePreviewCar=null;navigate(backFromDetail)})
         val content=col().apply {setPadding(px(18),px(18),px(18),px(22))}
-        content.addView(text(t("previewOnly"),12f,orange,true));content.addView(space(8))
+        val live = car.optString("id") !in previewCars.map { it.optString("id") }
+        content.addView(text(if(live)t("carsNav")else t("previewOnly"),12f,orange,true))
+        content.addView(space(8))
+        if(live && car.optString("image").startsWith("https://")){
+            val photo=ImageView(this).apply{scaleType=ImageView.ScaleType.CENTER_CROP}
+            content.addView(photo,lp(-1,240))
+            com.bumptech.glide.Glide.with(this).load(car.optString("image")).centerCrop().into(photo)
+            content.addView(space(12))
+        }
         content.addView(text(car.optString("make")+" "+car.optString("model"),25f,ink,true))
         content.addView(space(7));content.addView(text(euro(car.optInt("price")),25f,orange,true));content.addView(space(16))
         val details=listOf(
@@ -791,7 +859,24 @@ class MainActivity : Activity() {
         }
         content.addView(space(15));content.addView(text(t("vehicleDescription"),20f,ink,true));content.addView(space(8))
         content.addView(text(car.optString("description"),14f,ink));content.addView(space(18))
-        content.addView(text(t("previewNotSynced"),12f,muted));content.addView(space(15))
+        if(!live)content.addView(text(t("previewNotSynced"),12f,muted))
+        if(live){
+            val email=car.optString("contactEmail")
+            if(email.isNotBlank())content.addView(btn(t("askSeller"),false){
+                startActivity(Intent(Intent.ACTION_SENDTO,Uri.parse("mailto:"+Uri.encode(email))))
+            })
+            content.addView(space(9))
+            content.addView(btn(t("reportCar"),false) {
+                if(cloudUser==null){showAccount()} else AlertDialog.Builder(this)
+                    .setTitle(t("reportCar"))
+                    .setItems(arrayOf(t("reportFraud"),t("reportDuplicate"),t("reportInappropriate"),t("reportOther"))) { _,choice ->
+                        backend.report(car.optString("id"),listOf("fraud","duplicate","inappropriate","other")[choice]) { error ->
+                            toast(error ?: t("reportSent"))
+                        }
+                    }.show()
+            })
+        }
+        content.addView(space(15))
         content.addView(btn(t("backToListing"),true){activePreviewCar=null;navigate(backFromDetail)})
         body(main,content)
     }
@@ -856,6 +941,7 @@ class MainActivity : Activity() {
         return raw.joinToString("") { "%02x".format(it.toInt() and 255) }
     }
     private fun showAccount() {
+        if(previewUser.isBlank() && backend.ready){ showFirebaseAccount(); return }
         if(previewUser.isNotBlank()) {
             AlertDialog.Builder(this).setTitle(t("accountLogin")+" · "+previewUser)
                 .setMessage(t("previewMode")+"\n"+t("previewNotSynced"))
@@ -1007,6 +1093,19 @@ class MainActivity : Activity() {
             .setMessage(t("authUnavailable")+"\n\n"+t("demoOnly"))
             .setPositiveButton("OK",null).show()
     }
+    override fun onDestroy() { if(::backend.isInitialized) backend.close(); super.onDestroy() }
+
+    @Deprecated("Activity result API retained for compatibility with Activity base class")
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
+        super.onActivityResult(requestCode,resultCode,data)
+        if(requestCode!=pickPhotosRequest || resultCode!=RESULT_OK || data==null)return
+        pickedImages.clear()
+        data.clipData?.let { clip ->
+            for(i in 0 until minOf(clip.itemCount,6))pickedImages.add(clip.getItemAt(i).uri)
+        } ?: data.data?.let { pickedImages.add(it) }
+        pickedImagesLabel?.text = "${pickedImages.size} / 6"
+    }
+
     override fun onBackPressed() {
         when(screen){
             "details"->{activePreviewCar=null;navigate(backFromDetail)}
