@@ -4,7 +4,7 @@ base=Path(__file__).resolve().parent
 html=(base/'index.html').read_text()
 css=(base/'styles.css').read_text()
 parts=[]
-for f in ['translations-extra.js','i18n.js','cars-i18n.js','app.js']:
+for f in ['translations-extra.js','i18n.js','cars-i18n.js','car-brands.js','app.js']:
  src=(base/f).read_text()
  src=re.sub(r'^import [^\n]+\n','',src,flags=re.M)
  src=re.sub(r'^export \{[^\n]+\};?\n','',src,flags=re.M)

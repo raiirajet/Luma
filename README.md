@@ -5,6 +5,7 @@ Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwa
 ## Funktionen
 
 - Responsive Auto-Startseite mit **Marke, Modell, Preis, Erstzulassung, Kilometer, Kraftstoff, Getriebe, Karosserie, Verkäuferart**.
+- **435 kuratierte Automarken** (aktiv, historisch, regional, Luxus, Elektro und Kleinserien) in einem **durchsuchbaren Vorschlagsverzeichnis** (`car-brands.js`), inklusive türkischer und südosteuropäischer Hersteller. Modellvorschläge für häufige Marken; fehlende Marken und Modelle können frei eingegeben werden. Unterschiedliche Schreibweisen/Akzente werden beim Suchen normalisiert (z. B. Skoda → Škoda, VW → Volkswagen beim Inserieren). Die Liste erhebt keinen Anspruch auf jede jemals verwendete Marke; sie ist erweiterbar und benötigt keine Fremd-API.
 - 12 Suchländer im Nutzer-Dashboard (lokal für Gäste; Firebase-Profil für eingeloggte Nutzer).
 - 14 Sprachen: Deutsch, Englisch, Albanisch, Türkisch, Griechisch, Serbisch Latein/Kyrillisch, Slowenisch, Kroatisch, Mazedonisch, Bosnisch, Montenegrinisch, Bulgarisch, Rumänisch.
 - EUR-Preise, Filter, Sortierung, gespeicherte Suchen, Favoriten, Detailansicht mit technischen Daten und Bildernavigation.
@@ -70,3 +71,7 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 - Keine echte Händlerprüfung, Finanzierung, Zahlungsabwicklung, Fahrzeughistorie oder automatische Angebotsübersetzung. Für diese Funktionen sind Dienste und Rechtsprüfung notwendig.
 - Suche basiert aktuell auf den geladenen Inseraten (bis 300 Firestore-Dokumente); für Produktion werden serverseitige Pagination, Suche und Anti-Spam-Moderation benötigt.
 - Originaltexte von Nutzern sind bewusst unverändert; ein Übersetzungsdienst wäre eine zukünftige Option.
+
+## Markenverzeichnis aktualisieren
+
+`car-brands.js` enthält die lokalen Marken- und Modellvorschläge. Eine Automarke wird nicht blockiert, nur weil sie noch nicht auf der Liste steht: Marken können bei der Inseratserstellung unter Beachtung der Länge/Zeichenvalidierung selbst eingetragen werden. Suchen akzeptieren Teilnamen und Akzentvarianten. Für verlässliche Datenqualität sind künftig Moderation und Marken-Alias-Prüfungen sinnvoll.

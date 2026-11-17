@@ -32,8 +32,8 @@
 <div class="wrap search-wrap" id="searchAnchor"><form class="search-panel" id="searchForm" role="search"><div class="search-top"><div><span class="overline" data-i18n="carSearch">FAHRZEUGSUCHE</span><h2 data-i18n="findCar">Finde das Auto, das zu dir passt.</h2></div><button type="button" id="saveSearchBtn" class="outline-btn compact-btn">☆ <span data-i18n="saveSearch">Suche speichern</span></button></div>
 <div class="search-grid">
 <label class="search-field wide-field"><span data-i18n="searchTerms">Suche nach Marke oder Modell</span><input id="keyword" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Golf, A4, BMW" data-i18n-placeholder="keywordExample"></label>
-<label class="search-field"><span data-i18n="make">Marke</span><select id="make"></select></label>
-<label class="search-field"><span data-i18n="model">Modell</span><select id="model"></select></label>
+<label class="search-field"><span data-i18n="make">Marke</span><input id="make" type="search" list="makeOptions" autocomplete="off" maxlength="35" data-i18n-placeholder="allMakes" placeholder="Alle Marken"><datalist id="makeOptions"></datalist></label>
+<label class="search-field"><span data-i18n="model">Modell</span><input id="model" type="search" list="modelOptions" autocomplete="off" maxlength="65" data-i18n-placeholder="allModels" placeholder="Alle Modelle"><datalist id="modelOptions"></datalist></label>
 <label class="search-field"><span data-i18n="priceTo">Preis bis (€)</span><input id="priceTo" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Max. €"></label>
 <label class="search-field"><span data-i18n="yearFrom">Erstzulassung ab</span><select id="yearFrom"></select></label>
 <label class="search-field"><span data-i18n="mileageTo">Kilometer bis</span><select id="mileageTo"></select></label>

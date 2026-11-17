@@ -30,14 +30,24 @@ with sync_playwright() as p:
   page.locator('#carGrid .car-card').first.wait_for()
   assert page.locator('#carGrid .car-card').count()==1,'expected exactly one demo car'
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
-  assert page.locator('#make option[value="Nissan"]').count()==1
+  assert page.locator('#makeOptions option[value="Nissan"]').count()==1
+  assert page.locator('#makeOptions option').count()>=400
+  assert page.locator('#makeOptions option[value="Togg"]').count()==1
+  assert page.locator('#makeOptions option[value="Zastava"]').count()==1
+  assert page.evaluate('validCarMake("Ungewöhnliche Marke")')
+  assert page.evaluate('resolveCarMake("Skoda")')=='Škoda'
+  assert page.evaluate('resolveCarMake("vw")')=='Volkswagen'
   print('START',width,'cars',page.locator('.car-card').count(),'errors',errors)
   # Form and dynamic filters
-  page.locator('#make').select_option('Nissan')
+  page.locator('#make').fill('Nissan')
   assert page.locator('#carGrid .car-card').count()==1
-  page.locator('#model').select_option('GT-R')
+  page.locator('#model').fill('GT-R')
   assert page.locator('#carGrid .car-card').count()==1
-  page.locator('#make').select_option('BMW')
+  page.locator('#make').fill('BMW')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#make').fill('nIs')
+  assert page.locator('#carGrid .car-card').count()==1
+  page.locator('#make').fill('Mercedes-Benz')
   assert page.locator('#carGrid .car-card').count()==0
   page.locator('#clearAll').click()
   assert page.locator('#carGrid .car-card').count()==1
