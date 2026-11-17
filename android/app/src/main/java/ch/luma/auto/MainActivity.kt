@@ -155,7 +155,7 @@ class MainActivity : Activity() {
         if (backend.ready) {
             backend.watchAuth { user ->
                 cloudUser = user
-                if(user?.emailVerified == true && !user.phoneNumber.isNullOrBlank()) social.callable("syncPublicProfile",emptyMap()){_,_->}
+                if(user != null && user.isEmailVerified && !user.phoneNumber.isNullOrBlank()) social.callable("syncPublicProfile",emptyMap()){_,_->}
                 backend.watchOwned(user?.uid) { cars ->
                     ownCars.clear();ownCars.addAll(cars);render()
                 }
