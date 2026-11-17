@@ -1,7 +1,18 @@
-/*
- * Luma Firebase project configuration.
- * Replace null with the PUBLIC Firebase web app config from Firebase Console.
- * These identifiers are public; never put admin keys, service-account JSON,
- * private API secrets, or GitHub tokens into this file.
+/* Limba Auto public Firebase WEB client configuration.
+ * Firebase Console > Project settings > Your apps > Web app > SDK setup.
+ * These CLIENT identifiers are public. Never place admin keys, service-account
+ * files or server tokens in this file.
+ *
+ * Leave apiKey / projectId blank for offline demo mode. Do not put a DEMO user
+ * into production Authentication.
  */
-window.LUMA_FIREBASE_CONFIG = null;
+window.LIMBA_FIREBASE_CONFIG = {
+  apiKey: '',
+  authDomain: '',
+  projectId: '',
+  storageBucket: '',
+  messagingSenderId: '',
+  appId: ''
+};
+// Older third-party integrations may still expect the historical LUMA name.
+window.LUMA_FIREBASE_CONFIG = window.LIMBA_FIREBASE_CONFIG;
