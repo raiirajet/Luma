@@ -30,6 +30,8 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.ListenerRegistration
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
@@ -81,6 +83,9 @@ class MainActivity : Activity() {
     private var cloudStars = mutableSetOf<String>()
     private var cloudUser: com.google.firebase.auth.FirebaseUser? = null
     private lateinit var backend: LimbaFirebase
+    private lateinit var social: LimbaSocial
+    private var activeConversation = ""
+    private val socialListeners = mutableListOf<ListenerRegistration>()
     private val pickedImages = mutableListOf<Uri>()
     private var pickedImagesLabel: TextView? = null
     private val pickPhotosRequest = 1414
@@ -146,9 +151,11 @@ class MainActivity : Activity() {
         saveCount = prefs.getString("searches", "[]")?.let { runCatching { JSONArray(it).length() }.getOrDefault(0) } ?: 0
         try { assets.open("gtr.jpg").use { carPhoto = BitmapFactory.decodeStream(it) } } catch (_: Exception) { }
         backend = LimbaFirebase(this)
+        social = LimbaSocial(this)
         if (backend.ready) {
             backend.watchAuth { user ->
                 cloudUser = user
+                if(user?.emailVerified == true && !user.phoneNumber.isNullOrBlank()) social.callable("syncPublicProfile",emptyMap()){_,_->}
                 backend.watchOwned(user?.uid) { cars ->
                     ownCars.clear();ownCars.addAll(cars);render()
                 }
@@ -260,30 +267,14 @@ class MainActivity : Activity() {
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
     private fun euro(n: Int) = NumberFormat.getNumberInstance(Locale.GERMANY).format(n) + " €"
     private fun number(n: Int) = NumberFormat.getIntegerInstance(Locale.GERMANY).format(n)
-    private fun navigate(next: String) { screen = next; render() }
+    private fun clearSocialSubscriptions() { socialListeners.forEach { it.remove() };socialListeners.clear() }
+    private fun navigate(next: String) { clearSocialSubscriptions();screen = next; render() }
     private fun container(): LinearLayout {
         root.removeAllViews()
         root.setBackgroundColor(navy)
         val main = col()
         main.setBackgroundColor(mist)
         root.addView(main, fp())
-        if (screen != "details") {
-            val fab = row().apply {
-                setPadding(px(12), px(9), px(17), px(9));gravity = Gravity.CENTER_VERTICAL
-                background = c(orange, 30)
-                elevation = px(12).toFloat()
-                minimumHeight = px(58)
-                isClickable = true; isFocusable = true
-                contentDescription = t("addVehicle")
-                addView(drawableIcon(R.drawable.limba_add_car, paper, 37),lp(37,37))
-                addView(spaceHorizontal(7))
-                addView(text(t("addVehicle"),13f,paper,true))
-                setOnClickListener { showCarForm() }
-            }
-            val pos = fp(-2, -2, Gravity.BOTTOM or Gravity.END)
-            pos.setMargins(px(9),px(9),px(14),px(84))
-            root.addView(fab,pos)
-        }
         return main
     }
 
@@ -308,10 +299,11 @@ class MainActivity : Activity() {
     private fun navigation(main: LinearLayout) {
         val nav = row(paper).apply { gravity = Gravity.CENTER }
         val routes = listOf(
-            Triple("home", R.drawable.limba_search, t("carsNav")),
-            Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
+            Triple("home", R.drawable.limba_search, if(locale=="de")"Finden"else t("carsNav")),
             Triple("favorites", R.drawable.limba_favorites, t("saved")),
-            Triple("settings", R.drawable.limba_settings, t("settings"))
+            Triple("sell", R.drawable.limba_add_car, if(locale=="de")"Verkaufen"else t("sellCar")),
+            Triple("messages", R.drawable.limba_messages, t("socialMessages")),
+            Triple("profile", R.drawable.limba_profile, t("socialProfile"))
         )
         routes.forEach { (route, icon, name) ->
             val selected = screen == route
@@ -330,7 +322,7 @@ class MainActivity : Activity() {
                 gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
-            cell.setOnClickListener { navigate(route) }
+            cell.setOnClickListener { if(route=="sell")showCarForm() else navigate(route) }
         }
         main.addView(nav, lp(-1, 66))
     }
@@ -340,7 +332,11 @@ class MainActivity : Activity() {
         main.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
     }
     private fun render() {
+        clearSocialSubscriptions()
         when (screen) {
+            "messages" -> renderMessages()
+            "chat" -> renderConversation()
+            "profile" -> renderSocialProfile()
             "swipe" -> renderSwipe()
             "details" -> renderDetails()
             "favorites" -> renderFavorites()
@@ -478,6 +474,8 @@ class MainActivity : Activity() {
         form.addView(space(17))
         form.addView(search)
         form.addView(space(8))
+        form.addView(iconText(R.drawable.limba_vehicle_cards,"Swipe", { navigate("swipe") }))
+        form.addView(space(8))
         form.addView(iconText(R.drawable.limba_filter, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
         val actions = row()
         actions.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() }, LinearLayout.LayoutParams(0, px(46), 1f))
@@ -572,6 +570,14 @@ class MainActivity : Activity() {
         view.addView(text(car.optString("city")+" · "+car.optString("country"),12f,muted))
         view.addView(space(8))
         view.addView(text(euro(car.optInt("price")),23f,orange,true))
+        val trust=text("★ — · "+t("socialProfile"),11f,muted)
+        view.addView(trust)
+        if(live && ::social.isInitialized) social.getProfile(car.optString("uid")) { profile ->
+            if(profile!=null) trust.text="★ "+(profile.getDouble("sellerRatingAverage") ?: 0.0).toString()+
+                " ("+(profile.getLong("sellerRatingCount") ?: 0)+") · "+
+                (if(profile.getBoolean("phoneVerified")==true)"✓ "else "")+
+                (profile.getString("alias") ?: t("socialProfile"))
+        }
         view.addView(space(10))
         val liked=if(live)car.optString("id") in cloudStars else car.optString("id") in previewStars
         view.addView(iconText(R.drawable.limba_favorites,t("saveFavourites"),{
@@ -863,16 +869,32 @@ class MainActivity : Activity() {
         content.addView(text(car.optString("description"),14f,ink));content.addView(space(18))
         if(!live)content.addView(text(t("previewNotSynced"),12f,muted))
         if(live){
-            val email=car.optString("contactEmail")
-            if(email.isNotBlank())content.addView(btn(t("askSeller"),false){
-                startActivity(Intent(Intent.ACTION_SENDTO,Uri.parse("mailto:"+Uri.encode(email))))
+            val uid=car.optString("uid")
+            val seller=text(t("socialSeller")+" · ★ —",14f,muted,true)
+            content.addView(seller)
+            if(::social.isInitialized) social.getProfile(uid) { profile ->
+                if(profile!=null)seller.text=(profile.getString("alias") ?: t("socialSeller"))+
+                    " · ★ "+(profile.getDouble("sellerRatingAverage") ?: 0.0).toString()+
+                    " ("+(profile.getLong("sellerRatingCount") ?: 0)+")"+
+                    if(profile.getBoolean("phoneVerified")==true)" ✓" else ""
+            }
+            content.addView(btn(t("socialMessage"),true) {
+                social.beginConversation(car.optString("id")) { id,error ->
+                    if(error!=null)toast(error) else if(id!=null){activeConversation=id;navigate("chat")}
+                }
+            })
+            content.addView(space(8))
+            content.addView(btn(t("socialOffer"),false) {
+                social.beginConversation(car.optString("id")) { id,error ->
+                    if(error!=null)toast(error) else if(id!=null){activeConversation=id;navigate("chat")}
+                }
             })
             content.addView(space(9))
             content.addView(btn(t("reportCar"),false) {
                 if(cloudUser==null){showAccount()} else AlertDialog.Builder(this)
                     .setTitle(t("reportCar"))
                     .setItems(arrayOf(t("reportFraud"),t("reportDuplicate"),t("reportInappropriate"),t("reportOther"))) { _,choice ->
-                        backend.report(car.optString("id"),listOf("fraud","duplicate","inappropriate","other")[choice]) { error ->
+                        social.report("listing",car.optString("id"),listOf("fraud","duplicate","inappropriate","other")[choice]) { error ->
                             toast(error ?: t("reportSent"))
                         }
                     }.show()
@@ -1208,7 +1230,7 @@ class MainActivity : Activity() {
                 content.addView(text(t("statusLabel")+": "+t("status"+car.optString("status","active").replaceFirstChar{it.uppercase()}),
                     13f,muted))
                 content.addView(btn(t("editAd"),false) {showCarForm(car)})
-                listOf("active","paused","sold").forEach { status ->
+                listOf("active","paused").forEach { status ->
                     if(status!=car.optString("status")) content.addView(btn(t("status"+status.replaceFirstChar{it.uppercase()}),false){
                         backend.status(car,status){error->if(error!=null)toast(error)}
                     })
@@ -1228,12 +1250,225 @@ class MainActivity : Activity() {
         if(previewUser.isNotBlank()){content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))}
         body(main,content);navigation(main)
     }
+
+    // All new social screens use the same native Android view hierarchy as the rest of Limba.
+    private fun renderMessages() {
+        val main=container();toolbar(main,t("socialMessages"),{navigate("home")})
+        val content=col().apply {setPadding(px(17),px(18),px(17),px(26))}
+        content.addView(text(t("socialMessages"),23f,ink,true))
+        body(main,content);navigation(main)
+        if(!social.ready || social.uid==null) {
+            content.addView(btn(t("login"),true){showAccount()});return
+        }
+        val listener=social.watchConversations({ rows ->
+            if(screen!="messages")return@watchConversations
+            content.removeViews(1,(content.childCount-1).coerceAtLeast(0))
+            if(rows.isEmpty())emptyState(content,t("socialNoMessages"))
+            rows.forEach { d ->
+                val c=d.data ?: emptyMap<String,Any>()
+                content.addView(btn(
+                    (c["lastMessagePreview"] as? String).orEmpty().ifBlank{t("socialMessage")},
+                    false) {activeConversation=d.id;navigate("chat")})
+                content.addView(space(10))
+            }
+        },{e->toast(e)})
+        if(listener!=null)socialListeners.add(listener)
+    }
+
+    private fun renderConversation() {
+        val id=activeConversation
+        val main=container();toolbar(main,t("socialMessages"),{navigate("messages")})
+        val content=col().apply {setPadding(px(15),px(15),px(15),px(26))}
+        val conversationTitle=text(t("socialMessages"),22f,ink,true)
+        content.addView(conversationTitle);content.addView(space(12))
+        val messagePane=col(paper).apply {background=c(paper,14,border);setPadding(px(12),px(12),px(12),px(12))}
+        messagePane.addView(text(t("socialNoMessages"),13f,muted))
+        content.addView(messagePane);content.addView(space(14))
+        val offerPane=col()
+        content.addView(offerPane)
+        val transactionPane=col()
+        content.addView(transactionPane)
+        val write=EditText(this).apply {hint=t("socialWriteMessage");minHeight=px(50);background=c(paper,10,border)}
+        content.addView(write);content.addView(space(8))
+        content.addView(btn(t("socialSend"),true) {
+            val body=write.text.toString().trim()
+            if(body.length !in 1..1000){toast("1–1000");return@btn}
+            social.sendMessage(id,body) { e ->if(e==null)write.text.clear() else toast(e) }
+        })
+        content.addView(space(16))
+        val amount=EditText(this).apply {hint=t("socialOffer")+" €";inputType=InputType.TYPE_CLASS_NUMBER;
+            background=c(paper,10,border);minHeight=px(50)}
+        content.addView(amount);content.addView(space(8))
+        content.addView(btn(t("socialOffer"),false) {
+            val price=amount.text.toString().toIntOrNull()
+            if(price==null || price !in 1..999999999){toast("1–999999999 €");return@btn}
+            social.createOffer(id,price) { e ->if(e!=null)toast(e)else amount.text.clear() }
+        })
+        content.addView(space(14))
+        content.addView(text(t("socialNoPayment"),12f,muted))
+        body(main,content);navigation(main)
+        social.watchMessages(id) { rows ->
+            if(screen!="chat"||id!=activeConversation)return@watchMessages
+            messagePane.removeAllViews()
+            if(rows.isEmpty())messagePane.addView(text(t("socialNoMessages"),13f,muted))
+            rows.forEach { snap ->
+                val d=snap.data ?: emptyMap<String,Any>()
+                val mine=d["senderUid"]==social.uid
+                val bubble=col(if(mine)0xffe0efff.toInt() else mist).apply {
+                    background=c(if(mine)0xffe0efff.toInt() else mist,12)
+                    setPadding(px(12),px(10),px(12),px(10))
+                }
+                bubble.addView(text((d["text"] as? String).orEmpty(),14f,ink))
+                messagePane.addView(bubble);messagePane.addView(space(6))
+            }
+        }?.let { socialListeners.add(it) }
+        social.watchOffers(id) { rows ->
+            if(screen!="chat"||id!=activeConversation)return@watchOffers
+            offerPane.removeAllViews()
+            rows.sortedByDescending { it.getTimestamp("createdAt")?.seconds ?: 0L }.forEach { offer ->
+                val status=offer.getString("status").orEmpty()
+                val line=col(paper).apply {background=c(paper,12,border);setPadding(px(10),px(10),px(10),px(10))}
+                line.addView(text(euro((offer.getLong("amountEur") ?: 0L).toInt())+
+                    " · "+status,15f,ink,true))
+                if(status=="open"&&offer.getString("creatorUid")!=social.uid){
+                    val key=id+"~"+offer.id
+                    line.addView(btn(t("socialAccept"),true){
+                        social.respond(key,true){e->if(e!=null)toast(e)}
+                    })
+                    line.addView(btn(t("socialReject"),false){
+                        social.respond(key,false){e->if(e!=null)toast(e)}
+                    })
+                }
+                offerPane.addView(line);offerPane.addView(space(8))
+            }
+        }?.let { socialListeners.add(it) }
+        social.watchTransaction(id) { trans ->
+            if(screen!="chat"||id!=activeConversation)return@watchTransaction
+            transactionPane.removeAllViews()
+            if(trans?.exists()!=true)return@watchTransaction
+            val status=trans.getString("status").orEmpty()
+            transactionPane.addView(text(t("socialTransaction")+" · "+status,18f,ink,true))
+            when {
+                status=="reserved"&&trans.getString("sellerUid")==social.uid ->
+                    transactionPane.addView(btn(t("socialHandover"),true){
+                        social.handover(id){e->if(e!=null)toast(e)}
+                    })
+                status=="handover_confirmed"&&trans.getString("buyerUid")==social.uid ->
+                    transactionPane.addView(btn(t("socialPurchase"),true){
+                        social.purchase(id){e->if(e!=null)toast(e)}
+                    })
+                status=="completed"->transactionPane.addView(btn(t("socialReview"),true){
+                    showSocialReview(id,trans)
+                })
+            }
+            transactionPane.addView(space(12))
+        }?.let { socialListeners.add(it) }
+    }
+
+    private fun showSocialReview(transactionId:String,transaction:DocumentSnapshot) {
+        social.getReview(transactionId){ old ->
+            val status=old?.getString("status")
+            val stamp=old?.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+            if(status=="withdrawn"){toast(t("socialWithdrawn"));return@getReview}
+            val editAllowed=old==null||!old.exists()||System.currentTimeMillis()-stamp<30*60*1000L
+            val holder=col().apply {setPadding(px(16),px(8),px(16),px(8))}
+            val stars=Spinner(this).apply {
+                adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,
+                    listOf("1 ★","2 ★","3 ★","4 ★","5 ★"))
+                setSelection(((old?.getLong("stars") ?: 5L).toInt()-1).coerceIn(0,4))
+            }
+            holder.addView(stars,lp(-1,54))
+            val buyerRole=transaction.getString("sellerUid")==social.uid
+            val tags=if(buyerRole) listOf("goodCommunication","punctual","reliable","smoothClosing")
+                     else listOf("descriptionAccurate","goodCommunication","reliable","goodHandover")
+            val checks=tags.map { tag ->CheckBox(this).apply { text=t("socialTag_"+tag)
+                isChecked=(old?.get("tags") as? List<*>)?.contains(tag)==true;minHeight=px(44)
+                holder.addView(this,lp(-1,44))} }
+            val comment=EditText(this).apply {
+                hint=t("socialComment");setText(old?.getString("comment").orEmpty());maxLines=5
+                filters=arrayOf(android.text.InputFilter.LengthFilter(500))
+            }
+            holder.addView(comment,lp(-1,100))
+            val builder=AlertDialog.Builder(this).setTitle(t("socialReview")).setView(holder)
+                .setNegativeButton(t("cancelPreview"),null)
+            if(editAllowed)builder.setPositiveButton(t("socialSave")) { _,_ ->
+                val selected=checks.filter{it.isChecked}.map { tags[checks.indexOf(it)] }
+                if(selected.size>3){toast(t("socialThreeTags"));return@setPositiveButton}
+                val done:(String?)->Unit={error->toast(error ?: t("socialSaved"))}
+                val count=stars.selectedItemPosition+1
+                if(old?.exists()==true)social.editReview(transactionId+"_"+social.uid,count,selected,comment.text.toString(),done)
+                else social.submitReview(transactionId,count,selected,comment.text.toString(),done)
+            }
+            if(status=="visible")builder.setNeutralButton(t("socialWithdraw")) { _,_ ->
+                social.withdrawReview(transactionId+"_"+social.uid){error->toast(error ?: t("socialWithdrawn"))}
+            }
+            builder.show()
+        }
+    }
+
+    private fun renderSocialProfile() {
+        val main=container();toolbar(main,t("socialProfile"),{navigate("home")})
+        val content=col().apply {setPadding(px(18),px(18),px(18),px(26))}
+        content.addView(text(t("socialProfile"),24f,ink,true));content.addView(space(10))
+        body(main,content);navigation(main)
+        if(social.uid==null){content.addView(btn(t("login"),true){showAccount()});return}
+        social.getProfile(social.uid!!){ profile ->
+            if(screen!="profile")return@getProfile
+            val data=profile
+            val alias=data?.getString("alias") ?: (cloudUser?.email?.substringBefore("@") ?: "Mitglied")
+            val existing=content.childCount
+            if(existing>1)content.removeViews(1,existing-1)
+            content.addView(text(alias,22f,ink,true));content.addView(space(8))
+            content.addView(text(t("socialSeller")+" ★ "+
+                (data?.getDouble("sellerRatingAverage") ?: 0.0)+" ("+
+                (data?.getLong("sellerRatingCount") ?: 0L)+")",15f,muted))
+            content.addView(text(t("socialBuyer")+" ★ "+
+                (data?.getDouble("buyerRatingAverage") ?: 0.0)+" ("+
+                (data?.getLong("buyerRatingCount") ?: 0L)+")",15f,muted))
+            content.addView(space(14))
+            val input=EditText(this).apply {setText(alias);hint=t("socialAlias")}
+            content.addView(input,lp(-1,50))
+            content.addView(btn(t("socialSave"),false){
+                social.saveAlias(input.text.toString()){e->
+                    if(e!=null)toast(e)else {toast(t("socialSaved"));renderSocialProfile()}
+                }
+            })
+            content.addView(space(12))
+            content.addView(text(if(social.linkedPhone)t("socialVerified")else t("socialNotVerified"),13f,muted))
+            content.addView(btn(t("socialPhone"),false){
+                social.linkPhone({toast(t("socialVerified"));renderSocialProfile()},{e->toast(e)})
+            })
+            content.addView(space(10))
+            content.addView(btn(t("socialPush"),false){
+                social.enablePush { e ->toast(e ?: t("socialSaved")) }
+            })
+            content.addView(space(18))
+            content.addView(text(t("socialReviews"),20f,ink,true))
+            val reviews=col()
+            content.addView(reviews)
+            social.watchReviews(social.uid!!){ snapshots ->
+                if(screen!="profile")return@watchReviews
+                reviews.removeAllViews()
+                val seller=snapshots.filter{it.getString("revieweeRole")=="seller"}
+                val buyer=snapshots.filter{it.getString("revieweeRole")=="buyer"}
+                reviews.addView(text(t("socialSeller"),17f,ink,true))
+                seller.forEach{reviews.addView(text("★ "+it.getLong("stars")+
+                    " · "+it.getString("comment").orEmpty(),13f,muted))}
+                if(seller.isEmpty())reviews.addView(text(t("socialNoReviews"),13f,muted))
+                reviews.addView(space(12));reviews.addView(text(t("socialBuyer"),17f,ink,true))
+                buyer.forEach{reviews.addView(text("★ "+it.getLong("stars")+
+                    " · "+it.getString("comment").orEmpty(),13f,muted))}
+                if(buyer.isEmpty())reviews.addView(text(t("socialNoReviews"),13f,muted))
+            }?.let { socialListeners.add(it) }
+        }
+    }
+
     private fun showBackendInfo() {
         AlertDialog.Builder(this).setTitle(t("registerToSell"))
             .setMessage(t("authUnavailable")+"\n\n"+t("demoOnly"))
             .setPositiveButton("OK",null).show()
     }
-    override fun onDestroy() { if(::backend.isInitialized) backend.close(); super.onDestroy() }
+    override fun onDestroy() { clearSocialSubscriptions();if(::backend.isInitialized) backend.close(); super.onDestroy() }
 
     @Deprecated("Activity result API retained for compatibility with Activity base class")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
@@ -1249,6 +1484,7 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         when(screen){
             "details"->{activePreviewCar=null;navigate(backFromDetail)}
+            "chat"->navigate("messages")
             "home"->super.onBackPressed()
             else->navigate("home")
         }

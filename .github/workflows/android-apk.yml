@@ -87,12 +87,12 @@ jobs:
       - name: Prepare download
         run: |
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            APK_PATH=Limba-Auto-Android-v1.4.1.apk
+            APK_PATH=Limba-Auto-Android-v1.5.0.apk
             cp android/app/build/outputs/apk/release/app-release.apk "$APK_PATH"
             echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
             echo "SIGNED_RELEASE=true" >> "$GITHUB_ENV"
           else
-            APK_PATH=Limba-Auto-Android-v1.4.1-debug.apk
+            APK_PATH=Limba-Auto-Android-v1.5.0-debug.apk
             cp android/app/build/outputs/apk/debug/app-debug.apk "$APK_PATH"
             echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
             echo "SIGNED_RELEASE=false" >> "$GITHUB_ENV"
@@ -111,10 +111,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view android-v1.4.1 >/dev/null 2>&1; then
-            gh release create android-v1.4.1 \
+          if ! gh release view android-v1.5.0 >/dev/null 2>&1; then
+            gh release create android-v1.5.0 \
               --title 'Limba Auto Android 1.4.1' \
               --notes 'Limba 1.4.1 with the limba-auto Firebase production client configuration. This release is published only when the permanent release-signing secrets are configured.' \
               --prerelease
           fi
-          gh release upload android-v1.4.1 "$APK_PATH" --clobber
+          gh release upload android-v1.5.0 "$APK_PATH" --clobber
