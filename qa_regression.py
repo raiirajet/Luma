@@ -9,7 +9,7 @@ class Quiet(SimpleHTTPRequestHandler):
 handler=functools.partial(Quiet,directory=str(root))
 server=ThreadingHTTPServer(('127.0.0.1',0),handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
-base=f'http://127.0.0.1:{server.server_port}/index.html'
+base=f'http://127.0.0.1:{server.server_port}/preview.html'
 
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
