@@ -9,12 +9,27 @@ android {
     applicationId = "ch.luma.auto"
     minSdk = 26
     targetSdk = 35
-    versionCode = 4
-    versionName = "1.3.0"
+    versionCode = 5
+    versionName = "1.4.0"
+  }
+  signingConfigs {
+    create("limbaRelease") {
+      val path = System.getenv("LIMBA_KEYSTORE_FILE")
+      if (!path.isNullOrBlank()) {
+        storeFile = file(path)
+        storePassword = System.getenv("LIMBA_KEYSTORE_PASSWORD")
+        keyAlias = System.getenv("LIMBA_KEY_ALIAS")
+        keyPassword = System.getenv("LIMBA_KEY_PASSWORD")
+      }
+    }
   }
   buildTypes {
     getByName("debug") { isMinifyEnabled = false }
-    getByName("release") { isMinifyEnabled = false }
+    getByName("release") {
+      isMinifyEnabled = false
+      if (!System.getenv("LIMBA_KEYSTORE_FILE").isNullOrBlank())
+        signingConfig = signingConfigs.getByName("limbaRelease")
+    }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -22,4 +37,11 @@ android {
   }
   kotlinOptions { jvmTarget = "17" }
   packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+}
+dependencies {
+  implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+  implementation("com.google.firebase:firebase-auth")
+  implementation("com.google.firebase:firebase-firestore")
+  implementation("com.google.firebase:firebase-storage")
+  implementation("com.github.bumptech.glide:glide:4.16.0")
 }
