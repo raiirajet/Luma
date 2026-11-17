@@ -20,13 +20,9 @@ with sync_playwright() as p:
   errors=[]; page.on('pageerror',lambda err:errors.append(str(err)))
   page.route('https://upload.wikimedia.org/**',lambda route:route.abort())
   page.route('https://images.unsplash.com/**',lambda route:route.abort())
-  # This environment blocks localhost/file navigations. Execute the self-contained preview
-  # in about:blank, preserving synthetic history in the same document.
-  page.evaluate("""() => { const origPush=history.pushState.bind(history), origReplace=history.replaceState.bind(history);
-    history.pushState=(s,t,u)=>origPush(s,t);history.replaceState=(s,t,u)=>origReplace(s,t);
-    const values={};Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=>(k in values?values[k]:null),setItem:(k,v)=>{values[k]=String(v)},removeItem:k=>delete values[k]}})
-  }""")
-  page.set_content((root/'preview.html').read_text(),wait_until='domcontentloaded')
+  # A real HTTP origin is required for accurate mobile viewport, touch events
+  # and ES-module loading. about:blank set_content distorts mobile hit-testing.
+  page.goto(base,wait_until='domcontentloaded')
   page.locator('#carGrid .car-card').first.wait_for()
   assert page.locator('#carGrid .car-card').count()==1,'expected exactly one demo car'
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
