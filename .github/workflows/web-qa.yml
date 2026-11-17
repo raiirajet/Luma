@@ -9,6 +9,7 @@ on:
       - '*.html'
       - 'styles.css'
       - '.github/workflows/web-qa.yml'
+      - 'tests/web_mvp.py'
   push:
     branches: [main]
     paths:
@@ -35,7 +36,7 @@ jobs:
           node --check config.js
       - name: Validate Python source and create preview
         run: |
-          python3 -m py_compile build_preview.py qa_regression.py test_swipe_pointer.py
+          python3 -m py_compile build_preview.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py
           python3 build_preview.py
           test -s preview.html
       - name: Install Playwright and Chromium
@@ -46,3 +47,4 @@ jobs:
         run: |
           python3 qa_regression.py
           python3 test_swipe_pointer.py
+          python3 tests/web_mvp.py
