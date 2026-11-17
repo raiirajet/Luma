@@ -68,9 +68,33 @@
         <div class="listing-grid" id="listingGrid"></div>
         <div class="empty-state hidden" id="noResults"><div class="empty-icon">⌕</div><h3 data-i18n="noResults">Keine passenden Anzeigen gefunden.</h3><p data-i18n="noResultsText">Versuche andere Suchbegriffe oder Filter.</p><button class="btn btn-dark" id="resetEmpty" data-i18n="clear">Zurücksetzen</button></div>
       </section>
-      <section class="container discover-banner"><div><div class="eyebrow light-eyebrow">✦ LUMA SWIPE</div><h2 data-i18n="swipeCall">Stöbern war noch nie so intuitiv.</h2><p data-i18n="swipeCallSub">Wische durch spannende Angebote. Ein nächster Fund ist nur einen Swipe entfernt.</p><button class="btn btn-cream" data-view="swipe" data-i18n="trySwipe">Swipe entdecken →</button></div><div class="banner-arrows" aria-hidden="true"><span>←</span><span>→</span><span>↑</span><span>↓</span></div></section>
+      <section class="container discover-banner"><div><div class="eyebrow light-eyebrow">✦ LUMA SWIPE</div><h2 data-i18n="swipeCall">Stöbern war noch nie so intuitiv.</h2><p data-i18n="swipeCallSub">Wische durch spannende Angebote. Ein nächster Fund ist nur einen Swipe entfernt.</p><button class="btn btn-cream" data-view="swipe" data-i18n="trySwipe">Swipe entdecken →</button></div><div class="banner-photo" aria-hidden="true"><img src="https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?w=520&auto=format&fit=crop&q=85" alt="" loading="lazy"></div></section>
     </div>
-    <section class="container content-section hidden page-section" id="swipeView" aria-labelledby="swipeTitle"><div class="section-heading"><div><span class="section-kicker">LUMA SWIPE</span><h2 id="swipeTitle" data-i18n="swipeTitle">Entdecken mit einem Wisch</h2></div><button class="btn btn-plain" data-view="discover" data-i18n="backToMarket">← Zum Marktplatz</button></div><p class="swipe-intro" data-i18n="swipeHelp">Links: nächstes Angebot · Rechts: Angebot öffnen · Hoch: Details · Runter: Ähnliche Angebote</p><div class="swipe-layout"><div class="swipe-card" id="swipeCard" tabindex="0" role="group" aria-label="Swipe listing"></div><div class="swipe-sidebar"><h3 data-i18n="howSwipe">So funktioniert Luma Swipe</h3><div class="swipe-direction"><span>←</span><div><strong data-i18n="swipeNext">Weiter</strong><small data-i18n="swipeNextSub">Nächstes Angebot</small></div></div><div class="swipe-direction"><span>→</span><div><strong data-i18n="swipeOpen">Öffnen</strong><small data-i18n="swipeOpenSub">Artikel ansehen</small></div></div><div class="swipe-direction"><span>↑</span><div><strong data-i18n="swipeDetails">Details</strong><small data-i18n="swipeDetailsSub">Alle Informationen</small></div></div><div class="swipe-direction"><span>↓</span><div><strong data-i18n="swipeSimilar">Ähnliches</strong><small data-i18n="swipeSimilarSub">Gleiche Kategorie</small></div></div><div class="swipe-buttons"><button id="swipeLeft" aria-label="Next">←</button><button id="swipeDown" aria-label="Similar">↓</button><button id="swipeUp" aria-label="Details">↑</button><button id="swipeRight" aria-label="Open">→</button></div><small data-i18n="keyboardTip">Auch mit den Pfeiltasten steuerbar.</small></div></div></section>
+    <section class="container content-section hidden page-section swipe-page" id="swipeView" aria-labelledby="swipeTitle">
+      <div class="section-heading swipe-heading">
+        <div><span class="section-kicker">LUMA SWIPE</span><h2 id="swipeTitle" data-i18n="swipeTitle">Entdecken mit einem Wisch</h2></div>
+        <button class="btn btn-plain" data-view="discover" data-i18n="backToMarket">← Zum Marktplatz</button>
+      </div>
+      <div class="swipe-layout">
+        <div class="swipe-card" id="swipeCard" tabindex="0" role="group" aria-label="Swipe listing"></div>
+      </div>
+      <div class="swipe-help-bar"><button type="button" id="showSwipeTutorial" class="swipe-help-link">ⓘ <span data-i18n="swipeShowTutorial">Anleitung erneut anzeigen</span></button></div>
+      <div class="swipe-tutorial hidden" id="swipeTutorial" role="dialog" aria-modal="true" aria-labelledby="swipeTutorialTitle" aria-hidden="true">
+        <div class="swipe-tutorial-panel">
+          <div class="swipe-tutorial-badge">✳ LUMA SWIPE</div>
+          <h3 id="swipeTutorialTitle" data-i18n="howSwipe">So funktioniert Luma Swipe</h3>
+          <p class="swipe-tutorial-subtitle" data-i18n="swipeTutorialIntro">Vier einfache Gesten – danach kannst du direkt loslegen.</p>
+          <div class="swipe-tutorial-grid">
+            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">←</span><div><strong data-i18n="swipeNext">Weiter</strong><small data-i18n="swipeNextSub">Nächstes Angebot</small></div></div>
+            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">→</span><div><strong data-i18n="swipeOpen">Öffnen</strong><small data-i18n="swipeOpenSub">Artikel ansehen</small></div></div>
+            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">↑</span><div><strong data-i18n="swipeDetails">Details</strong><small data-i18n="swipeDetailsSub">Alle Informationen</small></div></div>
+            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">↓</span><div><strong data-i18n="swipeSimilar">Ähnliches</strong><small data-i18n="swipeSimilarSub">Gleiche Kategorie</small></div></div>
+          </div>
+          <button type="button" class="btn btn-coral swipe-tutorial-start" id="swipeTutorialDone" data-i18n="swipeStart">Verstanden, los geht's!</button>
+          <small class="swipe-tutorial-tip" data-i18n="swipeOnce">Die Erklärung wird nur beim ersten Mal automatisch angezeigt.</small>
+        </div>
+      </div>
+    </section>
     <section class="container content-section hidden page-section" id="savedView"><div class="section-heading"><div><span class="section-kicker" data-i18n="yourCollection">DEINE SAMMLUNG</span><h2 data-i18n="saved">Merkliste</h2></div></div><div id="savedGrid" class="listing-grid"></div><h3 class="subheading" data-i18n="savedSearches">Gespeicherte Suchen</h3><div id="searchesList" class="saved-search-list"></div></section>
     <section class="container content-section hidden page-section" id="mineView"><div class="section-heading"><div><span class="section-kicker" data-i18n="yourListings">DEINE ANGEBOTE</span><h2 data-i18n="myAds">Meine Anzeigen</h2></div><button class="btn btn-coral" id="mineSellBtn" data-i18n="sell">Inserieren</button></div><div id="mineGrid" class="listing-grid"></div></section>
   </main>

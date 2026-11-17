@@ -66,3 +66,9 @@ Local preview: serve the repository folder with a static HTTP server (ES modules
 - `config.js`: public Firebase web configuration placeholder.
 - `firestore.rules` and `storage.rules`: production-intent access controls (must be tested before rollout).
 - `.github/workflows/pages.yml`: static hosting workflow.
+
+### Luma Swipe – Einmaliges Onboarding
+
+Beim ersten Öffnen von **Swipe** zeigt Luma eine kurze Anleitung für vier Gesten (links: weiter; rechts: öffnen; hoch: Details; runter: ähnliche). Mit **Verstanden, los geht's!** wird die Anleitung geschlossen und per `localStorage` (`luma_swipeTutorialSeen`) als erledigt gespeichert. Danach gibt es keine sichtbaren Richtungspfeile oder dauerhaftes Erklärungspanel; alle Gesten funktionieren direkt auf der Fotokarte. Die diskrete Textoption **Anleitung erneut anzeigen** öffnet den Lernmodus bei Bedarf. Auf Desktop funktionieren zusätzlich die Pfeiltasten.
+
+Die Beispielbilder sind echte Stockfotografien von Unsplash, **keine Fotos tatsächlicher Luma-Verkäuferangebote**. Die Einträge und Preise sind Demoangaben. Für die produktive Nutzung sind eigene Inseratbilder, Moderation und die Firebase-Einrichtung erforderlich.
