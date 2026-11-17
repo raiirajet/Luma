@@ -1,109 +1,60 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#142827">
-  <meta name="description" content="Luma – entdecke, verkaufe und finde besondere Dinge in Südosteuropa. Mehrsprachiger Marktplatz in Euro mit Swipe-Entdeckung.">
-  <meta property="og:title" content="Luma – Entdecke mehr. Verkaufe einfach.">
-  <meta property="og:description" content="Ein Marktplatz für den Balkan, Griechenland und die Türkei. Entdecke Angebote in deiner Sprache.">
-  <meta property="og:type" content="website">
-  <title>Luma · Entdecke mehr. Verkaufe einfach.</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <script defer src="config.js"></script>
-  <script defer type="module" src="app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e2330">
+<meta name="description" content="Luma Auto – Autos suchen, vergleichen und verkaufen in Südosteuropa. Fahrzeugmarkt mit Europreisen.">
+<meta property="og:title" content="Luma Auto – Dein nächstes Auto wartet.">
+<meta property="og:description" content="Autos entdecken und verkaufen in Südosteuropa.">
+<meta property="og:type" content="website">
+<title>Luma Auto · Dein nächstes Auto wartet.</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<script defer src="config.js"></script>
+<script type="module" defer src="app.js"></script>
 </head>
 <body>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <header class="topbar">
-    <div class="container head-content">
-      <button class="logo" id="homeBtn" data-i18n-aria="goHome" aria-label="Startseite"><span class="logo-mark">✳</span><span>luma<span class="logo-dot">.</span></span></button>
-      <nav class="desktop-nav" data-i18n-aria="mainNavigation" aria-label="Hauptnavigation"><button class="nav-link active" data-view="discover" data-i18n="discover">Entdecken</button><button class="nav-link" data-view="swipe" data-i18n="swipe">Swipe</button><button class="nav-link" data-view="saved" data-i18n="saved">Merkliste</button><button class="nav-link" data-view="mine" data-i18n="myAds">Meine Anzeigen</button><button class="nav-link" data-view="dashboard" data-i18n="dashboard">Dashboard</button></nav>
-      <div class="head-actions">
-        <label class="sr-only" for="language" data-i18n="language">Sprache</label><select id="language" class="lang-select" data-i18n-aria="language" aria-label="Sprache"></select>
-        <button id="loginBtn" class="account-btn"><span class="account-symbol">◯</span><span id="accountLabel" data-i18n="login">Anmelden</span></button>
-        <button class="account-settings" id="dashboardBtn" data-i18n-aria="dashboard" aria-label="Dashboard" title="Dashboard">⚙</button><button class="btn btn-coral header-sell" id="sellBtn"><span>＋</span><span data-i18n="sell">Inserieren</span></button>
-      </div>
-    </div>
-  </header>
-  <main>
-    <div id="discoverView">
-      <section class="hero" aria-labelledby="heroTitle">
-        <div class="container hero-inner">
-          <div class="hero-text">
-            <div class="eyebrow"><span class="eyebrow-dot"></span><span data-i18n="eyebrow">DEIN MARKTPLATZ FÜR SÜDOSTEUROPA</span></div>
-            <h1 id="heroTitle"><span data-i18n="hero1">Finde, was du</span><br><em data-i18n="hero2">wirklich liebst.</em></h1>
-            <p data-i18n="heroSub">Von Ljubljana bis Istanbul. Entdecke einzigartige Angebote, verkaufe unkompliziert und finde dein nächstes Lieblingsstück.</p>
-            <form id="heroSearch" class="search-shell" role="search">
-              <span class="search-icon">⌕</span><label class="sr-only" for="searchInput" data-i18n="search">Suchen</label><input id="searchInput" type="search" placeholder="Was suchst du?" autocomplete="off" maxlength="100">
-              <button class="btn btn-coral search-button" type="submit" data-i18n="search">Suchen</button>
-            </form>
-            <div class="hero-pills"><span class="popular-title" data-i18n="trending">Beliebt:</span><button data-tag="iPhone">iPhone</button><button data-tag="Auto" data-i18n="popularCar">Auto</button><button data-tag="Apartment" data-i18n="popularApartment">Wohnung</button><button data-tag="Fahrrad" data-i18n="popularBike">Fahrrad</button></div>
-          </div>
-          <div class="hero-visual" aria-hidden="true">
-            <div class="hero-orb"></div>
-            <div class="hero-photo big-photo"><img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=760&auto=format&fit=crop&q=80" alt="" loading="eager"></div>
-            <div class="hero-photo small-photo"><img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=80" alt="" loading="eager"></div>
-            <div class="floating-tag tag-top"><span>✦</span> <span data-i18n="freshFinds">Neue Entdeckungen</span></div>
-            <div class="floating-tag tag-bottom"><span class="spark">♥</span> <span data-i18n="loveFind">Finde dein Lieblingsstück</span></div>
-          </div>
-        </div>
-      </section>
-      <section class="container content-section categories-block" aria-labelledby="categoriesTitle">
-        <div class="section-heading"><div><span class="section-kicker" data-i18n="explore">ENTDECKEN</span><h2 id="categoriesTitle" data-i18n="categoriesTitle">Was interessiert dich?</h2></div><button id="showAllCategories" class="text-link" data-i18n="allCategories">Alle Kategorien ↗</button></div>
-        <div class="categories-grid" id="categoryGrid"></div>
-      </section>
-      <section class="container content-section listing-section" id="listingsSection" aria-labelledby="listingsTitle">
-        <div class="section-heading listings-heading"><div><span class="section-kicker" data-i18n="handpicked">FÜR DICH</span><h2 id="listingsTitle" data-i18n="listingsTitle">Frisch entdeckt</h2></div><div class="heading-ops"><span class="count" id="resultCount"></span><button class="btn btn-plain" id="saveSearchBtn">☆ <span data-i18n="saveSearch">Suche speichern</span></button></div></div>
-        <div class="filter-bar">
-          <label><span data-i18n="category">Kategorie</span><select id="categoryFilter"></select></label>
-          <label><span data-i18n="minPrice">Preis ab €</span><input id="minPrice" type="number" min="0" inputmode="numeric" placeholder="0"></label>
-          <label><span data-i18n="maxPrice">Preis bis €</span><input id="maxPrice" type="number" min="0" inputmode="numeric" placeholder="∞"></label>
-          <label><span data-i18n="sort">Sortieren</span><select id="sortFilter"><option value="latest" data-i18n="newest">Neueste</option><option value="priceLow" data-i18n="priceLow">Preis ↑</option><option value="priceHigh" data-i18n="priceHigh">Preis ↓</option></select></label>
-          <button class="clear-filters" id="clearFilters" data-i18n="clear">Zurücksetzen</button>
-        </div>
-        <div class="listing-grid" id="listingGrid"></div>
-        <div class="empty-state hidden" id="noResults"><div class="empty-icon">⌕</div><h3 data-i18n="noResults">Keine passenden Anzeigen gefunden.</h3><p data-i18n="noResultsText">Versuche andere Suchbegriffe oder Filter.</p><button class="btn btn-dark" id="resetEmpty" data-i18n="clear">Zurücksetzen</button></div>
-      </section>
-      <section class="container discover-banner"><div><div class="eyebrow light-eyebrow">✦ LUMA SWIPE</div><h2 data-i18n="swipeCall">Stöbern war noch nie so intuitiv.</h2><p data-i18n="swipeCallSub">Wische durch spannende Angebote. Ein nächster Fund ist nur einen Swipe entfernt.</p><button class="btn btn-cream" data-view="swipe" data-i18n="trySwipe">Swipe entdecken →</button></div><div class="banner-photo" aria-hidden="true"><img src="https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?w=520&auto=format&fit=crop&q=85" alt="" loading="lazy"></div></section>
-    </div>
-    <section class="hidden swipe-fullscreen" id="swipeView" aria-label="Luma Swipe">
-      <div class="swipe-card" id="swipeCard" tabindex="0" role="group" data-i18n-aria="swipeCardLabel" aria-label="Angebot durch Wischen entdecken"></div>
-      <button type="button" class="swipe-overlay-home" id="swipeHomeBtn" data-i18n-aria="goHome" title="Startseite" aria-label="Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></button>
-      <button type="button" class="swipe-overlay-favorite" id="swipeQuickFavorite" data-i18n-aria="addFavorite" aria-label="Als Favorit speichern">♡</button>
-      <button type="button" id="showSwipeTutorial" class="swipe-overlay-help" data-i18n-aria="swipeShowTutorial" aria-label="Anleitung erneut anzeigen">ⓘ</button>
-      <div class="swipe-tutorial hidden" id="swipeTutorial" role="dialog" aria-modal="true" aria-labelledby="swipeTutorialTitle" aria-hidden="true">
-        <div class="swipe-tutorial-panel">
-          <div class="swipe-tutorial-badge">✳ LUMA SWIPE</div>
-          <h3 id="swipeTutorialTitle" data-i18n="howSwipe">So funktioniert Luma Swipe</h3>
-          <p class="swipe-tutorial-subtitle" data-i18n="swipeTutorialIntro">Vier einfache Gesten – danach kannst du direkt loslegen.</p>
-          <div class="swipe-tutorial-grid">
-            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">←</span><div><strong data-i18n="swipeNext">Weiter</strong><small data-i18n="swipeNextSub">Nächstes Angebot</small></div></div>
-            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">→</span><div><strong data-i18n="swipeOpen">Öffnen</strong><small data-i18n="swipeOpenSub">Artikel ansehen</small></div></div>
-            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">↑</span><div><strong data-i18n="swipeDetails">Details</strong><small data-i18n="swipeDetailsSub">Alle Informationen</small></div></div>
-            <div class="swipe-tutorial-direction"><span class="swipe-tutorial-arrow">↓</span><div><strong data-i18n="swipeSimilar">Ähnliches</strong><small data-i18n="swipeSimilarSub">Gleiche Kategorie</small></div></div>
-          </div>
-          <button type="button" class="btn btn-coral swipe-tutorial-start" id="swipeTutorialDone" data-i18n="swipeStart">Verstanden, los geht's!</button>
-          <small class="swipe-tutorial-tip" data-i18n="swipeOnce">Die Erklärung wird nur beim ersten Mal automatisch angezeigt.</small>
-        </div>
-      </div>
-    </section>
-    <section class="container content-section hidden page-section" id="savedView"><div class="section-heading"><div><span class="section-kicker" data-i18n="yourCollection">DEINE SAMMLUNG</span><h2 data-i18n="saved">Merkliste</h2></div></div><div id="savedGrid" class="listing-grid"></div><h3 class="subheading" data-i18n="savedSearches">Gespeicherte Suchen</h3><div id="searchesList" class="saved-search-list"></div></section>
-    <section class="container content-section hidden page-section" id="dashboardView">
-      <div class="section-heading"><div><span class="section-kicker" data-i18n="accountSettings">PERSÖNLICHE EINSTELLUNGEN</span><h2 data-i18n="dashboard">Dashboard</h2></div></div>
-      <div class="dashboard-card">
-        <div class="dashboard-heading"><div><h3 data-i18n="searchRegionTitle">In welchen Ländern möchtest du suchen?</h3><p data-i18n="searchRegionSubtitle">Wähle ein oder mehrere Länder. Deine Auswahl gilt automatisch für Entdecken und Swipe.</p></div><span class="dashboard-globe">🌍</span></div>
-        <button type="button" id="chooseAllCountries" class="dashboard-all" data-i18n="allCountries">Alle Länder</button>
-        <div id="dashboardCountries" class="dashboard-countries" role="group" data-i18n-aria="searchRegionTitle" aria-label="Suchländer auswählen"></div>
-        <div class="dashboard-actions"><button class="btn btn-coral" id="savePreferences" data-i18n="saveSettings">Einstellungen speichern</button><p id="dashboardSaveStatus" role="status"></p></div>
-        <p id="dashboardAccountHint" class="dashboard-hint" data-i18n="guestPreferences">Ohne Anmeldung wird diese Auswahl nur auf diesem Gerät gespeichert. Mit deinem Konto wird sie synchronisiert.</p>
-      </div>
-    </section>
-    <section class="container content-section hidden page-section" id="mineView"><div class="section-heading"><div><span class="section-kicker" data-i18n="yourListings">DEINE ANGEBOTE</span><h2 data-i18n="myAds">Meine Anzeigen</h2></div><button class="btn btn-coral" id="mineSellBtn" data-i18n="sell">Inserieren</button></div><div id="mineGrid" class="listing-grid"></div></section>
-  </main>
-  <footer class="footer"><div class="container footer-grid"><div><div class="footer-logo">✳ luma.</div><p data-i18n="footerDescription">Entdecke den Balkan, Griechenland und die Türkei – ein Angebot nach dem anderen.</p></div><div><h4 data-i18n="marketplace">Marktplatz</h4><button data-view="discover" data-i18n="discover">Entdecken</button><button data-view="swipe">Luma Swipe</button><button id="footerSell" data-i18n="sell">Inserieren</button><button data-view="dashboard" data-i18n="dashboard">Dashboard</button></div><div><h4 data-i18n="info">Informationen</h4><button id="safetyInfo" data-i18n="safeTrading">Sicher handeln</button><button id="privacyInfo" data-i18n="privacy">Datenschutz</button><button id="contactInfo" data-i18n="contact">Kontakt</button></div><div><h4 data-i18n="regions">Regionen</h4><p data-i18n="regionDescription">Entdecke Angebote aus Südosteuropa. Deine Suchländer stellst du im Dashboard ein.</p><small data-i18n="footerNote">Vorschau mit Beispieldaten. Keine echten Verkaufsangebote.</small></div></div><div class="container footer-bottom">© 2026 Luma. <span data-i18n="tagline">Made for more.</span> <span data-i18n="demoDisclaimer">Demoversion – Backend noch konfigurieren.</span></div></footer>
-  <nav class="mobile-nav" data-i18n-aria="mobileNavigation" aria-label="Mobile Navigation"><button data-view="discover"><span>⌂</span><small data-i18n="discover">Entdecken</small></button><button data-view="swipe"><span>⇄</span><small>Swipe</small></button><button id="mobileSell"><span class="mobile-plus">+</span><small data-i18n="sell">Inserieren</small></button><button data-view="saved"><span>♡</span><small data-i18n="saved">Merkliste</small></button><button data-view="mine"><span>▤</span><small data-i18n="myAds">Meine Anzeigen</small></button><button data-view="dashboard"><span>⚙</span><small data-i18n="dashboard">Dashboard</small></button></nav>
-  <div class="modal-overlay hidden" id="modalOverlay" aria-hidden="true"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-head"><h2 id="modalTitle"></h2><button id="modalClose" class="icon-button" data-i18n-aria="close" aria-label="Schliessen">✕</button></div><div id="modalBody"></div></section></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<header class="site-header" id="siteHeader"><div class="wrap head-row">
+<button class="brand" id="brandBtn" aria-label="Luma Auto"><span class="brand-emblem">✳</span><span>luma<span class="brand-accent">.</span><small>AUTO</small></span></button>
+<nav class="main-nav" aria-label="Navigation">
+<button class="nav-link is-active" data-view="home" data-i18n="carsNav">Autos finden</button>
+<button class="nav-link" data-view="swipe" data-i18n="swipe">Swipe</button>
+<button class="nav-link" data-view="favorites" data-i18n="saved">Merkliste</button>
+<button class="nav-link" data-view="mine" data-i18n="myAds">Meine Inserate</button>
+</nav>
+<div class="header-right"><label for="language" class="sr-only" data-i18n="language">Sprache</label><select id="language" class="language-select" aria-label="Sprache"></select><button id="settingsBtn" class="icon-btn" aria-label="Suchländer einstellen" data-i18n-aria="personalSettings">⚙</button><button id="loginBtn" class="signin-btn" data-i18n="login">Anmelden</button><button id="sellBtn" class="primary-btn sell-header" data-i18n="sellCar">Auto verkaufen</button></div>
+</div></header>
+<main>
+<section id="homeView">
+<section class="hero"><div class="hero-picture" aria-hidden="true"></div><div class="hero-overlay"></div><div class="wrap hero-content"><div class="hero-copy"><div class="pill-eyebrow"><span class="live-indicator"></span><span data-i18n="heroEyebrow">DEIN AUTOMARKT FÜR SÜDOSTEUROPA</span></div><h1><span data-i18n="heroTitle1">Dein nächstes Auto.</span><br><em data-i18n="heroTitle2">Deine nächste Freiheit.</em></h1><p data-i18n="heroDescription">Finde Fahrzeuge in deiner Region oder über Ländergrenzen hinweg. Einfach suchen, vergleichen und direkt Kontakt aufnehmen.</p></div></div></section>
+<div class="wrap search-wrap" id="searchAnchor"><form class="search-panel" id="searchForm" role="search"><div class="search-top"><div><span class="overline" data-i18n="carSearch">FAHRZEUGSUCHE</span><h2 data-i18n="findCar">Finde das Auto, das zu dir passt.</h2></div><button type="button" id="saveSearchBtn" class="outline-btn compact-btn">☆ <span data-i18n="saveSearch">Suche speichern</span></button></div>
+<div class="search-grid">
+<label class="search-field wide-field"><span data-i18n="searchTerms">Suche nach Marke oder Modell</span><input id="keyword" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Golf, A4, BMW" data-i18n-placeholder="keywordExample"></label>
+<label class="search-field"><span data-i18n="make">Marke</span><select id="make"></select></label>
+<label class="search-field"><span data-i18n="model">Modell</span><select id="model"></select></label>
+<label class="search-field"><span data-i18n="priceTo">Preis bis (€)</span><input id="priceTo" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Max. €"></label>
+<label class="search-field"><span data-i18n="yearFrom">Erstzulassung ab</span><select id="yearFrom"></select></label>
+<label class="search-field"><span data-i18n="mileageTo">Kilometer bis</span><select id="mileageTo"></select></label>
+<button class="primary-btn search-main" type="submit"><span class="magnify">⌕</span><span data-i18n="showResults">Fahrzeuge anzeigen</span><b id="heroCount">12</b></button>
+</div>
+<div class="filter-ext"><button type="button" class="link-btn" id="advancedToggle"><span>☷</span> <span data-i18n="moreFilters">Weitere Filter</span><span id="filterChevron">⌄</span></button><button type="button" class="link-btn faint" id="clearAll" data-i18n="resetFilters">Filter zurücksetzen</button></div>
+<div class="advanced hidden" id="advancedFilters"><label class="search-field"><span data-i18n="fuel">Kraftstoff</span><select id="fuel"></select></label><label class="search-field"><span data-i18n="transmission">Getriebe</span><select id="transmission"></select></label><label class="search-field"><span data-i18n="body">Karosserie</span><select id="body"></select></label><label class="search-field"><span data-i18n="sellerType">Anbieter</span><select id="sellerType"></select></label><label class="search-field"><span data-i18n="priceFrom">Preis ab (€)</span><input id="priceFrom" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Min. €"></label><label class="search-field"><span data-i18n="yearTo">Erstzulassung bis</span><select id="yearTo"></select></label></div>
+</form></div>
+<section class="wrap main-content" id="resultsSection"><div class="section-intro"><div><div class="overline dark-overline" data-i18n="featuredCars">FAHRZEUGE ENTDECKEN</div><h2 data-i18n="latestCars">Aktuelle Fahrzeugangebote</h2><p class="muted-copy" data-i18n="demoNotice">Beispielfahrzeuge mit Symbolfotos – keine echten Verkaufsangebote.</p></div><div class="result-ops"><span id="resultCount" class="result-count"></span><label for="sort" class="sr-only" data-i18n="sort">Sortieren</label><select id="sort" class="sort-select"></select></div></div>
+<div class="body-quick" id="bodyQuick"><button data-body="" class="quick-card is-selected"><span>🚙</span><b data-i18n="allCars">Alle Autos</b></button><button data-body="suv" class="quick-card"><span>🚘</span><b data-i18n="suv">SUV</b></button><button data-body="sedan" class="quick-card"><span>🚗</span><b data-i18n="sedan">Limousine</b></button><button data-body="wagon" class="quick-card"><span>🚐</span><b data-i18n="wagon">Kombi</b></button><button data-body="hatchback" class="quick-card"><span>🚕</span><b data-i18n="hatchback">Kompakt</b></button><button data-body="coupe" class="quick-card"><span>🏎️</span><b data-i18n="coupe">Coupé</b></button></div>
+<div id="carGrid" class="car-grid"></div><div id="emptyResults" class="empty-panel hidden"><span>⌕</span><h3 data-i18n="emptyCars">Keine passenden Fahrzeuge gefunden.</h3><p data-i18n="adjustSearch">Ändere die Filter oder erweitere die Suchländer in den Einstellungen.</p><button class="primary-btn" id="resetEmpty" data-i18n="resetFilters">Filter zurücksetzen</button></div></section>
+<section class="wrap value-strip"><div><span class="value-icon">◎</span><strong data-i18n="localSearch">Grenzenlos suchen</strong><p data-i18n="localSearchDesc">Deine Suchländer bestimmst du selbst.</p></div><div><span class="value-icon">♡</span><strong data-i18n="saveFavourites">Favoriten speichern</strong><p data-i18n="saveFavouritesDesc">Vergleiche interessante Autos später.</p></div><div><span class="value-icon">↗</span><strong data-i18n="simpleContact">Direkter Kontakt</strong><p data-i18n="simpleContactDesc">Schreibe Verkäufer direkt an.</p></div></section>
+<section class="wrap swipe-promo"><div><span class="overline">LUMA DRIVE</span><h2 data-i18n="swipePromo">Fahrzeuge entdecken. Einfach wischen.</h2><p data-i18n="swipePromoDesc">Swipe durch Autos statt durch endlose Listen.</p><button class="white-btn" data-view="swipe" data-i18n="trySwipe">Swipe entdecken →</button></div><div class="promo-art" aria-hidden="true">✳</div></section>
+</section>
+<section id="swipeView" class="swipe-full hidden" aria-label="Luma Drive"><div id="swipeCard" class="swipe-photo" tabindex="0" role="group" aria-label="Fahrzeug mit Wischgeste entdecken"></div><button id="swipeHome" class="swipe-home" aria-label="Zur Startseite" title="Home">⌂</button><button id="swipeFavorite" class="swipe-heart" aria-label="Als Favorit speichern">♡</button><button id="swipeHelp" class="swipe-help" aria-label="Swipe-Anleitung anzeigen">ⓘ</button><div id="swipeTutorial" class="swipe-tutorial hidden"><div class="swipe-instruction"><span class="overline">LUMA DRIVE</span><h2 data-i18n="howSwipe">So funktioniert Luma Swipe</h2><p data-i18n="swipeTeach">Vier Gesten – danach siehst du nur das Fahrzeug.</p><div class="gesture-grid"><div><b>←</b><span data-i18n="swipeNext">Weiter</span></div><div><b>→</b><span data-i18n="swipeOpen">Öffnen</span></div><div><b>↑</b><span data-i18n="swipeDetails">Details</span></div><div><b>↓</b><span data-i18n="swipeSimilar">Ähnliche</span></div></div><button id="swipeDone" class="primary-btn full-width" data-i18n="swipeStart">Verstanden, los geht's!</button></div></div></section>
+<section class="wrap subpage hidden" id="favoritesView"><div class="section-intro"><div><span class="overline dark-overline" data-i18n="yourCollection">DEINE SAMMLUNG</span><h2 data-i18n="savedCars">Gemerkte Fahrzeuge</h2></div></div><div id="favoritesGrid" class="car-grid"></div></section>
+<section class="wrap subpage hidden" id="mineView"><div class="section-intro"><div><span class="overline dark-overline" data-i18n="myAds">Meine Inserate</span><h2 data-i18n="myVehicles">Meine Fahrzeuge</h2></div><button class="primary-btn" id="mineSell" data-i18n="sellCar">Auto verkaufen</button></div><div id="mineGrid" class="car-grid"></div></section>
+<section class="wrap subpage hidden" id="settingsView"><div class="section-intro"><div><span class="overline dark-overline" data-i18n="settings">EINSTELLUNGEN</span><h2 data-i18n="searchRegions">Meine Suchländer</h2><p class="muted-copy" data-i18n="regionHint">Wähle aus, in welchen Ländern du Autos finden möchtest. Keine Auswahl bedeutet: alle Länder.</p></div></div><div class="settings-layout"><div class="settings-card"><div class="settings-card-head"><h3 data-i18n="searchRegions">Meine Suchländer</h3><button id="allCountries" class="outline-btn" data-i18n="allCountries">Alle Länder</button></div><div id="countryChoices" class="country-choices"></div><button id="saveCountries" class="primary-btn" data-i18n="saveSettings">Einstellungen speichern</button><p class="muted-copy" id="prefsStatus"></p></div><div class="settings-card"><h3 data-i18n="savedSearches">Gespeicherte Suchen</h3><div id="savedSearchesList"></div><h3 class="settings-language-title" data-i18n="language">Sprache</h3><p class="muted-copy" data-i18n="languageHint">Die Sprache änderst du oben rechts.</p><p class="muted-copy" id="accountStatus"></p></div></div></section>
+</main>
+<footer class="site-footer"><div class="wrap footer-layout"><div><div class="brand footer-brand"><span class="brand-emblem">✳</span>luma<span class="brand-accent">.</span><small>AUTO</small></div><p data-i18n="footerCar">Dein Automarkt für Südosteuropa.</p></div><div class="footer-links"><button data-view="home" data-i18n="carsNav">Autos finden</button><button data-view="settings" data-i18n="settings">Einstellungen</button><button id="footerSafety" data-i18n="safeTrading">Sicher handeln</button><button id="footerPrivacy" data-i18n="privacy">Datenschutz</button></div><small data-i18n="demoNotice">Beispielfahrzeuge mit Symbolfotos – keine echten Verkaufsangebote.</small></div></footer>
+<nav class="mobile-nav" aria-label="Mobile Navigation"><button data-view="home"><span>⌕</span><small data-i18n="carsNav">Autos finden</small></button><button data-view="favorites"><span>♡</span><small data-i18n="saved">Merkliste</small></button><button data-view="swipe"><span>✦</span><small>Swipe</small></button><button data-view="settings"><span>⚙</span><small data-i18n="settings">Einstellungen</small></button></nav>
+<div id="modal" class="modal-wrap hidden" role="presentation"><div class="modal-backdrop" data-close="true"></div><div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="modalClose" class="modal-close" aria-label="Schliessen">×</button><div id="modalContent"></div></div></div>
 </body>
 </html>

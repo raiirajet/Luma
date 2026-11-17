@@ -1,40 +1,26 @@
-# Luma — Southeast Europe marketplace
+# Luma Auto · Autoverkaufsportal für Südosteuropa
 
-Responsive static website and Firebase-powered multilingual classifieds marketplace.
+Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwagen-Marktplatz** umgestaltet. Das Design ist eigenständig und orientiert sich bei den Suchabläufen an gängigen Fahrzeugbörsen, ohne Branding oder Gestaltung eines konkreten Wettbewerbers zu kopieren.
 
-**Countries:** Albania, Türkiye, Greece, Serbia, Slovenia, Kosovo, North Macedonia, Croatia, Bosnia and Herzegovina, Montenegro, Bulgaria and Romania. **Currency:** EUR. **Languages:** German, English, Albanian, Turkish, Greek, Serbian Latin/Cyrillic, Slovenian, Croatian, Macedonian, Bosnian, Montenegrin, Bulgarian and Romanian.
+## Funktionen
 
-## Included
+- Responsive Auto-Startseite mit **Marke, Modell, Preis, Erstzulassung, Kilometer, Kraftstoff, Getriebe, Karosserie, Verkäuferart**.
+- 12 Suchländer im Nutzer-Dashboard (lokal für Gäste; Firebase-Profil für eingeloggte Nutzer).
+- 14 Sprachen: Deutsch, Englisch, Albanisch, Türkisch, Griechisch, Serbisch Latein/Kyrillisch, Slowenisch, Kroatisch, Mazedonisch, Bosnisch, Montenegrinisch, Bulgarisch, Rumänisch.
+- EUR-Preise, Filter, Sortierung, gespeicherte Suchen, Favoriten, Detailansicht mit technischen Daten und Bildernavigation.
+- Vollbild-Fahrzeug-Swipe mit Home oben rechts, Favorit unten rechts und einmaliger Einführung.
+- Firebase Email/Password und Bestätigungs-E-Mail, Fahrzeug-Inserate und Fotouploads, Verwaltung und Löschung eigener Inserate. Funktionen sind gesperrt, solange Firebase nicht eingerichtet ist.
+- 12 klar als **Demos** gekennzeichnete Autos mit externen, echten Unsplash-Stockfotos. **Die Bilder stellen nicht die angegebenen Beispielmodelle dar.** Es handelt sich um keine echten Kaufangebote und keine aktuellen Marktpreise.
 
-- Responsive homepage, country picker, 15 prefilled categories, full-text search across loaded listings, EUR price filters and sorting.
-- Swiping interface with touch/pointer gestures and arrow keys: left = next; right = quick view; up = details; down = similar category.
-- Favorites, saved searches, detail pages, seller email contacts, listing publishing and deleting.
-- Demo inventory clearly labelled as **sample ads**, even after Firebase is configured.
-- Firebase Authentication with sign-up, email verification, login, password reset and sign-out.
-- Firestore listings and user-scoped saved searches/favorites; Firebase Storage images up to 6 photos/5 MB each.
-- Firestore and Storage rule sets. GitHub Pages auto-deploy workflow.
+## Firebase aktivieren
 
-## What is NOT live by default
+1. Firebase-Projekt und Web-App anlegen. Die **öffentliche** Konfiguration in `config.js` eintragen. Keine Service-Account-Schlüssel einchecken.
+2. Firebase Authentication → E-Mail/Passwort aktivieren, E-Mail-Verifizierung einstellen und die GitHub-Pages-Domain autorisieren.
+3. Firestore und Storage aufsetzen und Regeln `firestore.rules` und `storage.rules` nach Emulator-Tests anwenden.
+4. **Wichtig:** Firestore-Regeln schränken neue Anzeigen auf Kategorie `vehicles` und Fahrzeugdaten ein. Bestehende Nicht-Auto-Anzeigen aus älteren Luma-Versionen werden in der neuen Oberfläche ausgefiltert. Daten werden nicht gelöscht.
+5. Erst nach Moderation, Rechts- und Datenschutzprüfung sowie Schutz gegen Betrug öffentlich zum Handel freigeben.
 
-This first release is an **interactive preview** until you configure your own Firebase web app. Signup, posting and account features are deliberately disabled without Firebase rather than mimicked as real registrations. The initial photos/listings are sample content and are not real sellers. Marketplace-style translation covers navigation and core interactions; longer editorial copy and certain notices require editorial localization before commercial launch. User-written listing descriptions are *not* translated automatically.
-
-## Firebase setup
-
-1. Create a Firebase project; register a web app and copy its Firebase web config to `config.js` by replacing `null`. This config is public, but **never** put service-account credentials or other secrets in the repository.
-2. Under Authentication → Sign-in method, enable **Email/Password** and enable email verification flow. Add the final site domain to Authentication → Authorized domains. Configure email templates and a sender domain.
-3. Create **Cloud Firestore (production mode)** and **Firebase Storage** in an appropriate supported region. Apply `firestore.rules` and `storage.rules` using the Firebase Console or CLI. Do **not** run public test-mode rules. If your project's storage bucket was created after Firebase changed its default plan requirements, verify required billing settings.
-4. Validate rules in Firebase Emulator Suite, including unverified users, other people's listings and unauthorized storage paths. Then test sign-up, email verification, posting, deletion and cross-account access.
-5. Add platform documents (terms, privacy policy, legal/operator contact) before public launch. Set up abuse reports, moderation, illegal-content removal, seller verification, legal compliance and safe transaction guidance.
-
-### CLI deploy rules (run from a cloned local repository)
-
-Create or update `firebase.json` locally if needed:
-
-```json
-{"firestore":{"rules":"firestore.rules"},"storage":{"rules":"storage.rules"}}
-```
-
-Then:
+**CLI zum späteren Aktivieren der Sicherheitsregeln:**
 
 ```bash
 firebase login
@@ -42,43 +28,20 @@ firebase use YOUR_PROJECT_ID
 firebase deploy --only firestore:rules,storage
 ```
 
-### GitHub Pages publishing
+Mit GitHub Actions ist das statische Frontend für GitHub Pages konfiguriert (`.github/workflows/pages.yml`). Ein Push nach `main` löst die Veröffentlichung aus.
 
-The included `.github/workflows/pages.yml` deploys on every push to `main`. In GitHub navigate **Settings → Pages → Build and deployment → Source: GitHub Actions**, then open **Actions** to check the workflow. The expected URL is `https://raiirajet.github.io/Luma/` only once Pages has been enabled and deployment has succeeded.
+## Lokal starten
 
-Local preview: serve the repository folder with a static HTTP server (ES modules will not run reliably under `file://`), for example `python3 -m http.server 8080`, then browse `http://localhost:8080`.
+```bash
+python3 -m http.server 8080
+# http://localhost:8080/
+```
 
-## Next release recommendations
+Diese Web-App verwendet ES-Module und benötigt daher einen lokalen HTTP-Server. Die separate `preview.html` ist als einzelne Datei auch direkt im Browser aufrufbar.
 
-- Server-side geospatial and category indexes, pagination, multilingual search and transliteration (the current search filters up to 200 downloaded ads).
-- Stronger photo upload safety checks, image scanning, moderation and deletion of orphaned images.
-- Buyer/seller in-app messaging, notification subscriptions, following sellers and anti-fraud protections.
-- Currency displays in EUR with optional local-currency conversion using verified daily FX rates; cross-border payment and shipping options.
-- Accessibility audit and manual review of every locale; localized legal terms and country-specific listing policies.
-- Verification and moderation for cars, property, jobs, pets and other regulated/restricted listing types.
+## Grenzen
 
-## Project structure
-
-- `index.html`: semantic web UI.
-- `styles.css`: responsive design system.
-- `app.js`: marketplace interactions and Firebase integration.
-- `i18n.js`: regional languages and category translations.
-- `config.js`: public Firebase web configuration placeholder.
-- `firestore.rules` and `storage.rules`: production-intent access controls (must be tested before rollout).
-- `.github/workflows/pages.yml`: static hosting workflow.
-
-### Luma Swipe – Einmaliges Onboarding
-
-Beim ersten Öffnen von **Swipe** zeigt Luma eine kurze Anleitung für vier Gesten (links: weiter; rechts: öffnen; hoch: Details; runter: ähnliche). Mit **Verstanden, los geht's!** wird die Anleitung geschlossen und per `localStorage` (`luma_swipeTutorialSeen`) als erledigt gespeichert. Danach gibt es keine sichtbaren Richtungspfeile oder dauerhaftes Erklärungspanel; alle Gesten funktionieren direkt auf der Fotokarte. Die diskrete Textoption **Anleitung erneut anzeigen** öffnet den Lernmodus bei Bedarf. Auf Desktop funktionieren zusätzlich die Pfeiltasten.
-
-Die Beispielbilder sind echte Stockfotografien von Unsplash, **keine Fotos tatsächlicher Luma-Verkäuferangebote**. Die Einträge und Preise sind Demoangaben. Für die produktive Nutzung sind eigene Inseratbilder, Moderation und die Firebase-Einrichtung erforderlich.
-
-
-## Version 1.2 — persönliche Suchländer, Swipe-Vollbild, vollständige Oberflächenlokalisierung
-
-- **Startseite:** Länderstreifen und Länderfilter entfernt. Die Suche richtet sich nach persönlichen Ländern.
-- **Dashboard:** Über Zahnrad in der Kopfzeile, über die Navigation oder unten in der mobilen Navigation erreichbar. Mehrfachauswahl der 12 Länder, `Alle Länder` als Standard. Auswahl wirkt in Entdecken und Swipe. `Einstellungen speichern` speichert lokal für Gäste bzw. in `users/{uid}/data/preferences` bei angemeldeten Nutzern.
-- **Swipe:** randloses Vollbild mit Foto, Home-Symbol rechts oben, schnellem Favoritenherz rechts unten, optionaler Hilfe links unten. Vier Gesten bleiben aktiv; Erklärung erscheint automatisch nur bei der ersten Nutzung.
-- **14 Sprachen:** Übersetzungsdatei `translations-extra.js` deckt zusätzliche Marketing-, Dashboard-, Dialog-, Fehler- und Zugänglichkeits-Texte vollständig ab. Demoartikel besitzen lokalisierte Titel und Beschreibungen. Eigene Angebote anderer Benutzer werden unverändert in der Sprache des Verfassers angezeigt; für automatische Übersetzungen fremdsprachiger Live-Anzeigen wird später ein separater Übersetzungsdienst benötigt.
-- **Firebase:** Neue Firestore-Regel für `users/{uid}/data/preferences` enthalten. Diese Regel muss separat ausgerollt werden. Ohne konfigurierte Firebase-App bleiben Benutzeranmeldung und kontenübergreifende Synchronisation deaktiviert; Gästepräferenzen funktionieren lokal.
-- **Lokale Vorschau:** `preview.html` ist eine eigenständig öffnende HTML-Vorschau ohne Build-Schritte, mit realen Fotos von Unsplash und klar gekennzeichneten Demoangeboten.
+- Keine funktionierende Benutzerregistrierung und keine realen Uploads, solange `config.js` ohne Firebase-Konfiguration bleibt.
+- Keine echte Händlerprüfung, Finanzierung, Zahlungsabwicklung, Fahrzeughistorie oder automatische Angebotsübersetzung. Für diese Funktionen sind Dienste und Rechtsprüfung notwendig.
+- Suche basiert aktuell auf den geladenen Inseraten (bis 300 Firestore-Dokumente); für Produktion werden serverseitige Pagination, Suche und Anti-Spam-Moderation benötigt.
+- Originaltexte von Nutzern sind bewusst unverändert; ein Übersetzungsdienst wäre eine zukünftige Option.

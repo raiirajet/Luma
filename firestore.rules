@@ -4,22 +4,31 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function verified() { return signedIn() && request.auth.token.email_verified == true; }
     function owner(uid) { return signedIn() && request.auth.uid == uid; }
-    function validListing(data) {
-      return data.keys().hasAll(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt'])
-        && data.keys().hasOnly(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt'])
-        && data.uid is string && data.uid == request.auth.uid
-        && data.title is string && data.title.size() >= 5 && data.title.size() <= 110
-        && data.description is string && data.description.size() >= 15 && data.description.size() <= 3000
-        && data.city is string && data.city.size() >= 1 && data.city.size() <= 90
-        && data.contactEmail is string && data.contactEmail.size() <= 180
-        && data.price is int && data.price >= 0 && data.price <= 999999999
-        && data.category in ['vehicles','property','electronics','fashion','home','garden','kids','sports','jobs','services','pets','collectibles','music','tickets','other']
-        && data.country in ['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']
-        && data.condition in ['new','used']
-        && data.status in ['active','sold']
-        && data.image is string && data.image.size() > 0 && data.image.size() <= 2048
-        && data.images is list && data.images.size() >= 1 && data.images.size() <= 6
-        && data.createdAt is timestamp;
+    function validListing(d) {
+      return d.keys().hasAll(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType'])
+        && d.keys().hasOnly(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType'])
+        && d.uid is string && d.uid == request.auth.uid
+        && d.title is string && d.title.size() >= 5 && d.title.size() <= 110
+        && d.description is string && d.description.size() >= 15 && d.description.size() <= 3000
+        && d.city is string && d.city.size() >= 1 && d.city.size() <= 90
+        && d.contactEmail is string && d.contactEmail.size() <= 180
+        && d.price is int && d.price >= 1 && d.price <= 999999999
+        && d.category == 'vehicles'
+        && d.country in ['AL','TR','GR','RS','SI','XK','MK','HR','BA','ME','BG','RO']
+        && d.condition in ['new','used']
+        && d.status in ['active','sold']
+        && d.make is string && d.make.size() >= 2 && d.make.size() <= 35
+        && d.model is string && d.model.size() >= 1 && d.model.size() <= 65
+        && d.year is int && d.year >= 1950 && d.year <= 2027
+        && d.mileage is int && d.mileage >= 0 && d.mileage <= 1500000
+        && d.power is int && d.power >= 1 && d.power <= 2000
+        && d.fuel in ['petrol','diesel','hybrid','electric']
+        && d.transmission in ['manual','automatic']
+        && d.body in ['suv','sedan','wagon','hatchback','coupe']
+        && d.sellerType in ['privateSeller','dealer']
+        && d.image is string && d.image.size() > 0 && d.image.size() <= 2048
+        && d.images is list && d.images.size() >= 1 && d.images.size() <= 6
+        && d.createdAt is timestamp;
     }
     match /listings/{listingId} {
       allow read: if resource.data.status == 'active' || (signedIn() && resource.data.uid == request.auth.uid);
