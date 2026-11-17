@@ -90,3 +90,11 @@ body:has(#swipeView:not(.hidden)) .fab-add{display:none}
 
 /* Keep bottom navigation above content cards and below modal/FAB. */
 @media(max-width:760px){.mobile-nav{z-index:65;isolation:isolate}.fab-add{z-index:66}}
+/* Limba MVP 1.4: uniform owner actions and vehicle reports. */
+.my-car-item { min-width: 0; }
+.mine-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px 0 22px; }
+.mine-actions .outline-btn { min-height:42px; }
+.status-pill { font-size:12px; font-weight:700; border-radius:18px; color:#15384a; background:#eaf3fa; padding:9px 12px; }
+.listing-report { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding-top:12px; }
+.listing-report select { flex:1; min-width:175px; min-height:42px; padding:8px 12px; border:1px solid #c5d5dc; border-radius:9px; background:#fff; color:#122e3c; }
+@media (max-width:600px) { .mine-actions { gap:6px; } .mine-actions .outline-btn { flex:1 1 40%; } .listing-report button { flex:1 1 100%; } }
