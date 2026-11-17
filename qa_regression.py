@@ -128,9 +128,9 @@ with sync_playwright() as p:
   assert page.locator('#modal').is_hidden()
   assert page.locator('#swipeView').is_visible()
   page.locator('#swipeFavorite').click()
-  assert page.locator('#swipeFavorite').inner_text()=='♡'
+  assert not page.locator('#swipeFavorite').evaluate('(e) => e.classList.contains("active")')
   page.locator('#swipeFavorite').click()
-  assert page.locator('#swipeFavorite').inner_text()=='♥'
+  assert page.locator('#swipeFavorite').evaluate('(e) => e.classList.contains("active")')
   # Escape modal closes modal and retains swipe
   page.locator('#swipeCard').focus()
   page.keyboard.press('ArrowRight')

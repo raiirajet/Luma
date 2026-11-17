@@ -31,3 +31,10 @@ Image: [Joshua Spence, Nissan GT-R R35 Black Edition](https://commons.wikimedia.
 - Real Firebase email registration / verification, Firestore and Storage connected through the Android SDK with tested security rules.
 - Seller profiles, publishing and editing listings, picture picker, secure chat, moderation, paging, notifications, privacy and store signing.
 - Offline-first local persistence should be expanded to a structured database for many listings.
+
+## Android 1.1 – randfüllende Darstellung und Vektor-Icons
+
+- Android zeigt die **Statusleiste und Navigations-/Gestenleiste** weiterhin an. Die native Oberfläche nutzt `WindowInsets` und die Displayaussparung, damit die Bedienelemente auch auf Android 15/16 nicht verdeckt werden. Kein immersiver Modus.
+- 20+ skalierbare Android-VectorDrawables für Navigation, Swipe, Details und Aktionen – ohne ASCII-/Emoji-Symbole als Menü-Icons. Die Website verwendet dazu passende SVG-Icons.
+- 435 Marken im lokalen `brands.json`; für über 85 Hersteller sind hunderte Modellvorschläge hinterlegt. Unbekannte Modelle können eingegeben werden, ohne dass ein Server oder eine API nötig ist.
+- **Installationshinweis:** Diese Test-APK wird in GitHub Actions mit einem kurzlebigen Debug-Schlüssel signiert. Bei einer älteren Luma-Test-APK kann deshalb eine Deinstallation vor der Installation nötig sein. Für datenerhaltende Updates braucht die App eine dauerhafte Release-Signatur.

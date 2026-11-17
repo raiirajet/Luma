@@ -15,3 +15,27 @@
 
 .swipe-photo,.swipe-photo *{touch-action:none!important;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .swipe-full{overscroll-behavior:none}
+
+/* Real Lucide-style SVG icon system. No text glyphs in navigation. */
+.luma-sprite{position:absolute;width:0;height:0;overflow:hidden;pointer-events:none}
+.ui-icon{display:inline-block;flex:none;width:21px;height:21px;vertical-align:middle;color:inherit;stroke:currentColor;fill:none}
+.brand-emblem{display:inline-grid;place-items:center;width:31px;height:31px;line-height:1}.brand-emblem .ui-icon{width:29px;height:29px;color:var(--accent)}
+.nav-link{display:inline-flex;align-items:center;justify-content:center;gap:7px}.nav-link .ui-icon{width:18px;height:18px}
+.icon-btn .ui-icon{width:21px;height:21px}
+.search-main,.outline-btn,.link-btn,.swipe-tutorial-back,.detail-back{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.magnify,.magnify .ui-icon{display:inline-flex;align-items:center;width:22px;height:22px}.filter-ext .ui-icon{width:18px;height:18px}
+#filterChevron{display:inline-flex;transition:transform .15s ease}#filterChevron.rotated{transform:rotate(180deg)}
+.quick-card .quick-icon{display:grid;place-items:center;min-height:37px}.quick-card .ui-icon{width:30px;height:30px;color:var(--accent)}
+.empty-panel>span>.ui-icon{width:34px;height:34px;color:var(--accent)}
+.value-strip .value-icon .ui-icon{width:28px;height:28px}
+.promo-art .ui-icon{width:92px;height:92px;opacity:.6}
+.swipe-home .ui-icon,.swipe-heart .ui-icon,.swipe-help .ui-icon{width:25px;height:25px}
+.swipe-heart .ui-icon{width:28px;height:28px}.swipe-heart.active .ui-icon{fill:#ff8876;stroke:#ff8876}
+.gesture-grid .ui-icon{width:24px;height:24px;color:var(--accent)}
+.mobile-nav button>span{display:flex;align-items:center;justify-content:center;height:26px}.mobile-nav button .ui-icon{width:23px;height:23px}
+.mobile-nav button[aria-current="page"] .ui-icon{color:var(--accent)}
+.card-heart{display:grid;place-items:center}.card-heart .ui-icon{width:23px;height:23px}.card-heart.active .ui-icon{fill:var(--accent);stroke:var(--accent)}
+.modal-close{display:grid;place-items:center}.modal-close .ui-icon{width:21px;height:21px}
+#photoPrev .ui-icon,#photoNext .ui-icon{width:19px;height:19px}#detailLike .ui-icon{width:19px;height:19px}
+#detailLike{display:inline-flex;align-items:center;gap:8px}.swipe-tutorial-back .ui-icon,.detail-back .ui-icon{width:18px;height:18px}
+@media(max-width:760px){.brand-emblem{width:27px;height:27px}.brand-emblem .ui-icon{width:26px;height:26px}.promo-art .ui-icon{width:68px;height:68px}}

@@ -9,6 +9,9 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Build
+import android.view.WindowInsets
+import android.content.res.ColorStateList
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -79,10 +82,38 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        // Edge-to-edge visual layout, but never immersive: system status and gesture bars
+        // remain visible and all touch targets stay inside the real safe area.
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false)
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        }
         window.statusBarColor = navy
         window.navigationBarColor = navy
+        if (Build.VERSION.SDK_INT >= 29) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
         root = FrameLayout(this)
+        root.setBackgroundColor(navy)
+        root.setOnApplyWindowInsetsListener { view, insets ->
+            if (Build.VERSION.SDK_INT >= 30) {
+                val safe = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+            } else {
+                @Suppress("DEPRECATION")
+                view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
+                    insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+            }
+            insets
+        }
         setContentView(root)
+        root.requestApplyInsets()
         messages = JSONObject(assets.open("i18n.json").bufferedReader().use { it.readText() })
         brands = JSONObject(assets.open("brands.json").bufferedReader().use { it.readText() })
         locale = prefs.getString("language", "de") ?: "de"
@@ -132,6 +163,34 @@ class MainActivity : Activity() {
         minimumHeight = px(46)
         setOnClickListener { action() }
     }
+    private fun drawableIcon(res: Int, color: Int = ink, size: Int = 24): ImageView = ImageView(this).apply {
+        setImageResource(res)
+        imageTintList = ColorStateList.valueOf(color)
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        layoutParams = lp(size, size)
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+    private fun iconButton(res: Int, description: String, color: Int = ink, backgroundColor: Int = paper,
+                           action: () -> Unit): FrameLayout = FrameLayout(this).apply {
+        background = c(backgroundColor, 14, if (backgroundColor == paper) border else null)
+        minimumWidth = px(48); minimumHeight = px(48)
+        isClickable = true; isFocusable = true
+        contentDescription = description
+        val glyph = drawableIcon(res, color, 23)
+        addView(glyph, fp(24, 24, Gravity.CENTER))
+        setOnClickListener { action() }
+    }
+    private fun iconText(res: Int, caption: String, action: () -> Unit, fill: Boolean = false): LinearLayout = row().apply {
+        gravity = Gravity.CENTER
+        background = c(if (fill) orange else paper, 12, if (fill) null else border)
+        isClickable = true; isFocusable = true; minimumHeight = px(48)
+        contentDescription = caption
+        setPadding(px(12), px(10), px(12), px(10))
+        addView(drawableIcon(res, if (fill) paper else navy, 20), lp(20, 20))
+        addView(spaceHorizontal(8))
+        addView(text(caption, 13f, if (fill) paper else navy, true))
+        setOnClickListener { action() }
+    }
     private fun label(s: String): TextView = text(s, 12f, muted, true).apply {
         setPadding(0, px(12), 0, px(5))
     }
@@ -144,47 +203,54 @@ class MainActivity : Activity() {
     private fun number(n: Int) = NumberFormat.getIntegerInstance(Locale.GERMANY).format(n)
     private fun navigate(next: String) { screen = next; render() }
     private fun container(): LinearLayout {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         root.removeAllViews()
-        root.setBackgroundColor(mist)
+        root.setBackgroundColor(navy)
         val main = col()
+        main.setBackgroundColor(mist)
         root.addView(main, fp())
         return main
     }
 
     private fun toolbar(main: LinearLayout, section: String, back: (() -> Unit)? = null) {
         val line = row(paper)
-        line.setPadding(px(16), px(8), px(16), px(8))
-        val left = btn(if (back != null) "‹" else "✳", false) {
-            if (back != null) back() else navigate("home")
-        }
-        left.textSize = 24f
-        left.setTextColor(if (back != null) ink else orange)
+        line.setPadding(px(14), px(7), px(14), px(7))
+        val left = iconButton(if (back != null) R.drawable.ic_arrow_left else R.drawable.ic_luma,
+            if (back != null) t("backToMarket") else "Luma Auto", if (back != null) ink else orange,
+            paper) { if (back != null) back() else navigate("home") }
         left.background = null
-        line.addView(left, lp(42, 50))
+        line.addView(left, lp(48, 48))
         val headline = col()
         headline.addView(text("luma.", 25f, ink, true))
-        headline.addView(text(section, 9f, muted, true))
+        headline.addView(text(section, 10f, muted, true))
         line.addView(headline, LinearLayout.LayoutParams(0, -2, 1f))
         if (section != t("settings")) {
-            val settingsBtn = btn("⚙", false) { navigate("settings") }
-            settingsBtn.textSize = 18f
-            line.addView(settingsBtn, lp(48, 46))
+            line.addView(iconButton(R.drawable.ic_settings, t("settings")) { navigate("settings") }, lp(48, 48))
         }
         main.addView(line, lp(-1, 65))
     }
     private fun navigation(main: LinearLayout) {
         val nav = row(paper).apply { gravity = Gravity.CENTER }
         val routes = listOf(
-            Triple("home", "⌕", t("carsNav")), Triple("swipe", "◈", "Swipe"),
-            Triple("favorites", "♡", t("saved")), Triple("settings", "⚙", t("settings"))
+            Triple("home", R.drawable.ic_search, t("carsNav")),
+            Triple("swipe", R.drawable.ic_layers, "Swipe"),
+            Triple("favorites", R.drawable.ic_heart, t("saved")),
+            Triple("settings", R.drawable.ic_settings, t("settings"))
         )
         routes.forEach { (route, icon, name) ->
-            val cell = col().apply { gravity = Gravity.CENTER; setPadding(px(3), px(5), px(3), px(5)) }
-            cell.addView(text(icon, 23f, if (screen == route) orange else muted, true).apply { gravity = Gravity.CENTER })
-            cell.addView(text(name, 10f, if (screen == route) ink else muted, screen == route).apply {
+            val selected = screen == route
+            val cell = col().apply {
                 gravity = Gravity.CENTER
-                maxLines = 1
+                setPadding(px(3), px(6), px(3), px(6))
+                isClickable = true; isFocusable = true; minimumHeight = px(64)
+                contentDescription = name
+                if (selected) background = c(mist, 11)
+            }
+            val glyph = drawableIcon(icon, if (selected) orange else muted, 23)
+            val center = FrameLayout(this)
+            center.addView(glyph, fp(23, 23, Gravity.CENTER))
+            cell.addView(center, lp(-1, 27))
+            cell.addView(text(name, 10f, if (selected) ink else muted, selected).apply {
+                gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
             cell.setOnClickListener { navigate(route) }
@@ -215,8 +281,7 @@ class MainActivity : Activity() {
             val img = ImageView(this).apply { setImageBitmap(carPhoto); scaleType = ImageView.ScaleType.CENTER_CROP }
             frame.addView(img, fp())
         } else {
-            val fallback = text("🏎", 90f, paper, true).apply { gravity = Gravity.CENTER }
-            frame.addView(fallback, fp())
+            frame.addView(drawableIcon(R.drawable.ic_car, paper, 90), fp(90, 90, Gravity.CENTER))
         }
         frame.layoutParams = lp(-1, height)
         frame.clipToOutline = true
@@ -236,6 +301,15 @@ class MainActivity : Activity() {
         return true
     }
 
+    private fun canonicalBrand(input: String): String {
+        val target = input.trim()
+        val makes = brands.optJSONArray("makes") ?: return target
+        for (i in 0 until makes.length()) {
+            val candidate = makes.optString(i)
+            if (candidate.equals(target, ignoreCase = true)) return candidate
+        }
+        return target
+    }
     private fun autoComplete(value: String, hint: String, suggestions: List<String>, callback: (String) -> Unit): AutoCompleteTextView {
         val field = AutoCompleteTextView(this).apply {
             setSingleLine(true); setTextSize(15f); setTextColor(ink); setHintTextColor(muted)
@@ -278,7 +352,11 @@ class MainActivity : Activity() {
         toolbar(main, "AUTO · SÜDOSTEUROPA")
         val content = col()
         val hero = col(navy).apply { setPadding(px(22), px(29), px(22), px(28)) }
-        hero.addView(text("✳ LUMA AUTO", 11f, orange, true))
+        val heroBrand = row()
+        heroBrand.addView(drawableIcon(R.drawable.ic_car, orange, 18), lp(18, 18))
+        heroBrand.addView(spaceHorizontal(9))
+        heroBrand.addView(text("LUMA AUTO", 12f, orange, true))
+        hero.addView(heroBrand)
         hero.addView(space(13))
         hero.addView(text(t("heroTitle1"), 30f, paper, true))
         hero.addView(text(t("heroTitle2"), 29f, orange, true))
@@ -296,7 +374,7 @@ class MainActivity : Activity() {
         val makeField = autoComplete(make, t("allMakes"), makeItems) { make = it }
         form.addView(makeField, lp(-1, 49))
         form.addView(label(t("model")))
-        val modelArr = brands.optJSONObject("models")?.optJSONArray(make)
+        val modelArr = brands.optJSONObject("models")?.optJSONArray(canonicalBrand(make))
         val models = mutableListOf<String>()
         if (modelArr != null) for (i in 0 until modelArr.length()) models.add(modelArr.optString(i))
         val modelField = autoComplete(model, t("allModels"), models) { model = it }
@@ -304,7 +382,7 @@ class MainActivity : Activity() {
         makeField.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val arr = brands.optJSONObject("models")?.optJSONArray(s.toString())
+                val arr = brands.optJSONObject("models")?.optJSONArray(canonicalBrand(s.toString()))
                 val choices = mutableListOf<String>()
                 if (arr != null) for (i in 0 until arr.length()) choices.add(arr.optString(i))
                 modelField.setAdapter(ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, choices))
@@ -323,7 +401,7 @@ class MainActivity : Activity() {
         form.addView(space(17))
         form.addView(search)
         form.addView(space(8))
-        form.addView(btn(t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), false) { showAdvanced() })
+        form.addView(iconText(R.drawable.ic_sliders, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
         val actions = row()
         actions.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() }, LinearLayout.LayoutParams(0, px(46), 1f))
         actions.addView(spaceHorizontal(8))
@@ -360,10 +438,14 @@ class MainActivity : Activity() {
         block.addView(space(11))
         val priced = row()
         priced.addView(text(euro(68900), 23f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
-        priced.addView(btn(if (starred) "♥" else "♡", false) { setFavorite(!starred); renderHome() }, lp(56, 48))
+        priced.addView(iconButton(R.drawable.ic_heart, t("saveFavourites"), if (starred) orange else ink) {
+            setFavorite(!starred); renderHome()
+        }, lp(56, 48))
         block.addView(priced)
         block.addView(space(9))
-        block.addView(btn(t("vehicleDetails"), true) { openDetails("home") })
+        block.addView(iconText(R.drawable.ic_info,t("vehicleDetails"),{
+            openDetails(if(screen == "favorites") "favorites" else "home")
+        }, true))
         block.addView(space(6))
         block.addView(text(t("demoOnly"), 11f, muted))
         card.addView(block)
@@ -371,7 +453,7 @@ class MainActivity : Activity() {
     }
     private fun emptyState(parent: LinearLayout, msg: String) {
         val box = col(paper).apply { gravity = Gravity.CENTER; setPadding(px(18), px(38), px(18), px(38)); background = c(paper, 15, border) }
-        box.addView(text("⌕", 34f, orange, true).apply { gravity = Gravity.CENTER })
+        box.addView(drawableIcon(R.drawable.ic_search, orange, 36), lp(36, 36))
         box.addView(text(msg, 14f, muted).apply { gravity = Gravity.CENTER })
         parent.addView(box)
     }
@@ -418,7 +500,11 @@ class MainActivity : Activity() {
             val item = stored.optJSONObject(i) ?: continue
             val summary = (listOf(item.optString("make"),item.optString("model"),item.optString("keyword")).filter { it.isNotBlank() }.joinToString(" ")).ifBlank { t("allCars") }
             val cell = col(paper).apply { setPadding(px(14),px(12),px(14),px(12));background=c(paper,14,border) }
-            cell.addView(text("⌕  $summary",16f,ink,true))
+            val rowTitle = row()
+            rowTitle.addView(drawableIcon(R.drawable.ic_search, orange, 21), lp(21, 21))
+            rowTitle.addView(spaceHorizontal(9))
+            rowTitle.addView(text(summary,16f,ink,true))
+            cell.addView(rowTitle)
             cell.addView(space(6));cell.addView(text(t("searchSaveLabel")+" #${i+1}",12f,muted))
             cell.setOnClickListener {
                 keyword=item.optString("keyword");make=item.optString("make");model=item.optString("model")
@@ -467,12 +553,12 @@ class MainActivity : Activity() {
 
     private fun renderSwipe() {
         root.removeAllViews();root.setBackgroundColor(navy)
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN)
         val full=FrameLayout(this)
         root.addView(full,fp())
         val placeholder=image()
         full.addView(placeholder,fp())
-        // Native gesture surface. Children with buttons remain independently clickable.
+        // Safe native full-screen presentation: all controls remain below the
+        // status bar / display cutout and above Android's navigation/gesture bar.
         placeholder.setOnTouchListener(object:View.OnTouchListener {
             var x=0f;var y=0f
             override fun onTouch(v:View,event:MotionEvent):Boolean {
@@ -495,39 +581,52 @@ class MainActivity : Activity() {
                 return true
             }
         })
-        val shade=View(this).apply {background=gradient()}
-        full.addView(shade,fp())
-        // The gradient is decorative; all gestures should reach the photo surface.
-        shade.isClickable=false
-        val top=row()
-        top.setPadding(px(16),px(10),px(16),0)
-        top.addView(btn("?",false){showSwipeTutorial()},lp(48,48))
+        full.addView(View(this).apply {background=gradient();isClickable=false},fp())
+        val top=row().apply {setPadding(px(16),px(12),px(16),0)}
+        top.addView(iconButton(R.drawable.ic_info, t("learnSwipeAgain"), paper, 0x99213449.toInt()) {
+            showSwipeTutorial()
+        }, lp(48,48))
         top.addView(View(this),LinearLayout.LayoutParams(0,1,1f))
-        top.addView(btn("⌂",false){navigate("home")}.apply{textSize=24f},lp(54,48))
+        top.addView(iconButton(R.drawable.ic_home, t("backToMarket"), paper, 0x99213449.toInt()) {
+            navigate("home")
+        }, lp(48,48))
         full.addView(top,fp(-1,-2,Gravity.TOP))
-        val overlay=col().apply {setPadding(px(22),0,px(22),px(24))}
+        val overlay=col().apply {setPadding(px(19),0,px(19),px(24))}
         overlay.addView(text(t("demoOnly").uppercase(),11f,orange,true))
         overlay.addView(space(7))
-        overlay.addView(text("Nissan GT-R R35 Black Edition",28f,paper,true))
+        overlay.addView(text("Nissan GT-R R35 Black Edition",27f,paper,true))
         overlay.addView(space(5))
-        overlay.addView(text(euro(68900),27f,paper,true))
+        overlay.addView(text(euro(68900),26f,paper,true))
         overlay.addView(space(5))
         overlay.addView(text("2013   ·   49.500 km   ·   550 PS   ·   🇭🇷 Zagreb",13f,paper))
         overlay.addView(space(16))
         val buttons=row()
-        buttons.addView(btn("ⓘ  "+t("swipeDetails"),false) {openDetails("swipe")},LinearLayout.LayoutParams(0,px(52),1f))
+        buttons.addView(iconText(R.drawable.ic_info,t("swipeDetails"), {openDetails("swipe")}),
+            LinearLayout.LayoutParams(0,px(50),1f))
         buttons.addView(spaceHorizontal(10))
-        buttons.addView(btn(if(starred)"♥"else"♡",false){setFavorite(!starred);renderSwipe()}.apply{
-            textSize=26f;setTextColor(if(starred)orange else ink)
-        },lp(64,54))
+        buttons.addView(iconButton(R.drawable.ic_heart,t("saveFavourites"),
+            if(starred)orange else ink){setFavorite(!starred);renderSwipe()},lp(56,52))
         overlay.addView(buttons)
         full.addView(overlay,fp(-1,-2,Gravity.BOTTOM))
         if(!swipeSeen)root.post {if(screen=="swipe"&&!swipeSeen)showSwipeTutorial()}
     }
     private fun showSwipeTutorial() {
-        val instruction="←  ${t("swipeNext")}\n→  ${t("swipeOpen")}\n↑  ${t("swipeDetails")}\n↓  ${t("swipeSimilar")}"
+        val tutorial=col().apply {setPadding(px(20),px(10),px(20),px(10))}
+        val items=listOf(
+            Triple(R.drawable.ic_arrow_left,"swipeNext","swipeNextSub"),
+            Triple(R.drawable.ic_arrow_right,"swipeOpen","swipeOpenSub"),
+            Triple(R.drawable.ic_arrow_up,"swipeDetails","swipeDetailsSub"),
+            Triple(R.drawable.ic_arrow_down,"swipeSimilar","swipeSimilarSub")
+        )
+        items.forEach { (glyph,title,detail) ->
+            val line=row()
+            line.addView(drawableIcon(glyph,orange,26),lp(28,28))
+            line.addView(spaceHorizontal(14))
+            line.addView(text(t(title)+" · "+t(detail),13f,ink,true))
+            tutorial.addView(line,lp(-1,58))
+        }
         AlertDialog.Builder(this).setTitle(t("swipeTeach"))
-            .setMessage(instruction)
+            .setView(tutorial)
             .setPositiveButton(t("swipeStart")) { _,_-> swipeSeen=true;prefs.edit().putBoolean("swipeSeen",true).apply() }
             .setNegativeButton(t("backToCar")) { _,_->swipeSeen=true;prefs.edit().putBoolean("swipeSeen",true).apply() }
             .show()
@@ -545,9 +644,9 @@ class MainActivity : Activity() {
         info.addView(space(7));info.addView(text("🇭🇷 Zagreb · "+t("conditionUsed"),13f,muted))
         info.addView(space(17))
         val actions=row()
-        actions.addView(btn(if(starred)"♥  "+t("saved")else"♡  "+t("saved"),false){setFavorite(!starred);renderDetails()},LinearLayout.LayoutParams(0,px(49),1f))
+        actions.addView(iconText(R.drawable.ic_heart,t("saved"),{setFavorite(!starred);renderDetails()}),LinearLayout.LayoutParams(0,px(49),1f))
         actions.addView(spaceHorizontal(9))
-        actions.addView(btn("↗ "+t("shareCar"),false){shareWebsite()},LinearLayout.LayoutParams(0,px(49),1f))
+        actions.addView(iconText(R.drawable.ic_share,t("shareCar"),{shareWebsite()}),LinearLayout.LayoutParams(0,px(49),1f))
         info.addView(actions);info.addView(space(24))
         info.addView(text(t("technicalData"),22f,ink,true));info.addView(space(13))
         val specs=listOf(

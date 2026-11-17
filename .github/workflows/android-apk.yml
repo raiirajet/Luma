@@ -29,14 +29,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK 35 using runner tools
-        run: |
-          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)
-          test -n "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
 
       - name: Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -58,24 +55,24 @@ jobs:
 
       - name: Prepare download
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk Luma-Auto-Android-v1.0.0.apk
-          sha256sum Luma-Auto-Android-v1.0.0.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk Luma-Auto-Android-v1.1.0.apk
+          sha256sum Luma-Auto-Android-v1.1.0.apk
 
       - name: Upload installable APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: Luma-Auto-Android-APK
-          path: Luma-Auto-Android-v1.0.0.apk
+          path: Luma-Auto-Android-v1.1.0.apk
           retention-days: 30
 
       - name: Publish APK direct download in GitHub Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view android-v1.0.0 >/dev/null 2>&1; then
-            gh release create android-v1.0.0 \
-              --title 'Luma Auto Android 1.0.0 (native preview)' \
-              --notes 'Installable Android APK built in Kotlin (not a WebView). Preview contains one fictional Nissan GT-R listing. Local search, 435 marques, country settings, favourites, saved searches, swipe and detailed specifications are available. Firebase account registration and publishing are not enabled.' \
+          if ! gh release view android-v1.1.0 >/dev/null 2>&1; then
+            gh release create android-v1.1.0 \
+              --title 'Luma Auto Android 1.1.0 (native preview)' \
+              --notes 'Native Android v1.1: true edge-to-edge with safe status/navigation bar insets, 21+ real vector icons, 435 offline car makes and expanded models. One fictional Nissan GT-R; Firebase login and real listings are not yet connected. Debug-signed preview: upgrading from v1.0 may require uninstall because GitHub runner keys differ.' \
               --prerelease
           fi
-          gh release upload android-v1.0.0 Luma-Auto-Android-v1.0.0.apk --clobber
+          gh release upload android-v1.1.0 Luma-Auto-Android-v1.1.0.apk --clobber
