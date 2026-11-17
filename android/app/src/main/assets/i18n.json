@@ -203,7 +203,8 @@
     "verifiedBadge": "E-Mail bestätigt",
     "notVerified": "E-Mail noch nicht bestätigt",
     "verifiedRequired": "Bitte zuerst E-Mail bestätigen",
-    "checkEmail": "Bitte E-Mail-Postfach prüfen"
+    "checkEmail": "Bitte E-Mail-Postfach prüfen",
+    "contactPublic": "Die Kontakt-E-Mail ist öffentlich sichtbar. Leer lassen, wenn nicht gewünscht."
   },
   "en": {
     "displayName": "English",
@@ -409,7 +410,8 @@
     "verifiedBadge": "Email verified",
     "notVerified": "Email not yet verified",
     "verifiedRequired": "Verify your email first",
-    "checkEmail": "Check your email"
+    "checkEmail": "Check your email",
+    "contactPublic": "The contact email is publicly visible. Leave blank if unwanted."
   },
   "sq": {
     "displayName": "Shqip",
@@ -615,7 +617,8 @@
     "verifiedBadge": "Email i verifikuar",
     "notVerified": "Email ende i paverifikuar",
     "verifiedRequired": "Verifiko emailin fillimisht",
-    "checkEmail": "Kontrollo emailin"
+    "checkEmail": "Kontrollo emailin",
+    "contactPublic": "Emaili i kontaktit shfaqet publikisht. Lëre bosh nëse nuk dëshiron."
   },
   "tr": {
     "displayName": "Türkçe",
@@ -821,7 +824,8 @@
     "verifiedBadge": "E-posta doğrulandı",
     "notVerified": "E-posta henüz doğrulanmadı",
     "verifiedRequired": "Önce e-postanı doğrula",
-    "checkEmail": "E-postanı kontrol et"
+    "checkEmail": "E-postanı kontrol et",
+    "contactPublic": "İletişim e-postası herkese görünür. İstemiyorsanız boş bırakın."
   },
   "el": {
     "displayName": "Ελληνικά",
@@ -1027,7 +1031,8 @@
     "verifiedBadge": "Το email επιβεβαιώθηκε",
     "notVerified": "Το email δεν έχει επιβεβαιωθεί",
     "verifiedRequired": "Επιβεβαίωσε πρώτα το email",
-    "checkEmail": "Έλεγξε το email"
+    "checkEmail": "Έλεγξε το email",
+    "contactPublic": "Το email επικοινωνίας εμφανίζεται δημόσια. Αφήστε το κενό αν δεν το θέλετε."
   },
   "sr-Latn": {
     "displayName": "Srpski",
@@ -1233,7 +1238,8 @@
     "verifiedBadge": "E-pošta potvrđena",
     "notVerified": "E-pošta nije potvrđena",
     "verifiedRequired": "Prvo potvrdi e-poštu",
-    "checkEmail": "Proveri e-poštu"
+    "checkEmail": "Proveri e-poštu",
+    "contactPublic": "Kontakt e-pošta je javno vidljiva. Ostavite prazno ako to ne želite."
   },
   "sr-Cyrl": {
     "displayName": "Српски",
@@ -1439,7 +1445,8 @@
     "verifiedBadge": "Е-пошта потврђена",
     "notVerified": "Е-пошта није потврђена",
     "verifiedRequired": "Прво потврди е-пошту",
-    "checkEmail": "Провери е-пошту"
+    "checkEmail": "Провери е-пошту",
+    "contactPublic": "Контакт е-пошта је јавно видљива. Оставите празно ако не желите."
   },
   "sl": {
     "displayName": "Slovenščina",
@@ -1645,7 +1652,8 @@
     "verifiedBadge": "E-pošta potrjena",
     "notVerified": "E-pošta še ni potrjena",
     "verifiedRequired": "Najprej potrdi e-pošto",
-    "checkEmail": "Preveri e-pošto"
+    "checkEmail": "Preveri e-pošto",
+    "contactPublic": "Kontaktni e-naslov je javno viden. Pustite prazno, če tega ne želite."
   },
   "hr": {
     "displayName": "Hrvatski",
@@ -1851,7 +1859,8 @@
     "verifiedBadge": "E-pošta potvrđena",
     "notVerified": "E-pošta nije potvrđena",
     "verifiedRequired": "Prvo potvrdi e-poštu",
-    "checkEmail": "Provjeri e-poštu"
+    "checkEmail": "Provjeri e-poštu",
+    "contactPublic": "Kontaktna e-pošta javno je vidljiva. Ostavite prazno ako ne želite."
   },
   "mk": {
     "displayName": "Македонски",
@@ -2057,7 +2066,8 @@
     "verifiedBadge": "Е-пошта потврдена",
     "notVerified": "Е-пошта не е потврдена",
     "verifiedRequired": "Прво потврди е-пошта",
-    "checkEmail": "Провери е-пошта"
+    "checkEmail": "Провери е-пошта",
+    "contactPublic": "Контакт е-поштата е јавно видлива. Оставете празно ако не сакате."
   },
   "bs": {
     "displayName": "Bosanski",
@@ -2263,7 +2273,8 @@
     "verifiedBadge": "Email potvrđen",
     "notVerified": "Email nije potvrđen",
     "verifiedRequired": "Prvo potvrdi email",
-    "checkEmail": "Provjeri email"
+    "checkEmail": "Provjeri email",
+    "contactPublic": "Kontakt email je javno vidljiv. Ostavite prazno ako ne želite."
   },
   "cnr": {
     "displayName": "Crnogorski",
@@ -2469,7 +2480,8 @@
     "verifiedBadge": "Email potvrđen",
     "notVerified": "Email nije potvrđen",
     "verifiedRequired": "Prvo potvrdi email",
-    "checkEmail": "Provjeri email"
+    "checkEmail": "Provjeri email",
+    "contactPublic": "Kontakt e-pošta je javno vidljiva. Ostavite prazno ako ne želite."
   },
   "bg": {
     "displayName": "Български",
@@ -2675,7 +2687,8 @@
     "verifiedBadge": "Имейлът е потвърден",
     "notVerified": "Имейлът не е потвърден",
     "verifiedRequired": "Първо потвърди имейла",
-    "checkEmail": "Провери имейла"
+    "checkEmail": "Провери имейла",
+    "contactPublic": "Имейлът за контакт е публичен. Оставете празно, ако не желаете."
   },
   "ro": {
     "displayName": "Română",
@@ -2881,6 +2894,7 @@
     "verifiedBadge": "Email verificat",
     "notVerified": "Email neverificat",
     "verifiedRequired": "Verifică mai întâi emailul",
-    "checkEmail": "Verifică emailul"
+    "checkEmail": "Verifică emailul",
+    "contactPublic": "Emailul de contact este public. Lăsați necompletat dacă nu doriți."
   }
 }
