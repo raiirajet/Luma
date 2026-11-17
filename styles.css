@@ -175,3 +175,22 @@ button.card-heart{width:44px;height:44px}
 .profile-stats b{display:block;font-size:21px;color:#0d4e82}
 @media(max-width:1100px){.main-nav .nav-link{padding-left:7px;padding-right:7px;font-size:11px}.main-nav{margin-left:10px;gap:0}}
 @media(max-width:390px){.profile-stats{grid-template-columns:1fr 1fr}.mobile-nav small{letter-spacing:-.2px}}
+
+/* Tablet header: reserve the full horizontal space for language and account. */
+@media(min-width:761px) and (max-width:1100px){
+  .main-nav{display:none!important}
+  .header-right{margin-left:auto;flex-shrink:0}
+  .brand-limba{flex-shrink:0}
+  .header-right .language-select{width:92px}
+  .mobile-nav{display:flex;position:fixed;left:0;right:0;bottom:0;height:69px;
+    background:#fff;box-shadow:0 -5px 22px #09232d1c;z-index:28;
+    justify-content:space-around;padding:4px 8px max(5px,env(safe-area-inset-bottom))}
+  .mobile-nav button{border:0;background:transparent;display:flex;align-items:center;
+    justify-content:center;flex-direction:column;gap:2px;flex:1 1 20%;min-height:56px;
+    min-width:0;color:#234455;font-size:22px}
+  .mobile-nav small{font-size:11px;font-weight:750}
+  .mobile-nav button.market-sell>span{background:var(--accent);border-radius:15px;
+    width:45px;height:45px;transform:translateY(-7px)}
+  .mobile-nav button.market-sell small{margin-top:-7px}
+  .site-footer{padding-bottom:108px}
+}
