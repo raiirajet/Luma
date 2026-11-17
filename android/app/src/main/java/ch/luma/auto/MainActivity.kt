@@ -34,6 +34,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
 import java.util.Locale
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
+import java.security.SecureRandom
+import java.security.MessageDigest
+import android.text.InputType
 
 /**
  * Limba Auto — native Android proof-of-concept.
@@ -69,6 +74,11 @@ class MainActivity : Activity() {
     private var transmission = ""
     private var body = ""
     private var saveCount = 0
+    private var previewUser = ""
+    private val previewCars = mutableListOf<JSONObject>()
+    private var activePreviewCar: JSONObject? = null
+    private var swipeIndex = 0
+    private var previewStars = mutableSetOf<String>()
     private var carPhoto: android.graphics.Bitmap? = null
     private val countries = listOf(
         Triple("AL", "🇦🇱", "Albania"), Triple("TR", "🇹🇷", "Türkiye"),
@@ -121,9 +131,24 @@ class MainActivity : Activity() {
         starred = prefs.getBoolean("favorite", false)
         swipeSeen = prefs.getBoolean("swipeSeen", false)
         activeCountry = (prefs.getStringSet("countries", emptySet()) ?: emptySet()).toMutableSet()
+        previewUser = prefs.getString("previewUser", "") ?: ""
+        val stored = runCatching { JSONArray(prefs.getString("previewCars", "[]")) }.getOrDefault(JSONArray())
+        for (i in 0 until stored.length()) stored.optJSONObject(i)?.let { previewCars.add(it) }
+        previewStars = (prefs.getStringSet("previewStars", emptySet()) ?: emptySet()).toMutableSet()
         saveCount = prefs.getString("searches", "[]")?.let { runCatching { JSONArray(it).length() }.getOrDefault(0) } ?: 0
         try { assets.open("gtr.jpg").use { carPhoto = BitmapFactory.decodeStream(it) } } catch (_: Exception) { }
         render()
+        if (!prefs.contains("language")) root.post { chooseFirstLanguage() }
+    }
+
+    private fun chooseFirstLanguage() {
+        AlertDialog.Builder(this).setTitle(t("chooseLanguage"))
+            .setCancelable(false)
+            .setItems(codes.map { messages.optJSONObject(it)?.optString("displayName") ?: it }.toTypedArray()) { _,index ->
+                locale = codes[index]
+                prefs.edit().putString("language", locale).apply()
+                render()
+            }.show()
     }
 
     private fun t(k: String): String {
@@ -218,6 +243,23 @@ class MainActivity : Activity() {
         val main = col()
         main.setBackgroundColor(mist)
         root.addView(main, fp())
+        if (screen != "details") {
+            val fab = row().apply {
+                setPadding(px(12), px(9), px(17), px(9));gravity = Gravity.CENTER_VERTICAL
+                background = c(orange, 30)
+                elevation = px(12).toFloat()
+                minimumHeight = px(58)
+                isClickable = true; isFocusable = true
+                contentDescription = t("addVehicle")
+                addView(drawableIcon(R.drawable.limba_add_car, paper, 37),lp(37,37))
+                addView(spaceHorizontal(7))
+                addView(text(t("addVehicle"),13f,paper,true))
+                setOnClickListener { showCarForm() }
+            }
+            val pos = fp(-2, -2, Gravity.BOTTOM or Gravity.END)
+            pos.setMargins(px(9),px(9),px(14),px(84))
+            root.addView(fab,pos)
+        }
         return main
     }
 
@@ -233,6 +275,7 @@ class MainActivity : Activity() {
         headline.addView(drawableIcon(R.drawable.limba_logo_wordmark, ink, 135), lp(135, 38))
         headline.addView(text(section, 10f, muted, true))
         line.addView(headline, LinearLayout.LayoutParams(0, -2, 1f))
+        line.addView(iconButton(R.drawable.limba_profile,t("accountLogin")) { showAccount() },lp(48,48))
         if (section != t("settings")) {
             line.addView(iconButton(R.drawable.limba_settings, t("settings")) { navigate("settings") }, lp(48, 48))
         }
@@ -423,11 +466,14 @@ class MainActivity : Activity() {
         results.addView(space(7))
         results.addView(text(t("singleDemoNotice"), 12f, muted))
         results.addView(space(17))
-        if (listingAvailable()) results.addView(carCard()) else emptyState(results, t("emptyCars"))
+        var listed = false
+        previewCars.filter { matchesPreview(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
+        if (listingAvailable()) { results.addView(carCard());listed = true }
+        if (!listed) emptyState(results,t("emptyCars"))
         results.addView(space(16))
         results.addView(btn(t("yourSavedSearch"), false) { navigate("searches") })
         results.addView(space(9))
-        results.addView(btn(t("sellCar"), false) { showBackendInfo() })
+        results.addView(btn(t("addVehicle"), false) { showCarForm() })
         content.addView(results)
         body(main, content)
         navigation(main)
@@ -454,12 +500,55 @@ class MainActivity : Activity() {
         block.addView(priced)
         block.addView(space(9))
         block.addView(iconText(R.drawable.limba_info,t("vehicleDetails"),{
-            openDetails(if(screen == "favorites") "favorites" else "home")
+            activePreviewCar=null;openDetails(if(screen == "favorites") "favorites" else "home")
         }, true))
         block.addView(space(6))
         block.addView(text(t("demoOnly"), 11f, muted))
         card.addView(block)
         return card
+    }
+    private fun savePreviewCars() {
+        val arr = JSONArray()
+        previewCars.forEach { arr.put(it) }
+        prefs.edit().putString("previewCars",arr.toString()).apply()
+    }
+    private fun matchesPreview(x: JSONObject): Boolean {
+        if (previewUser.isBlank() || x.optString("uid") != previewUser) return false
+        val country = x.optString("country")
+        if (activeCountry.isNotEmpty() && country !in activeCountry) return false
+        if (keyword.isNotBlank() && !(x.optString("make")+" "+x.optString("model")+" "+x.optString("city")+" "+x.optString("description")).contains(keyword,ignoreCase=true)) return false
+        if (make.isNotBlank() && !x.optString("make").contains(make,ignoreCase=true)) return false
+        if (model.isNotBlank() && !x.optString("model").contains(model,ignoreCase=true)) return false
+        if (maxPrice.toIntOrNull()?.let { x.optInt("price") > it } == true) return false
+        if (yearFrom.toIntOrNull()?.let { x.optInt("year") < it } == true) return false
+        if (maxMileage.toIntOrNull()?.let { x.optInt("mileage") > it } == true) return false
+        if (fuel.isNotBlank() && fuel != x.optString("fuel")) return false
+        if (transmission.isNotBlank() && transmission != x.optString("transmission")) return false
+        if (body.isNotBlank() && body != x.optString("body")) return false
+        return true
+    }
+    private fun previewCard(car: JSONObject): LinearLayout {
+        val view=col(paper).apply { background=c(paper,16,border);setPadding(px(15),px(14),px(15),px(17)) }
+        val badge=row();badge.addView(drawableIcon(R.drawable.limba_car,orange,35),lp(35,35));badge.addView(spaceHorizontal(9))
+        badge.addView(text(t("previewOnly"),12f,orange,true));view.addView(badge)
+        view.addView(space(8))
+        view.addView(text(car.optString("make")+" "+car.optString("model"),20f,ink,true))
+        view.addView(space(5))
+        view.addView(text(car.optInt("year").toString()+" · "+number(car.optInt("mileage"))+" km · "+car.optInt("power")+" PS",13f,muted))
+        view.addView(text(car.optString("city")+" · "+car.optString("country"),12f,muted))
+        view.addView(space(8))
+        view.addView(text(euro(car.optInt("price")),23f,orange,true))
+        view.addView(space(10))
+        val liked=car.optString("id") in previewStars
+        view.addView(iconText(R.drawable.limba_favorites,t("saveFavourites"),{
+            val id=car.optString("id");if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
+            prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply();render()
+        },liked))
+        view.addView(space(7))
+        view.addView(iconText(R.drawable.limba_info,t("vehicleProfile"),{
+            activePreviewCar=car;openDetails(if(screen=="mine")"mine"else "home")
+        },true))
+        return view
     }
     private fun emptyState(parent: LinearLayout, msg: String) {
         val box = col(paper).apply { gravity = Gravity.CENTER; setPadding(px(18), px(38), px(18), px(38)); background = c(paper, 15, border) }
@@ -569,14 +658,31 @@ class MainActivity : Activity() {
         body(main,content);navigation(main)
     }
 
+    private fun swipeCandidates(): List<JSONObject?> {
+        val cars=previewCars.filter { matchesPreview(it) }.map { it as JSONObject? }.toMutableList()
+        if (listingAvailable()) cars.add(null) // null identifies the built-in Nissan GT-R sample
+        return cars
+    }
     private fun renderSwipe() {
         root.removeAllViews();root.setBackgroundColor(navy)
+        val all=swipeCandidates()
+        if (all.isEmpty()) {
+            val empty=col().apply {gravity=Gravity.CENTER;setPadding(px(20),px(20),px(20),px(20))}
+            empty.addView(text(t("emptyCars"),20f,paper,true))
+            empty.addView(space(20));empty.addView(btn(t("backToMarket"),true){navigate("home")})
+            root.addView(empty,fp())
+            return
+        }
+        swipeIndex=swipeIndex.coerceIn(0,all.size-1)
+        val current=all[swipeIndex]
         val full=FrameLayout(this)
         root.addView(full,fp())
-        val placeholder=image()
+        val placeholder=if(current==null) image() else FrameLayout(this).apply {
+            setBackgroundColor(navy)
+            addView(drawableIcon(R.drawable.limba_car,paper,170),fp(170,170,Gravity.CENTER))
+        }
         full.addView(placeholder,fp())
-        // Safe native full-screen presentation: all controls remain below the
-        // status bar / display cutout and above Android's navigation/gesture bar.
+        fun details(){activePreviewCar=current;openDetails("swipe")}
         placeholder.setOnTouchListener(object:View.OnTouchListener {
             var x=0f;var y=0f
             override fun onTouch(v:View,event:MotionEvent):Boolean {
@@ -584,13 +690,14 @@ class MainActivity : Activity() {
                     MotionEvent.ACTION_DOWN->{x=event.x;y=event.y;return true}
                     MotionEvent.ACTION_UP->{
                         val dx=event.x-x;val dy=event.y-y
-                        if(kotlin.math.max(kotlin.math.abs(dx),kotlin.math.abs(dy))<px(52)){
-                            openDetails("swipe");return true
-                        }
+                        if(kotlin.math.max(kotlin.math.abs(dx),kotlin.math.abs(dy))<px(52)){details();return true}
                         if(kotlin.math.abs(dx)>kotlin.math.abs(dy)) {
-                            if(dx<0) toast(t("onlyCar")) else openDetails("swipe")
-                        } else {
-                            if(dy<0)openDetails("swipe")else toast(t("noSimilar"))
+                            if(dx<0){if(swipeIndex+1<all.size){swipeIndex++;renderSwipe()}else toast(t("onlyCar"))}else details()
+                        }else{
+                            if(dy<0)details() else {
+                                val target=all.indices.firstOrNull { it!=swipeIndex && all[it]?.optString("make")==(current?.optString("make")?:"Nissan") }
+                                if(target!=null){swipeIndex=target;renderSwipe()}else toast(t("noSimilar"))
+                            }
                         }
                         return true
                     }
@@ -601,29 +708,34 @@ class MainActivity : Activity() {
         })
         full.addView(View(this).apply {background=gradient();isClickable=false},fp())
         val top=row().apply {setPadding(px(16),px(12),px(16),0)}
-        top.addView(iconButton(R.drawable.limba_info, t("learnSwipeAgain"), paper, 0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_info,t("learnSwipeAgain"),paper,0x99213449.toInt()) {
             showSwipeTutorial()
-        }, lp(48,48))
+        },lp(48,48))
         top.addView(View(this),LinearLayout.LayoutParams(0,1,1f))
-        top.addView(iconButton(R.drawable.limba_home, t("backToMarket"), paper, 0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_home,t("backToMarket"),paper,0x99213449.toInt()) {
             navigate("home")
-        }, lp(48,48))
+        },lp(48,48))
         full.addView(top,fp(-1,-2,Gravity.TOP))
         val overlay=col().apply {setPadding(px(19),0,px(19),px(24))}
-        overlay.addView(text(t("demoOnly").uppercase(),11f,orange,true))
+        overlay.addView(text(t("previewOnly").uppercase()+"  ·  "+(swipeIndex+1)+"/"+all.size,11f,orange,true))
         overlay.addView(space(7))
-        overlay.addView(text("Nissan GT-R R35 Black Edition",27f,paper,true))
-        overlay.addView(space(5))
-        overlay.addView(text(euro(68900),26f,paper,true))
-        overlay.addView(space(5))
-        overlay.addView(text("2013   ·   49.500 km   ·   550 PS   ·   🇭🇷 Zagreb",13f,paper))
-        overlay.addView(space(16))
+        val title=if(current==null)"Nissan GT-R R35 Black Edition"else current.optString("make")+" "+current.optString("model")
+        overlay.addView(text(title,27f,paper,true));overlay.addView(space(5))
+        overlay.addView(text(euro(current?.optInt("price")?:68900),26f,paper,true));overlay.addView(space(5))
+        val info=if(current==null)"2013 · 49.500 km · 550 PS · 🇭🇷 Zagreb"
+           else current.optString("year")+" · "+number(current.optInt("mileage"))+" km · "+current.optString("power")+" PS · "+current.optString("city")
+        overlay.addView(text(info,13f,paper));overlay.addView(space(16))
         val buttons=row()
-        buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"), {openDetails("swipe")}),
-            LinearLayout.LayoutParams(0,px(50),1f))
+        buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"),{details()}),LinearLayout.LayoutParams(0,px(50),1f))
         buttons.addView(spaceHorizontal(10))
-        buttons.addView(iconButton(R.drawable.limba_favorites,t("saveFavourites"),
-            if(starred)orange else ink){setFavorite(!starred);renderSwipe()},lp(56,52))
+        val liked=if(current==null)starred else current.optString("id") in previewStars
+        buttons.addView(iconButton(R.drawable.limba_favorites,t("saveFavourites"),if(liked)orange else ink){
+            if(current==null)setFavorite(!starred)else {
+                val id=current.optString("id")
+                if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
+                prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply()
+            };renderSwipe()
+        },lp(56,52))
         overlay.addView(buttons)
         full.addView(overlay,fp(-1,-2,Gravity.BOTTOM))
         if(!swipeSeen)root.post {if(screen=="swipe"&&!swipeSeen)showSwipeTutorial()}
@@ -655,7 +767,36 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun renderPreviewDetails() {
+        val car=activePreviewCar ?: return
+        val main=container();toolbar(main,t("vehicleProfile"),{activePreviewCar=null;navigate(backFromDetail)})
+        val content=col().apply {setPadding(px(18),px(18),px(18),px(22))}
+        content.addView(text(t("previewOnly"),12f,orange,true));content.addView(space(8))
+        content.addView(text(car.optString("make")+" "+car.optString("model"),25f,ink,true))
+        content.addView(space(7));content.addView(text(euro(car.optInt("price")),25f,orange,true));content.addView(space(16))
+        val details=listOf(
+            t("make") to car.optString("make"),t("model") to car.optString("model"),
+            t("firstReg") to car.optString("year"),t("mileage") to (number(car.optInt("mileage"))+" km"),
+            t("power") to (car.optString("power")+" PS"),t("fuel") to t(car.optString("fuel")),
+            t("transmission") to t(car.optString("transmission")),t("body") to t(car.optString("body")),
+            t("location") to (car.optString("city")+" · "+car.optString("country")),
+            t("carCondition") to t(if(car.optString("condition")=="new")"conditionNew"else "conditionUsed"),
+            t("accidentCar") to t(when(car.optString("accidentStatus")){"yes"->"accidentYes";"no"->"accidentNo";else->"accidentUnknown"}),
+            t("conditionShort") to (car.optString("conditionNote").ifBlank { t("accidentUnknown") })
+        )
+        details.forEachIndexed{idx,(label,value)->
+            val line=row(if(idx%2==0)paper else mist);line.setPadding(px(12),px(11),px(12),px(11))
+            line.addView(text(label,12f,muted),LinearLayout.LayoutParams(0,-2,1f))
+            line.addView(text(value,13f,ink,true),LinearLayout.LayoutParams(0,-2,1.25f));content.addView(line)
+        }
+        content.addView(space(15));content.addView(text(t("vehicleDescription"),20f,ink,true));content.addView(space(8))
+        content.addView(text(car.optString("description"),14f,ink));content.addView(space(18))
+        content.addView(text(t("previewNotSynced"),12f,muted));content.addView(space(15))
+        content.addView(btn(t("backToListing"),true){activePreviewCar=null;navigate(backFromDetail)})
+        body(main,content)
+    }
     private fun renderDetails() {
+        if(activePreviewCar!=null){renderPreviewDetails();return}
         val main=container();toolbar(main,"NISSAN GT-R",{navigate(backFromDetail)})
         val content=col()
         content.addView(image(280),lp(-1,280))
@@ -682,7 +823,7 @@ class MainActivity : Activity() {
             t("power") to "550 PS",t("fuel") to t("petrol"),
             t("transmission") to t("automatic"),t("body") to t("coupe"),
             t("engine") to "3.8 l V6 Biturbo VR38DETT",t("drive") to t("awd"),
-            t("color") to t("black"),t("seats") to t("fourSeats")
+            t("color") to t("black"),t("accidentCar") to t("accidentUnknown"),t("seats") to t("fourSeats")
         )
         specs.forEachIndexed { ix,(k,v)->
             val ln=row(if(ix%2==0)paper else mist)
@@ -709,11 +850,156 @@ class MainActivity : Activity() {
         val i=Intent(Intent.ACTION_SEND).apply {type="text/plain";putExtra(Intent.EXTRA_TEXT,"Limba Auto · https://raiirajet.github.io/Luma/")}
         startActivity(Intent.createChooser(i,t("shareCar")))
     }
+    private fun hashPassword(password: String, salt: String): String {
+        val key=PBEKeySpec(password.toCharArray(),salt.toByteArray(Charsets.UTF_8),120000,256)
+        val raw=SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(key).encoded
+        return raw.joinToString("") { "%02x".format(it.toInt() and 255) }
+    }
+    private fun showAccount() {
+        if(previewUser.isNotBlank()) {
+            AlertDialog.Builder(this).setTitle(t("accountLogin")+" · "+previewUser)
+                .setMessage(t("previewMode")+"\n"+t("previewNotSynced"))
+                .setPositiveButton(t("signOut")){_,_->previewUser="";prefs.edit().remove("previewUser").apply();render()}
+                .setNegativeButton(t("cancelPreview"),null).show()
+            return
+        }
+        val body=col().apply {setPadding(px(15),px(10),px(15),px(6))}
+        body.addView(text(t("demoAccess"),14f,navy,true))
+        val username=editField(body,t("usernameOrEmail"),"","limba")
+        val password=editField(body,t("password"),"","demo")
+        password.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        AlertDialog.Builder(this).setTitle(t("accountLogin"))
+            .setMessage(t("previewNotSynced"))
+            .setView(body)
+            .setPositiveButton(t("login"),null)
+            .setNeutralButton(t("localRegister")){_,_->showRegister()}
+            .setNegativeButton(t("cancelPreview"),null)
+            .create().also{dlg->
+                dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val name=username.text.toString().trim().lowercase(Locale.ROOT)
+                    val pass=password.text.toString()
+                    var valid=name=="limba"&&pass=="demo"
+                    if(!valid){val acc=JSONObject(prefs.getString("previewAccounts","{}")?:"{}").optJSONObject(name)
+                        if(acc!=null){val calculated=hashPassword(pass,acc.optString("salt"));valid=MessageDigest.isEqual(calculated.toByteArray(),acc.optString("hash").toByteArray())}}
+                    if(!valid)toast(t("loginInvalid")) else {
+                        previewUser=name;prefs.edit().putString("previewUser",name).apply();dlg.dismiss();render();toast(t("welcomePreview"))
+                    }
+                } }
+                dlg.show()
+            }
+    }
+    private fun showRegister() {
+        val layout=col().apply {setPadding(px(16),px(8),px(16),px(6))}
+        val username=editField(layout,t("username"),"", "3–32")
+        val pass=editField(layout,t("password"),"",t("minPassword"))
+        val confirm=editField(layout,t("confirmPassword"),"","")
+        pass.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        confirm.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        AlertDialog.Builder(this).setTitle(t("localRegister")).setMessage(t("previewNotSynced"))
+            .setView(layout).setPositiveButton(t("register"),null).setNegativeButton(t("cancelPreview"),null)
+            .create().also{dlg->
+                dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val name=username.text.toString().trim().lowercase(Locale.ROOT)
+                    val password=pass.text.toString()
+                    val all=JSONObject(prefs.getString("previewAccounts","{}")?:"{}")
+                    when {
+                        !name.matches(Regex("[a-z0-9._-]{3,32}"))||name=="limba" ->toast(t("requiredFields"))
+                        password.length<6 ->toast(t("minPassword"))
+                        password!=confirm.text.toString() ->toast(t("passwordsMismatch"))
+                        all.has(name) ->toast(t("accountExists"))
+                        else->{
+                            val salt=ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString(""){ "%02x".format(it.toInt() and 255) }
+                            all.put(name,JSONObject().put("salt",salt).put("hash",hashPassword(password,salt)))
+                            prefs.edit().putString("previewAccounts",all.toString()).putString("previewUser",name).apply()
+                            previewUser=name;dlg.dismiss();render();toast(t("previewRegistered"))
+                        }
+                    }
+                } }
+                dlg.show()
+            }
+    }
+    private fun showCarForm() {
+        if(previewUser.isBlank()){showAccount();return}
+        val col=col().apply {setPadding(px(18),px(6),px(18),px(14))}
+        col.addView(text(t("previewMode"),12f,orange,true));col.addView(space(8))
+        val makeList=mutableListOf<String>()
+        brands.optJSONArray("makes")?.let {arr->for(i in 0 until arr.length())makeList.add(arr.optString(i))}
+        col.addView(label(t("make")))
+        val makeField=autoComplete("",t("make"),makeList) { };col.addView(makeField,lp(-1,48))
+        col.addView(label(t("model")))
+        val modelField=autoComplete("",t("model"),emptyList()){};col.addView(modelField,lp(-1,48))
+        makeField.addTextChangedListener(object:android.text.TextWatcher {
+            override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int){}
+            override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){
+                val arr=brands.optJSONObject("models")?.optJSONArray(canonicalBrand(s.toString()))
+                val choices=mutableListOf<String>();if(arr!=null)for(i in 0 until arr.length())choices.add(arr.optString(i))
+                modelField.setAdapter(ArrayAdapter(this@MainActivity,android.R.layout.simple_dropdown_item_1line,choices))
+            }
+            override fun afterTextChanged(s:android.text.Editable?){}
+        })
+        val year=editField(col,t("firstReg"),"","2013",true)
+        val mileage=editField(col,t("mileage"),"","km",true)
+        val power=editField(col,t("power"),"","PS",true)
+        val price=editField(col,t("price"),"","€",true)
+        val city=editField(col,t("location"),"",t("location"))
+        fun spinner(label:String,values:List<Pair<String,String>>):Spinner {
+            col.addView(this.label(label));return Spinner(this).apply {
+                adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,values.map{it.second})
+                background=c(paper,12,border);col.addView(this,lp(-1,51));tag=values.map { it.first }
+            }
+        }
+        val country=spinner(t("country"),countries.map { it.first to (it.second+" "+it.third) })
+        val fuels=listOf("petrol","diesel","hybrid","electric")
+        val fuel=spinner(t("fuel"),fuels.map { it to t(it) })
+        val gearbox=listOf("manual","automatic")
+        val trans=spinner(t("transmission"),gearbox.map { it to t(it) })
+        val bodies=listOf("suv","sedan","wagon","hatchback","coupe")
+        val body=spinner(t("body"),bodies.map { it to t(it) })
+        val conditions=listOf("used","new")
+        val condition=spinner(t("carCondition"),conditions.map { it to t(if(it=="used")"conditionUsed"else "conditionNew") })
+        val accidents=listOf("unknown","no","yes")
+        val accident=spinner(t("accidentCar"),accidents.map { it to t(if(it=="unknown")"accidentUnknown"else if(it=="yes")"accidentYes"else "accidentNo") })
+        val note=editField(col,t("conditionShort"),"",t("conditionShortHint"))
+        col.addView(label(t("vehicleDescription")))
+        val desc=EditText(this).apply { setTextColor(ink);minLines=3;maxLines=6;setPadding(px(13),px(10),px(13),px(10));background=c(paper,12,border) }
+        col.addView(desc,lp(-1,110))
+        val scroll=ScrollView(this);scroll.addView(col)
+        AlertDialog.Builder(this).setTitle(t("vehicleProfile")).setView(scroll)
+            .setPositiveButton(t("savePreviewCar"),null)
+            .setNegativeButton(t("cancelPreview"),null)
+            .create().also{dlg->
+                dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val mk=canonicalBrand(makeField.text.toString());val mdl=modelField.text.toString().trim()
+                    val yr=year.text.toString().toIntOrNull();val km=mileage.text.toString().toIntOrNull();val hp=power.text.toString().toIntOrNull();val eur=price.text.toString().toIntOrNull()
+                    val town=city.text.toString().trim();val description=desc.text.toString().trim()
+                    if(mk.length !in 2..35||mdl.length !in 1..65||yr==null||yr !in 1950..2027||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
+                    val car=JSONObject().put("id","preview-"+System.currentTimeMillis()).put("uid",previewUser)
+                        .put("make",mk).put("model",mdl).put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
+                        .put("city",town).put("country",countries[country.selectedItemPosition].first).put("fuel",fuels[fuel.selectedItemPosition])
+                        .put("transmission",gearbox[trans.selectedItemPosition]).put("body",bodies[body.selectedItemPosition])
+                        .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
+                        .put("conditionNote",note.text.toString().trim().take(240)).put("description",description.take(3000))
+                    previewCars.add(0,car);savePreviewCars();dlg.dismiss();navigate("mine");toast(t("previewSaved"))
+                } }
+                dlg.show()
+            }
+    }
     private fun renderMine() {
         val main=container();toolbar(main,t("myAds"),{navigate("home")})
         val content=col().apply {setPadding(px(19),px(30),px(19),px(30))}
-        emptyState(content,t("noOwnCars"));content.addView(space(18))
-        content.addView(iconText(R.drawable.limba_add_car, t("sellCar"), {showBackendInfo()}, true))
+        content.addView(text(t("myAds"),23f,ink,true));content.addView(space(11))
+        val own=previewCars.filter { previewUser.isNotBlank()&&it.optString("uid")==previewUser }
+        if(own.isEmpty())emptyState(content,t("noOwnCars"))
+        own.forEach { car ->
+            content.addView(previewCard(car));content.addView(space(6))
+            content.addView(btn(t("removeAd"),false) {
+                AlertDialog.Builder(this).setTitle(t("removeAd")).setMessage(t("removeConfirm"))
+                    .setPositiveButton(t("removeAd")){_,_->previewCars.remove(car);savePreviewCars();renderMine()}
+                    .setNegativeButton(t("cancelPreview"),null).show()
+            });content.addView(space(16))
+        }
+        content.addView(iconText(R.drawable.limba_add_car,t("addVehicle"),{showCarForm()},true))
+        content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))
         body(main,content);navigation(main)
     }
     private fun showBackendInfo() {
@@ -723,7 +1009,7 @@ class MainActivity : Activity() {
     }
     override fun onBackPressed() {
         when(screen){
-            "details"->navigate(backFromDetail)
+            "details"->{activePreviewCar=null;navigate(backFromDetail)}
             "home"->super.onBackPressed()
             else->navigate("home")
         }
@@ -731,8 +1017,9 @@ class MainActivity : Activity() {
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean {
         if(screen=="swipe"){
             when(keyCode){
-                KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_DPAD_DOWN->{toast(if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT)t("onlyCar")else t("noSimilar"));return true}
-                KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_RIGHT->{openDetails("swipe");return true}
+                KeyEvent.KEYCODE_DPAD_LEFT->{if(swipeIndex+1<swipeCandidates().size){swipeIndex++;renderSwipe()}else toast(t("onlyCar"));return true}
+                KeyEvent.KEYCODE_DPAD_DOWN->{toast(t("noSimilar"));return true}
+                KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_RIGHT->{activePreviewCar=swipeCandidates().getOrNull(swipeIndex);openDetails("swipe");return true}
             }
         }
         return super.onKeyDown(keyCode,event)

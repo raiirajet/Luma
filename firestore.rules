@@ -5,8 +5,8 @@ service cloud.firestore {
     function verified() { return signedIn() && request.auth.token.email_verified == true; }
     function owner(uid) { return signedIn() && request.auth.uid == uid; }
     function validListing(d) {
-      return d.keys().hasAll(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType'])
-        && d.keys().hasOnly(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType'])
+      return d.keys().hasAll(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType','accidentStatus','conditionNote'])
+        && d.keys().hasOnly(['title','description','price','country','category','city','contactEmail','condition','image','images','uid','status','createdAt','make','model','year','mileage','power','fuel','transmission','body','sellerType','accidentStatus','conditionNote'])
         && d.uid is string && d.uid == request.auth.uid
         && d.title is string && d.title.size() >= 5 && d.title.size() <= 110
         && d.description is string && d.description.size() >= 15 && d.description.size() <= 3000
@@ -19,6 +19,8 @@ service cloud.firestore {
         && d.status in ['active','sold']
         && d.make is string && d.make.size() >= 2 && d.make.size() <= 35
         && d.model is string && d.model.size() >= 1 && d.model.size() <= 65
+        && d.accidentStatus in ['yes','no','unknown']
+        && d.conditionNote is string && d.conditionNote.size() <= 240
         && d.year is int && d.year >= 1950 && d.year <= 2027
         && d.mileage is int && d.mileage >= 0 && d.mileage <= 1500000
         && d.power is int && d.power >= 1 && d.power <= 2000

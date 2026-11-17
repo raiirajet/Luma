@@ -79,3 +79,14 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 ## Limba Designsystem (November 2026)
 
 Das Markendesign verwendet die 18 vom Betreiber gelieferten transparenten 3D-PNG-Funktionsicons plus Wortmarke, Symbol und App-Icon. Text- und Bedienoberflächen tragen den Namen **Limba**. Die GitHub-Repository-URL und die Android-App-ID `ch.luma.auto` bleiben bewusst bestehen, damit die bestehende Installation / Web-URL erhalten bleiben; die APK bleibt eine debug-signierte Vorabversion.
+
+## Limba 1.3 · Demo-Konten, Floating Plus und Fahrzeug-Steckbrief
+
+- Dezent sichtbarer Floating-Plus-Button für die Fahrzeuginserierung auf Desktop/Mobilgeräten; Swipe bleibt ungestört.
+- **Demo-Zugang:** Benutzername `limba`, Passwort `demo` (ausschliesslich Testmodus; weder Firebase-Konto noch echte Verkäuferidentität). Der Zugang ist öffentlich und DARF NICHT als Admin- oder Produktionskonto verwendet werden.
+- Lokale Testkonten lassen sich in der Browser-Vorschau registrieren und mit PBKDF2-SHA256-Prüfwert wieder anmelden; die Daten bleiben **nur im Browser**. Es werden keine Klartextpasswörter gespeichert. Diese Demo-Accounts sind kein Ersatz für einen serverseitig geschützten Login.
+- Echte E-Mail-Registrierung, Verifizierungs-E-Mail, Passwort-Zurücksetzen und Inseratserstellung sind im Webcode vorhanden, **aber erst nach Eintrag einer echten öffentlichen Firebase-Konfiguration in `config.js`, Aktivierung der Dienste sowie Deployment getesteter Firestore-/Storage-Regeln produktiv nutzbar**. Diese Backend-Konfiguration ist aktuell `null` und wurde nicht veröffentlicht.
+- Demo-Nutzer können lokale Test-Inserate erstellen und löschen; sie sind weder öffentlich noch zwischen Website und Android synchronisiert. Im Browser ist ein optionales kleines Foto möglich; bei fehlendem Bild wird ein neutrales Fahrzeugsymbol angezeigt. Testbilder/Anzeigen liegen nur im lokalen Speicher des Browsers.
+- Das Formular zeigt einen strukturierten Fahrzeug-Steckbrief mit Unfallfahrzeug (Ja/Nein/Keine Angabe), kurzer Zustandsnotiz, freier Beschreibung und technischen Daten.
+- Das vorgeschlagene Backend-Schema `firestore.rules` wurde um `accidentStatus` und `conditionNote` erweitert, die Regeln müssen **gesondert getestet und deployed** werden. Neue Datensätze nach diesen Regeln müssen beide Felder liefern; bisherige veröffentlichte Fahrzeuge bleiben lesbar.
+- Alle neuen UI-Texte sind über `feature-i18n.js` in sämtlichen 14 UI-Sprachen hinterlegt. Die Android-Version enthält dieselben übersetzten Strings in `android/app/src/main/assets/i18n.json`.
