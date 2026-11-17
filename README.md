@@ -1,5 +1,20 @@
 # Limba Auto · Autoverkaufsportal für Südosteuropa
 
+## Limba 1.4 · gemeinsames Firebase-MVP für Website und Android
+
+**Installation und Aktivierung:** [FIREBASE_LIMBA_SETUP.md](FIREBASE_LIMBA_SETUP.md) beschreibt Schritt für Schritt, wie ein neues Firebase-Projekt namens **Limba** mit beiden Apps verbunden wird. Das Skript `python3 scripts/prepare_config.py limba-web.json google-services.json` bereitet die beiden öffentlichen Client-Konfigurationen und GitHub-Secrets vor.
+
+- **Demo ohne Firebase:** Website und APK können ohne Zugangsdaten weiterhin mit lokalen Testdaten verwendet werden; `limba/demo` bleibt ausschliesslich ein öffentlicher Demo-Zugang.
+- **Firebase mit Konfiguration:** gemeinsames Auth-System mit E-Mail-Verifizierung und Passwort-Reset; synchronisierte öffentliche Fahrzeuge und Favoriten; Eigentümeransicht für aktive, pausierte und verkaufte Inserate.
+- **Native Android-App:** echte Firebase-SDKs, Kamera-/Galerie-Auswahl über das Android-Dokument-Auswahlsystem, Upload bis 6 Bilder, Bearbeiten, Statuswechsel, Löschen und Fahrzeugmeldungen.
+- **Web:** Bearbeiten, Verkauft/Pausiert/Reaktivieren, opt-in Kontakt-E-Mail, separater Kontospeicher und Meldungen. Mobile Darstellung korrigiert.
+- **Sicherheit:** Firestore- und Storage-Regeln mit Eigentümer- und Verifizierungsprüfung; Firebase-Emulator-Tests und Web-/APK-CI. **Die Regeln werden nicht automatisch auf eine fremde/produktive Firebase-Datenbank ausgerollt.**
+- **GitHub Actions:** GitHub Pages und Android lesen optionale GitHub-Secrets `LIMBA_WEB_CONFIG_B64` und `LIMBA_ANDROID_CONFIG_B64`. Für stabil signierte Release-APKs können zusätzlich die vier Keystore-Secrets hinterlegt werden.
+- **Sprachen & Marken:** 14 Sprachversionen und die bestehende Markenliste bleiben erhalten.
+
+**Wichtige Betriebsgrenzen:** Ohne echte Firebase-Konfigurationsdaten und manuell freigegebene Dienste werden keine öffentlichen Fahrzeuge oder Nutzerkonten angelegt. Vor öffentlicher Veröffentlichung sind reale End-to-End-Tests mit zwei Konten und echten Bildern, Datenschutz-/Rechtsprüfung und Anti-Spam-Massnahmen erforderlich. Die aktuelle Firestore-Suche lädt max. 300 aktive Inserate; serverseitige Pagination und ein Moderator-Dashboard sind weiterhin geplant.
+
+
 Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwagen-Marktplatz** umgestaltet. Das Design ist eigenständig und orientiert sich bei den Suchabläufen an gängigen Fahrzeugbörsen, ohne Branding oder Gestaltung eines konkreten Wettbewerbers zu kopieren.
 
 ## Funktionen
@@ -78,15 +93,15 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 
 ## Limba Designsystem (November 2026)
 
-Das Markendesign verwendet die 18 vom Betreiber gelieferten transparenten 3D-PNG-Funktionsicons plus Wortmarke, Symbol und App-Icon. Text- und Bedienoberflächen tragen den Namen **Limba**. Die GitHub-Repository-URL und die Android-App-ID `ch.luma.auto` bleiben bewusst bestehen, damit die bestehende Installation / Web-URL erhalten bleiben; die APK bleibt eine debug-signierte Vorabversion.
+Das Markendesign verwendet die 18 vom Betreiber gelieferten transparenten 3D-PNG-Funktionsicons plus Wortmarke, Symbol und App-Icon. Text- und Bedienoberflächen tragen den Namen **Limba**. Die GitHub-Repository-URL und die Android-App-ID `ch.luma.auto` bleiben bewusst bestehen, damit die bestehende Installation / Web-URL erhalten bleiben; ohne hinterlegte Release-Signing-Secrets bleibt die APK eine debug-signierte Vorabversion.
 
 ## Limba 1.3 · Demo-Konten, Floating Plus und Fahrzeug-Steckbrief
 
 - Dezent sichtbarer Floating-Plus-Button für die Fahrzeuginserierung auf Desktop/Mobilgeräten; Swipe bleibt ungestört.
 - **Demo-Zugang:** Benutzername `limba`, Passwort `demo` (ausschliesslich Testmodus; weder Firebase-Konto noch echte Verkäuferidentität). Der Zugang ist öffentlich und DARF NICHT als Admin- oder Produktionskonto verwendet werden.
 - Lokale Testkonten lassen sich in der Browser-Vorschau registrieren und mit PBKDF2-SHA256-Prüfwert wieder anmelden; die Daten bleiben **nur im Browser**. Es werden keine Klartextpasswörter gespeichert. Diese Demo-Accounts sind kein Ersatz für einen serverseitig geschützten Login.
-- Echte E-Mail-Registrierung, Verifizierungs-E-Mail, Passwort-Zurücksetzen und Inseratserstellung sind im Webcode vorhanden, **aber erst nach Eintrag einer echten öffentlichen Firebase-Konfiguration in `config.js`, Aktivierung der Dienste sowie Deployment getesteter Firestore-/Storage-Regeln produktiv nutzbar**. Diese Backend-Konfiguration ist aktuell `null` und wurde nicht veröffentlicht.
-- Demo-Nutzer können lokale Test-Inserate erstellen und löschen; sie sind weder öffentlich noch zwischen Website und Android synchronisiert. Im Browser ist ein optionales kleines Foto möglich; bei fehlendem Bild wird ein neutrales Fahrzeugsymbol angezeigt. Testbilder/Anzeigen liegen nur im lokalen Speicher des Browsers.
+- Echte E-Mail-Registrierung, Verifizierungs-E-Mail, Passwort-Zurücksetzen und Inseratserstellung sind im Webcode vorhanden, **aber erst nach Eintrag einer echten öffentlichen Firebase-Konfiguration in `config.js`, Aktivierung der Dienste sowie Deployment getesteter Firestore-/Storage-Regeln produktiv nutzbar**. Die Client-Konfiguration enthält bis zur Einrichtung bewusst leere Felder; mit den GitHub-Secrets wird sie beim Build eingesetzt.
+- Demo-Nutzer können lokale Test-Inserate erstellen und löschen; sie sind weder öffentlich noch zwischen Website und Android synchronisiert. Im Browser ist ein optionales kleines Foto möglich; bei fehlendem Bild wird ein neutrales Fahrzeugsymbol angezeigt. Testbilder/Anzeigen liegen nur im lokalen Speicher des Browsers bzw. des jeweiligen Android-Geräts.
 - Das Formular zeigt einen strukturierten Fahrzeug-Steckbrief mit Unfallfahrzeug (Ja/Nein/Keine Angabe), kurzer Zustandsnotiz, freier Beschreibung und technischen Daten.
 - Das vorgeschlagene Backend-Schema `firestore.rules` wurde um `accidentStatus` und `conditionNote` erweitert, die Regeln müssen **gesondert getestet und deployed** werden. Neue Datensätze nach diesen Regeln müssen beide Felder liefern; bisherige veröffentlichte Fahrzeuge bleiben lesbar.
 - Alle neuen UI-Texte sind über `feature-i18n.js` in sämtlichen 14 UI-Sprachen hinterlegt. Die Android-Version enthält dieselben übersetzten Strings in `android/app/src/main/assets/i18n.json`.
