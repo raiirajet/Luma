@@ -255,8 +255,8 @@ class MainActivity : Activity() {
         background = c(paper, 11, border)
         setPadding(px(13), px(11), px(13), px(11))
     }
-    private fun editField(parent: LinearLayout, label: String, existing: String, hint: String, numeric: Boolean = false): EditText {
-        parent.addView(label(label))
+    private fun editField(parent: LinearLayout, caption: String, existing: String, hint: String, numeric: Boolean = false): EditText {
+        parent.addView(label(caption))
         val field = input(existing, hint, numeric)
         parent.addView(field, lp(-1, 48))
         return field
