@@ -704,6 +704,8 @@ class MainActivity : Activity() {
             prefs.edit().putStringSet("countries",activeCountry.toSet()).apply();navigate("home")
         });content.addView(space(19))
         content.addView(iconText(R.drawable.limba_notifications, t("yourSavedSearch"), {navigate("searches")}))
+        content.addView(space(12))
+        content.addView(iconText(R.drawable.limba_vehicle_cards,t("myAds"),{navigate("mine")}))
         body(main,content);navigation(main)
     }
 
@@ -974,6 +976,79 @@ class MainActivity : Activity() {
                 dlg.show()
             }
     }
+
+    private fun showFirebaseAccount() {
+        val user = cloudUser
+        if(user != null) {
+            val choices = arrayOf(t("myAds"),t("refreshVerification"),t("sendVerification"),t("signOut"))
+            AlertDialog.Builder(this).setTitle(user.email ?: "Limba")
+                .setMessage(if(user.isEmailVerified)t("verifiedBadge") else t("notVerified"))
+                .setItems(choices) { _,which ->
+                    when(which) {
+                        0 -> navigate("mine")
+                        1 -> backend.refreshVerification { confirmed ->
+                            toast(if(confirmed)t("verifiedBadge")else t("notVerified"));render()
+                        }
+                        2 -> backend.sendVerification { err -> toast(err ?: t("checkEmail")) }
+                        3 -> backend.auth?.signOut()
+                    }
+                }.setNegativeButton(t("cancel"),null).show()
+            return
+        }
+        AlertDialog.Builder(this).setTitle(t("accountLogin"))
+            .setItems(arrayOf(t("login"),t("register"),t("forgotPassword"),t("signInDemo"))) { _,which ->
+                when(which){
+                    0->showFirebaseAuthForm("login")
+                    1->showFirebaseAuthForm("register")
+                    2->showFirebaseAuthForm("reset")
+                    3->{previewUser="limba";prefs.edit().putString("previewUser",previewUser).apply()
+                        render();toast(t("welcomePreview"))}
+                }
+            }.setNegativeButton(t("cancel"),null).show()
+    }
+    private fun showFirebaseAuthForm(mode:String) {
+        val layout=col().apply { setPadding(px(16),px(8),px(16),px(8)) }
+        val email=editField(layout,t("email"),"","name@example.com")
+        email.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        val password=if(mode!="reset")editField(layout,t("password"),"","")else null
+        password?.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        val confirm=if(mode=="register")editField(layout,t("confirmPassword"),"","")else null
+        confirm?.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        val title=when(mode){"register"->t("register");"reset"->t("forgotPassword");else->t("login")}
+        AlertDialog.Builder(this).setTitle(title).setView(layout)
+            .setPositiveButton(title,null).setNegativeButton(t("cancel"),null)
+            .create().also { dialog ->
+                dialog.setOnShowListener {
+                    val positive=dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    positive.setOnClickListener {
+                        val address=email.text.toString().trim()
+                        val pass=password?.text?.toString() ?: ""
+                        if(!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()) {
+                            toast(t("requiredFields"));return@setOnClickListener
+                        }
+                        if(mode!="reset" && pass.length<8) {
+                            toast(t("minPassword"));return@setOnClickListener
+                        }
+                        if(mode=="register" && pass != confirm?.text.toString()) {
+                            toast(t("passwordsMismatch"));return@setOnClickListener
+                        }
+                        positive.isEnabled=false
+                        val done:(String?)->Unit={ error ->
+                            positive.isEnabled=true
+                            if(error!=null)toast(error)else{
+                                dialog.dismiss();toast(if(mode=="register"||mode=="reset")t("checkEmail") else t("login"))
+                            }
+                        }
+                        when(mode){
+                            "register"->backend.register(address,pass,done)
+                            "reset"->backend.resetPassword(address,done)
+                            else->backend.signIn(address,pass,done)
+                        }
+                    }
+                }
+                dialog.show()
+            }
+    }
     private fun showRegister() {
         val layout=col().apply {setPadding(px(16),px(8),px(16),px(6))}
         val username=editField(layout,t("username"),"", "3–32")
@@ -1004,16 +1079,20 @@ class MainActivity : Activity() {
                 dlg.show()
             }
     }
-    private fun showCarForm() {
-        if(previewUser.isBlank()){showAccount();return}
+    private fun showCarForm(existing: JSONObject? = null) {
+        val isPreview = previewUser.isNotBlank()
+        if(!isPreview && cloudUser==null){showAccount();return}
+        if(!isPreview && cloudUser?.isEmailVerified!=true){
+            toast(t("verifiedRequired"));showAccount();return
+        }
         val col=col().apply {setPadding(px(18),px(6),px(18),px(14))}
-        col.addView(text(t("previewMode"),12f,orange,true));col.addView(space(8))
+        col.addView(text(if(isPreview)t("previewMode")else t("vehicleProfile"),12f,orange,true));col.addView(space(8))
         val makeList=mutableListOf<String>()
         brands.optJSONArray("makes")?.let {arr->for(i in 0 until arr.length())makeList.add(arr.optString(i))}
         col.addView(label(t("make")))
-        val makeField=autoComplete("",t("make"),makeList) { };col.addView(makeField,lp(-1,48))
+        val makeField=autoComplete(existing?.optString("make")?:"",t("make"),makeList) { };col.addView(makeField,lp(-1,48))
         col.addView(label(t("model")))
-        val modelField=autoComplete("",t("model"),emptyList()){};col.addView(modelField,lp(-1,48))
+        val modelField=autoComplete(existing?.optString("model")?:"",t("model"),emptyList()){};col.addView(modelField,lp(-1,48))
         makeField.addTextChangedListener(object:android.text.TextWatcher {
             override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int){}
             override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){
@@ -1023,11 +1102,11 @@ class MainActivity : Activity() {
             }
             override fun afterTextChanged(s:android.text.Editable?){}
         })
-        val year=editField(col,t("firstReg"),"","2013",true)
-        val mileage=editField(col,t("mileage"),"","km",true)
-        val power=editField(col,t("power"),"","PS",true)
-        val price=editField(col,t("price"),"","€",true)
-        val city=editField(col,t("location"),"",t("location"))
+        val year=editField(col,t("firstReg"),existing?.optString("year")?:"","2013",true)
+        val mileage=editField(col,t("mileage"),existing?.optString("mileage")?:"","km",true)
+        val power=editField(col,t("power"),existing?.optString("power")?:"","PS",true)
+        val price=editField(col,t("price"),existing?.optString("price")?:"","€",true)
+        val city=editField(col,t("location"),existing?.optString("city")?:"",t("location"))
         fun spinner(label:String,values:List<Pair<String,String>>):Spinner {
             col.addView(this.label(label));return Spinner(this).apply {
                 adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,values.map{it.second})
@@ -1035,37 +1114,84 @@ class MainActivity : Activity() {
             }
         }
         val country=spinner(t("country"),countries.map { it.first to (it.second+" "+it.third) })
+        existing?.let {country.setSelection(countries.indexOfFirst{c->c.first==it.optString("country")}.coerceAtLeast(0))}
         val fuels=listOf("petrol","diesel","hybrid","electric")
         val fuel=spinner(t("fuel"),fuels.map { it to t(it) })
+        existing?.let {fuel.setSelection(fuels.indexOf(it.optString("fuel")).coerceAtLeast(0))}
         val gearbox=listOf("manual","automatic")
         val trans=spinner(t("transmission"),gearbox.map { it to t(it) })
+        existing?.let {trans.setSelection(gearbox.indexOf(it.optString("transmission")).coerceAtLeast(0))}
         val bodies=listOf("suv","sedan","wagon","hatchback","coupe")
         val body=spinner(t("body"),bodies.map { it to t(it) })
+        existing?.let {body.setSelection(bodies.indexOf(it.optString("body")).coerceAtLeast(0))}
         val conditions=listOf("used","new")
         val condition=spinner(t("carCondition"),conditions.map { it to t(if(it=="used")"conditionUsed"else "conditionNew") })
+        existing?.let {condition.setSelection(conditions.indexOf(it.optString("condition")).coerceAtLeast(0))}
         val accidents=listOf("unknown","no","yes")
         val accident=spinner(t("accidentCar"),accidents.map { it to t(if(it=="unknown")"accidentUnknown"else if(it=="yes")"accidentYes"else "accidentNo") })
-        val note=editField(col,t("conditionShort"),"",t("conditionShortHint"))
+        existing?.let {accident.setSelection(accidents.indexOf(it.optString("accidentStatus")).coerceAtLeast(0))}
+        val note=editField(col,t("conditionShort"),existing?.optString("conditionNote")?:"",t("conditionShortHint"))
+        val sellerTypes=listOf("privateSeller","dealer")
+        val seller=spinner(t("sellerType"),sellerTypes.map { it to t(it) })
+        existing?.let {seller.setSelection(sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0))}
+        val contact=if(!isPreview)editField(col,t("contactEmail"),
+            existing?.optString("contactEmail") ?: (cloudUser?.email ?: ""),t("email"))else null
         col.addView(label(t("vehicleDescription")))
         val desc=EditText(this).apply { setTextColor(ink);minLines=3;maxLines=6;setPadding(px(13),px(10),px(13),px(10));background=c(paper,12,border) }
+        desc.setText(existing?.optString("description") ?: "")
         col.addView(desc,lp(-1,110))
+        if(!isPreview && existing==null){
+            pickedImages.clear()
+            col.addView(space(12))
+            col.addView(btn(t("listingPhotos"),false){
+                val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{
+                    type="image/*";addCategory(Intent.CATEGORY_OPENABLE)
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true)
+                }
+                startActivityForResult(intent,pickPhotosRequest)
+            })
+            pickedImagesLabel=text("0 / 6",12f,muted)
+            col.addView(pickedImagesLabel)
+        }
         val scroll=ScrollView(this);scroll.addView(col)
         AlertDialog.Builder(this).setTitle(t("vehicleProfile")).setView(scroll)
-            .setPositiveButton(t("savePreviewCar"),null)
+            .setPositiveButton(if(isPreview)t("savePreviewCar")else if(existing!=null)t("editAd")else t("publish"),null)
             .setNegativeButton(t("cancelPreview"),null)
             .create().also{dlg->
                 dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     val mk=canonicalBrand(makeField.text.toString());val mdl=modelField.text.toString().trim()
                     val yr=year.text.toString().toIntOrNull();val km=mileage.text.toString().toIntOrNull();val hp=power.text.toString().toIntOrNull();val eur=price.text.toString().toIntOrNull()
                     val town=city.text.toString().trim();val description=desc.text.toString().trim()
-                    if(mk.length !in 2..35||mdl.length !in 1..65||yr==null||yr !in 1950..2027||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
-                    val car=JSONObject().put("id","preview-"+System.currentTimeMillis()).put("uid",previewUser)
+                    if(mk.length !in 2..35||mdl.length !in 1..65||yr==null||yr !in 1950..(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)+1)||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
+                    val car=JSONObject().put("id",existing?.optString("id") ?: "preview-"+System.currentTimeMillis())
+                        .put("uid",if(isPreview)previewUser else cloudUser?.uid ?: "")
                         .put("make",mk).put("model",mdl).put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
                         .put("city",town).put("country",countries[country.selectedItemPosition].first).put("fuel",fuels[fuel.selectedItemPosition])
                         .put("transmission",gearbox[trans.selectedItemPosition]).put("body",bodies[body.selectedItemPosition])
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
                         .put("conditionNote",note.text.toString().trim().take(240)).put("description",description.take(3000))
-                    previewCars.add(0,car);savePreviewCars();dlg.dismiss();navigate("mine");toast(t("previewSaved"))
+                        .put("sellerType",sellerTypes[seller.selectedItemPosition])
+                        .put("contactEmail",contact?.text?.toString()?.trim() ?: "")
+                    if (isPreview) {
+                        existing?.let { previewCars.remove(it) }
+                        previewCars.add(0,car);savePreviewCars();dlg.dismiss();navigate("mine")
+                        toast(t("previewSaved"))
+                    } else {
+                        if(existing==null && pickedImages.isEmpty()) {
+                            toast(t("listingPhotos"));return@setOnClickListener
+                        }
+                        val submit=dlg.getButton(AlertDialog.BUTTON_POSITIVE)
+                        submit.isEnabled=false
+                        val done:(String?)->Unit={error->
+                            submit.isEnabled=true
+                            if(error!=null)toast(error)else{
+                                pickedImages.clear();pickedImagesLabel=null
+                                dlg.dismiss();navigate("mine");toast(t("carPublished"))
+                            }
+                        }
+                        if(existing!=null) backend.update(car,done)
+                        else backend.publish(car,pickedImages.toList(),done)
+                    }
                 } }
                 dlg.show()
             }
@@ -1074,18 +1200,34 @@ class MainActivity : Activity() {
         val main=container();toolbar(main,t("myAds"),{navigate("home")})
         val content=col().apply {setPadding(px(19),px(30),px(19),px(30))}
         content.addView(text(t("myAds"),23f,ink,true));content.addView(space(11))
-        val own=previewCars.filter { previewUser.isNotBlank()&&it.optString("uid")==previewUser }
+        val own=if(previewUser.isNotBlank())
+            previewCars.filter { it.optString("uid")==previewUser }
+            else ownCars.toList()
         if(own.isEmpty())emptyState(content,t("noOwnCars"))
         own.forEach { car ->
             content.addView(previewCard(car));content.addView(space(6))
+            if(previewUser.isBlank()) {
+                content.addView(text(t("statusLabel")+": "+t("status"+car.optString("status","active").replaceFirstChar{it.uppercase()}),
+                    13f,muted))
+                content.addView(btn(t("editAd"),false) {showCarForm(car)})
+                listOf("active","paused","sold").forEach { status ->
+                    if(status!=car.optString("status")) content.addView(btn(t("status"+status.replaceFirstChar{it.uppercase()}),false){
+                        backend.status(car,status){error->if(error!=null)toast(error)}
+                    })
+                }
+            }else content.addView(btn(t("editAd"),false){showCarForm(car)})
             content.addView(btn(t("removeAd"),false) {
                 AlertDialog.Builder(this).setTitle(t("removeAd")).setMessage(t("removeConfirm"))
-                    .setPositiveButton(t("removeAd")){_,_->previewCars.remove(car);savePreviewCars();renderMine()}
+                    .setPositiveButton(t("removeAd")){_,_->
+                        if(previewUser.isNotBlank()){
+                            previewCars.remove(car);savePreviewCars();renderMine()
+                        } else backend.remove(car){error->if(error!=null)toast(error)}
+                    }
                     .setNegativeButton(t("cancelPreview"),null).show()
             });content.addView(space(16))
         }
         content.addView(iconText(R.drawable.limba_add_car,t("addVehicle"),{showCarForm()},true))
-        content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))
+        if(previewUser.isNotBlank()){content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))}
         body(main,content);navigation(main)
     }
     private fun showBackendInfo() {
