@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
@@ -53,6 +55,12 @@ class LimbaFirebase(private val activity: Activity) {
                     ?: FirebaseApp.initializeApp(activity.applicationContext, opts, "limba")
             }.getOrNull()
         } else null
+        // Do not enforce until Play Integrity has been registered for the release
+        // signature and verified on real devices; default remains opt-in.
+        if (config?.optBoolean("appCheckEnabled",false) == true) app?.let {
+            FirebaseAppCheck.getInstance(it)
+                .installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
+        }
         auth = app?.let { FirebaseAuth.getInstance(it) }
         db = app?.let { FirebaseFirestore.getInstance(it) }
         storage = app?.let { FirebaseStorage.getInstance(it) }

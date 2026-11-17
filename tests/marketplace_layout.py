@@ -45,6 +45,8 @@ try:
     page.locator('.mobile-nav [data-view="home"]').click()
    page.locator('.swipe-inline').click()
    assert page.locator('#swipeView').is_visible()
+   if page.locator('#swipeTutorial').is_visible():
+    page.locator('#swipeDone').click()
    page.locator('#swipeHome').click()
    assert page.locator('#homeView').is_visible()
    assert not errors,(width,errors)

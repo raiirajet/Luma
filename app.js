@@ -231,7 +231,12 @@ async function updateListingStatus(id,status){
 }
 async function removeListing(id){const x=state.listings.find(y=>y.id===id);if(!x||!state.user||x.uid!==state.user.uid)return;if(!window.confirm(T('removeConfirm')))return;if(x.isPreview){state.listings=state.listings.filter(y=>y.id!==id);persist('previewCars',state.listings.filter(y=>y.isPreview));renderAll();toast(T('removedMessage'));return}if(!state.fb)return;try{const {db,storage,modules:m}=state.fb;await m.deleteDoc(m.doc(db,'listings',id));state.listings=state.listings.filter(y=>y.id!==id);renderAll();toast(T('removedMessage'));for(const u of (x.images||[])){try{await m.deleteObject(m.ref(storage,u))}catch(e){console.warn('image cleanup',e)}}}catch(e){toast(T('uploadFailed'))}}
 async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window.LUMA_FIREBASE_CONFIG;if(!conf?.apiKey||!conf?.projectId)return;try{
- const base='https://www.gstatic.com/firebasejs/12.6.0/';const [app,auth,db,storage,functions]=await Promise.all(['firebase-app.js','firebase-auth.js','firebase-firestore.js','firebase-storage.js','firebase-functions.js'].map(s=>import(base+s)));const init=app.initializeApp(conf);const modules={...auth,...db,...storage,...functions};state.fb={app:init,functions:functions.getFunctions(init,'europe-west6'),auth:auth.getAuth(init),db:db.getFirestore(init),storage:storage.getStorage(init),modules};state.firebaseReady=true;
+ const base='https://www.gstatic.com/firebasejs/12.6.0/';const [app,auth,db,storage,functions]=await Promise.all(['firebase-app.js','firebase-auth.js','firebase-firestore.js','firebase-storage.js','firebase-functions.js'].map(s=>import(base+s)));const init=app.initializeApp(conf);
+ if(window.LIMBA_APP_CHECK_SITE_KEY){
+   const check=await import(base+'firebase-app-check.js');
+   check.initializeAppCheck(init,{provider:new check.ReCaptchaV3Provider(window.LIMBA_APP_CHECK_SITE_KEY),isTokenAutoRefreshEnabled:true});
+ }
+ const modules={...auth,...db,...storage,...functions};state.fb={app:init,functions:functions.getFunctions(init,'europe-west6'),auth:auth.getAuth(init),db:db.getFirestore(init),storage:storage.getStorage(init),modules};state.firebaseReady=true;
  auth.onAuthStateChanged(state.fb.auth,async user=>{
   if(!user&&state.user?.isPreview)return;
   unsubscribeOwned?.();unsubscribeOwned=null;serverOwned=[];

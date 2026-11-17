@@ -45,5 +45,6 @@ dependencies {
   implementation("com.google.firebase:firebase-storage")
   implementation("com.google.firebase:firebase-functions")
   implementation("com.google.firebase:firebase-messaging")
+  implementation("com.google.firebase:firebase-appcheck-playintegrity")
   implementation("com.github.bumptech.glide:glide:4.16.0")
 }
