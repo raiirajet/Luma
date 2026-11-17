@@ -255,7 +255,7 @@ class LimbaFirebase(private val activity: Activity) {
             ?.addOnSuccessListener {
                 if (images != null && storage != null) {
                     for (i in 0 until images.length()) {
-                        runCatching { storage.getReferenceFromUrl(images.optString(i)).delete() }
+                        runCatching { storage?.getReferenceFromUrl(images.optString(i))?.delete() }
                     }
                 }
                 done(null)
