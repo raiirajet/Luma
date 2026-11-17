@@ -10,7 +10,10 @@ Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwa
 - EUR-Preise, Filter, Sortierung, gespeicherte Suchen, Favoriten, Detailansicht mit technischen Daten und Bildernavigation.
 - Vollbild-Fahrzeug-Swipe mit Home oben rechts, Favorit unten rechts und einmaliger Einführung.
 - Firebase Email/Password und Bestätigungs-E-Mail, Fahrzeug-Inserate und Fotouploads, Verwaltung und Löschung eigener Inserate. Funktionen sind gesperrt, solange Firebase nicht eingerichtet ist.
-- 12 klar als **Demos** gekennzeichnete Autos mit externen, echten Unsplash-Stockfotos. **Die Bilder stellen nicht die angegebenen Beispielmodelle dar.** Es handelt sich um keine echten Kaufangebote und keine aktuellen Marktpreise.
+- **Ein einziges Musterfahrzeug:** schwarzer **Nissan GT-R R35 Black Edition (Beispieljahr 2013)** mit einer ausführlichen, in allen 14 Sprachen übersetzten Beschreibung und einer echten, passenden Fahrzeugaufnahme. **Preis, Kilometerstand, Ort und Zustand sind erfundene Testangaben**, kein Angebot und kein Verkäufer. Echte Nutzerfahrzeuge bleiben erhalten, falls Firebase aktiviert wird.
+- **Rücknavigation:** Swipe → Hoch-/Rechtswischen → Fahrzeugdetails → «Zurück zum Swipe», Schliessen oder Browser-Zurück. Die Swipe-Infohilfe verfügt über «Zurück zum Fahrzeug». **Home** oben rechts verlässt Swipe; das **Herz** unten rechts speichert Favoriten. Bei nur einem Treffer werden links/abwärts keine endlosen Wiederholungen mehr ausgelöst.
+- Die Gestenerkennung verhindert unbeabsichtigte Browser-Scroll-Abbrüche bei vertikalen Swipes. Tastaturpfeile sind zusätzlich als Alternative verfügbar.
+- Eine angemeldete Person kann nach Bestätigung der E-Mail-Adresse im Kontodialog den Verifizierungsstatus erneut laden, damit der Inserat-Upload anschliessend möglich wird.
 
 ## Firebase aktivieren
 
@@ -37,7 +40,29 @@ python3 -m http.server 8080
 # http://localhost:8080/
 ```
 
-Diese Web-App verwendet ES-Module und benötigt daher einen lokalen HTTP-Server. Die separate `preview.html` ist als einzelne Datei auch direkt im Browser aufrufbar.
+Diese Web-App verwendet ES-Module und benötigt daher einen lokalen HTTP-Server. Die separate `preview.html` ist als einzelne Datei auch direkt im Browser aufrufbar. Sie kann mit `python3 build_preview.py` aus den aktuellen Quelldateien neu erzeugt werden.
+
+## Regressionstests
+
+Die Skripte `qa_regression.py` und `test_swipe_pointer.py` prüfen die lokalen Oberflächen mit Playwright/Chromium bei 1440 px und 390 px. Geprüft wurden unter anderem:
+
+- genau ein Demoauto und dessen ausführliche Beschreibung in allen 14 Sprachen
+- Marke/Modell/Preisfilter, Reset, Suchländer, gespeicherte Suchen, Merkliste
+- Swipe-Einführung, Infohilfe mit Zurück, Gesten in alle vier Richtungen, Klick auf Favorit, Home
+- Zurück aus Detailansichten mit Button, Escape und Browser-Verlauf
+- Gast-Authentifizierungsdialog (Firebase noch nicht eingerichtet) und JavaScript-Laufzeitfehler
+
+Tests laufen ohne Zugriff auf externe Bilder; Bilddarstellung und echte Firebase-Backend-Interaktionen müssen zusätzlich nach dem produktiven Einrichten geprüft werden.
+
+```bash
+python3 build_preview.py
+python3 qa_regression.py
+python3 test_swipe_pointer.py
+```
+
+## Bild und Datenherkunft
+
+Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Nissan_GT-R_R35_Black_Edition.JPG), **CC BY-SA 4.0**. Die Urheberangabe und die Lizenz sind aus der Fahrzeugdetailansicht verlinkt. Angaben zum Modellantrieb, V6-Biturbo und zur Black Edition sind mit dem [2013 Nissan GT-R Press Kit](https://usa.nissannews.com/en-US/releases/2013-nissan-gt-r-press-kit) gegengeprüft; die Verkaufsdaten sind ausdrücklich fiktiv.
 
 ## Grenzen
 
