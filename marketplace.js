@@ -138,7 +138,7 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
         $('offerAmount').value='';}
       catch(err){error(err)}finally{button.disabled=false;}
     });
-    const c=f.modules.collection(f.db,'conversations',conversationId);
+    const c=f.modules.doc(f.db,'conversations',conversationId);
     activeListeners.push(f.modules.onSnapshot(
       f.modules.query(f.modules.collection(c,'messages'),f.modules.orderBy('createdAt','asc'),f.modules.limit(100)),
       snap=>{
@@ -295,9 +295,10 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
       if(!('serviceWorker' in navigator)||!('Notification' in window))throw Error(tr('pushNotSupported'));
       const permission=await Notification.requestPermission();
       if(permission!=='granted')return notify(tr('pushDenied'));
-      if(!f.modules.isSupported||!(await f.modules.isSupported()))throw Error(tr('pushNotSupported'));
+      const messaging=await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-messaging.js');
+      if(!(await messaging.isSupported()))throw Error(tr('pushNotSupported'));
       const serviceWorkerRegistration=await navigator.serviceWorker.register('firebase-messaging-sw.js');
-      const token=await f.modules.getToken(f.modules.getMessaging(f.app),{vapidKey:key,serviceWorkerRegistration});
+      const token=await messaging.getToken(messaging.getMessaging(f.app),{vapidKey:key,serviceWorkerRegistration});
       await run('registerPushToken',{token,platform:'web',appVersion:'1.5.0'});
       notify(tr('pushEnabled'));
     }catch(e){error(e)}

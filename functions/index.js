@@ -105,6 +105,23 @@ const dateFromInput = value => {
   return Timestamp.fromMillis(ms);
 };
 
+// Synchronize verification badges from Firebase Auth, never from client input.
+exports.syncPublicProfile = secureCall('chat', async (_data, uid) => {
+  const record = await require('firebase-admin/auth').getAuth().getUser(uid);
+  const ref = profileRef(uid);
+  const old = await ref.get();
+  const memberSince = Timestamp.fromMillis(Date.parse(record.metadata.creationTime) || Date.now());
+  const fields = {emailVerified:record.emailVerified===true,phoneVerified:!!record.phoneNumber};
+  if (!old.exists) Object.assign(fields,{
+    alias:(record.displayName || record.email?.split('@')[0] || 'Mitglied').slice(0,60),
+    photoUrl:'',memberSince,sellerRatingCount:0,sellerRatingAverage:0,sellerRatingTotal:0,
+    buyerRatingCount:0,buyerRatingAverage:0,buyerRatingTotal:0,
+    completedSales:0,completedPurchases:0,responseRate:0,badges:[]
+  });
+  await ref.set(fields,{merge:true});
+  return {synced:true};
+});
+
 exports.createConversation = secureCall('chat', async ({listingId}, uid) => {
   const lid = id(listingId, 'Inserat');
   const lref = listingRef(lid);
