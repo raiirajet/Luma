@@ -4,7 +4,7 @@ html=(Path(__file__).resolve().parent/'preview.html').read_text()
 with sync_playwright() as p:
  b=p.chromium.launch(headless=True,args=['--no-sandbox','--allow-file-access-from-files','--disable-web-security'])
  for width,height in [(1440,900),(390,844)]:
-  ctx=b.new_context(viewport={'width':width,'height':height},has_touch=width<500)
+  ctx=b.new_context(viewport={'width':width,'height':height},has_touch=width<500,is_mobile=False)
   page=ctx.new_page();page.set_default_timeout(5000)
   errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.route('https://upload.wikimedia.org/**',lambda route:route.abort())
