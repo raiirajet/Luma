@@ -43,6 +43,40 @@ try:
     page.locator('.mobile-nav [data-view="profile"]').click()
     assert page.locator('#profileView').is_visible()
     page.locator('.mobile-nav [data-view="home"]').click()
+   # A single tap opens the complete offline catalogue. Typing narrows it.
+   make=page.locator('#make')
+   make.click()
+   dropdown=page.locator('#make + .catalogue-dropdown')
+   assert dropdown.is_visible(),(width,'brand picker did not open on tap')
+   assert dropdown.locator('[role="option"]').count() >= 400,(width,'car marques are missing')
+   dropdown.evaluate('(el) => el.scrollTop = 180')
+   assert dropdown.evaluate('(el) => el.scrollTop')>0,(width,'picker not scrollable')
+   make.fill('volks')
+   assert dropdown.locator('[role="option"]').count() >= 1
+   assert dropdown.get_by_role('option',name='Volkswagen',exact=True).count()==1
+   make.press('ArrowDown')
+   make.press('Enter')
+   assert make.input_value()=='Volkswagen'
+   assert page.locator('#carGrid .car-card').count()==0
+   page.locator('#clearAll').click()
+   make.click()
+   dropdown.get_by_role('option',name='Nissan',exact=True).click()
+   assert make.input_value()=='Nissan'
+   model=page.locator('#model')
+   model.click()
+   modelmenu=page.locator('#model + .catalogue-dropdown')
+   assert modelmenu.get_by_role('option',name='GT-R',exact=True).count()==1,(width,'model catalogue missing')
+   model.fill('gt')
+   assert modelmenu.get_by_role('option',name='GT-R',exact=True).count()==1
+   modelmenu.get_by_role('option',name='GT-R',exact=True).click()
+   assert page.locator('#carGrid .car-card').count()==1
+   assert page.locator('#keyword').is_hidden()
+   page.locator('#advancedToggle').click()
+   assert page.locator('#keyword').is_visible()
+   assert page.locator('#fuel').is_visible()
+   page.locator('#advancedToggle').click()
+   assert page.locator('#keyword').is_hidden()
+   page.locator('#clearAll').click()
    assert page.locator('#keyword').is_hidden(), 'optional keyword is in more filters only'
    page.locator('.search-swipe-btn').click()
    assert page.locator('#swipeView').is_visible()
