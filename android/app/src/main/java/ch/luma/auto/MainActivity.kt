@@ -88,6 +88,7 @@ class MainActivity : Activity() {
     private lateinit var backend: LimbaFirebase
     private lateinit var social: LimbaSocial
     private var activeConversation = ""
+    private var focusOfferOnChat = false
     private val socialListeners = mutableListOf<ListenerRegistration>()
     private val pickedImages = mutableListOf<Uri>()
     private var pickedImagesLabel: TextView? = null
@@ -921,13 +922,13 @@ class MainActivity : Activity() {
             }
             content.addView(btn(t("socialMessage"),true) {
                 social.beginConversation(car.optString("id")) { id,error ->
-                    if(error!=null)toast(error) else if(id!=null){activeConversation=id;navigate("chat")}
+                    if(error!=null)toast(error) else if(id!=null){focusOfferOnChat=false;activeConversation=id;navigate("chat")}
                 }
             })
             content.addView(space(8))
-            content.addView(btn(t("socialOffer"),false) {
+            content.addView(btn(t("socialProposePrice"),false) {
                 social.beginConversation(car.optString("id")) { id,error ->
-                    if(error!=null)toast(error) else if(id!=null){activeConversation=id;navigate("chat")}
+                    if(error!=null)toast(error) else if(id!=null){focusOfferOnChat=true;activeConversation=id;navigate("chat")}
                 }
             })
             content.addView(space(9))
@@ -1387,7 +1388,14 @@ class MainActivity : Activity() {
         content.addView(text(t("socialNoPayment"),12f,muted))
         social.isConversationBuyer(id){isBuyer->
             if(screen!="chat"||id!=activeConversation)return@isConversationBuyer
-            if(isBuyer==true){negotiation.visibility=View.VISIBLE;refreshQuota()}
+            if(isBuyer==true){
+                negotiation.visibility=View.VISIBLE
+                refreshQuota()
+                if(focusOfferOnChat){
+                    focusOfferOnChat=false
+                    negotiation.post{ (content.parent as? ScrollView)?.smoothScrollTo(0,negotiation.top) }
+                }
+            }
         }
         body(main,content);navigation(main)
         social.watchMessages(id) { rows ->
