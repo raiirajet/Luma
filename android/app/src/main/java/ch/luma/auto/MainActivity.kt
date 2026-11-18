@@ -351,7 +351,7 @@ class MainActivity : Activity() {
         val bubble=fp(56,56,Gravity.END or Gravity.BOTTOM).apply {
             marginEnd=px(16);bottomMargin=px(82)
         }
-        root.addView(plus,bubble)
+        if(screen!="swipe")root.addView(plus,bubble)
         if(compareIds.isNotEmpty() && screen!="swipe" && screen!="compare"){
             val compare=btn(t("compare")+" "+compareIds.size+"/3",false){
                 if(compareIds.size<2)toast(t("compareNeedTwo"))else navigate("compare")
@@ -439,6 +439,9 @@ class MainActivity : Activity() {
         body(main,content);navigation(main)
     }
     private fun body(main: LinearLayout, content: LinearLayout) {
+        // The overlayed "+" control must never obscure the last actionable item.
+        content.setPadding(content.paddingLeft,content.paddingTop,content.paddingRight,
+            content.paddingBottom+px(76))
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }
         scroll.addView(content)
         main.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
