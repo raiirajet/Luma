@@ -1,14 +1,22 @@
 import {estimateImport} from './limba-lux.js';
 export const createLimbaExperiences=function createLimbaExperiences(api){
- const {el,state,filtered,carCard,price,number,flag,countryLabel,h,safeURL,T,F,X,isDemo,openDetails,modal,toast} = api;
+ const {el,state,filtered,carCard,price,number,flag,countryLabel,h,safeURL,T,F,X,L,isDemo,openDetails,modal,toast} = api;
  const selected=new Set();
  const listCountries=[['AL','🇦🇱','Albania'],['TR','🇹🇷','Türkiye'],['GR','🇬🇷','Greece'],['RS','🇷🇸','Serbia'],['SI','🇸🇮','Slovenia'],['XK','🇽🇰','Kosovo'],['MK','🇲🇰','North Macedonia'],['HR','🇭🇷','Croatia'],['BA','🇧🇦','Bosnia and Herzegovina'],['ME','🇲🇪','Montenegro'],['BG','🇧🇬','Bulgaria'],['RO','🇷🇴','Romania'],['CH','🇨🇭','Switzerland']];
  function passport(car){
   const detail=(key)=>h(car[key]||X('noInfo'));
   return `<section class="limba-passport"><div class="lux-heading"><span class="lux-symbol">✦</span><div><h3>${h(X('vehiclePass'))}</h3><small>${h(X('sellerClaims'))}</small></div></div><div class="passport-facts"><div><strong>${h(X('serviceHistory'))}</strong><p>${detail('serviceHistory')}</p></div><div><strong>${h(X('tuningDetails'))}</strong><p>${detail('modificationNotes')}</p></div><div><strong>${h(X('documentNotes'))}</strong><p>${detail('documentNotes')}</p></div></div><p class="lux-disclaimer">${h(X('notVerified'))}</p></section>`;
  }
+ const countryOptions=excluded=>listCountries.filter(c=>c[0]!==excluded).map(([code,emoji])=>`<option value="${h(code)}">${emoji} ${h(countryLabel(code))}</option>`).join('');
+ const importInputs=[
+  ['transport','transport',1000000],['customs','customs',100],['vat','vat',100],['registration','registration',1000000]
+ ];
+ const importBreakdown=value=>[
+  ['listedPrice',value.price],['transport',value.transport],['customs',value.duty],
+  ['vat',value.tax],['registration',value.registration],['total',value.total]
+ ];
  function calculatorMarkup(car){
-  const countries=listCountries.filter(c=>c[0]!==car.country).map(([code,emoji,name])=>`<option value="${h(code)}">${emoji} ${h(code==='CH'?(state.locale==='de'?'Schweiz':name):countryLabel(code))}</option>`).join('');
+  const countries=countryOptions(car.country);
   return `<section class="borderless-box"><div class="lux-heading"><span class="lux-symbol">◎</span><div><h3>${h(X('borderless'))}</h3><small>${h(X('importDesc'))}</small></div></div><form class="borderless-grid" id="importForm"><label>${h(X('targetCountry'))}<select name="destination" required><option value="">—</option>${countries}</select></label><label>${h(X('transport'))}<input name="transport" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" placeholder="0"></label><label>${h(X('customs'))}<input name="customs" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="0"></label><label>${h(X('vat'))}<input name="vat" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="0"></label><label>${h(X('registration'))}<input name="registration" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" placeholder="0"></label><button type="submit" class="primary-btn">${h(X('calculate'))}</button></form><div class="import-result" id="importResult" aria-live="polite"><p>${h(X('estimateMissing'))}</p></div><p class="lux-disclaimer">${h(X('estimateOnly'))}</p></section>`;
  }
  function attachCalculator(car){
@@ -18,8 +26,7 @@ export const createLimbaExperiences=function createLimbaExperiences(api){
    const keys=['transport','customs','vat','registration'];
    if(!fd.get('destination')||!keys.some(k=>String(fd.get(k)||'').trim())){el('importResult').textContent=X('estimateMissing');return;}
    const value=estimateImport({price:car.price,...Object.fromEntries(keys.map(k=>[k,fd.get(k)]))});
-   const lines=[['listedPrice',value.price],['transport',value.transport],['customs',value.duty],['vat',value.tax],['registration',value.registration],['total',value.total]];
-   el('importResult').innerHTML=lines.map(([k,v])=>`<div class="${k==='total'?'import-total':''}"><span>${h(X(k))}</span><strong>${price(v)}</strong></div>`).join('');
+   el('importResult').innerHTML=importBreakdown(value).map(([k,v])=>`<div class="${k==='total'?'import-total':''}"><span>${h(X(k))}</span><strong>${price(v)}</strong></div>`).join('');
   });
  }
  function garageCards(cars){
@@ -36,7 +43,35 @@ export const createLimbaExperiences=function createLimbaExperiences(api){
    ['power',car=>`${number(car.power)} ${T('powerUnit')}`],['fuel',car=>T(car.fuel)],
    ['transmission',car=>T(car.transmission)],['serviceHistory',car=>car.serviceHistory||X('noInfo')],
    ['tuningDetails',car=>car.modificationNotes||X('noInfo')]];
-  modal(`<h2 id="modalTitle">${h(X('compare'))}</h2><div class="compare-table" role="table"><div class="compare-row compare-names"><span></span>${pair.map(car=>`<strong>${h(car.title)}<br>${price(car.price)}</strong>`).join('')}</div>${data.map(([k,fn])=>`<div class="compare-row"><span>${h(X(k)!==k?X(k):T(k))}</span>${pair.map(car=>`<strong>${h(fn(car))}</strong>`).join('')}</div>`).join('')}</div><p class="lux-disclaimer">${h(X('sellerClaims'))}</p>`);
+  const importMarkup=`<section class="market-listing-section">
+   <h3>${h(L('compareImport'))}</h3><p>${h(X('importDesc'))}</p>
+   <form class="market-import-form" id="compareImportForm">
+    <label class="market-import-destination">${h(X('targetCountry'))}
+     <select name="destination" required><option value="">—</option>${countryOptions()}</select></label>
+    <div class="market-import-columns">${pair.map((car,index)=>`<fieldset>
+     <legend>${h(car.title)}</legend>${importInputs.map(([key,label,max])=>
+      `<label>${h(X(label))}<input name="${key}-${index}" type="number" min="0" max="${max}" step="0.01" inputmode="decimal" placeholder="0"></label>`).join('')}
+    </fieldset>`).join('')}</div>
+    <button class="primary-btn" type="submit">${h(X('calculate'))}</button>
+   </form><div id="compareImportResult" class="market-import-result" aria-live="polite"></div>
+   <p class="lux-disclaimer">${h(X('estimateOnly'))}</p>
+  </section>`;
+
+  modal(`<h2 id="modalTitle">${h(X('compare'))}</h2><div class="compare-table" role="table"><div class="compare-row compare-names"><span></span>${pair.map(car=>`<strong>${h(car.title)}<br>${price(car.price)}</strong>`).join('')}</div>${data.map(([k,fn])=>`<div class="compare-row"><span>${h(X(k)!==k?X(k):T(k))}</span>${pair.map(car=>`<strong>${h(fn(car))}</strong>`).join('')}</div>`).join('')}</div><p class="lux-disclaimer">${h(X('sellerClaims'))}</p>${importMarkup}`);
+  el('compareImportForm').addEventListener('submit',event=>{
+   event.preventDefault();
+   const data=new FormData(event.currentTarget);
+   const estimates=pair.map((car,index)=>estimateImport({
+    price:car.price,...Object.fromEntries(importInputs.map(([key])=>[key,data.get(key+'-'+index)]))
+   }));
+   const rows=importBreakdown(estimates[0]);
+   const compared=importBreakdown(estimates[1]);
+   el('compareImportResult').innerHTML=`<div class="compare-table" role="table">
+    <div class="compare-row compare-names"><span>${h(countryLabel(data.get('destination')))}</span>${pair.map(car=>`<strong>${h(car.title)}</strong>`).join('')}</div>
+    ${rows.map(([key,value],index)=>`<div class="compare-row ${key==='total'?'import-total':''}">
+     <span>${h(X(key))}</span><strong>${h(price(value))}</strong>
+     <strong>${h(price(compared[index][1]))}</strong></div>`).join('')}</div>`;
+  });
  }
  function render(){
   const arr=filtered(),spot=el('showroomSpotlight');

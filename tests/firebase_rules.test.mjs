@@ -1,17 +1,23 @@
 import fs from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import {
-  collection, deleteDoc, deleteField, doc, getDoc, getDocs, query,
+  collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query,
   serverTimestamp, setDoc, updateDoc, where
 } from 'firebase/firestore';
 import { ref, uploadBytes } from 'firebase/storage';
 
-const projectId = 'demo-limba';
+const projectId = process.env.GCLOUD_PROJECT?.startsWith('demo-') ? process.env.GCLOUD_PROJECT : 'demo-limba';
 const host = '127.0.0.1';
 const env = await initializeTestEnvironment({
   projectId,
-  firestore: { host, port: 8082, rules: fs.readFileSync('firestore.rules', 'utf8') },
-  storage: { host, port: 9199, rules: fs.readFileSync('storage.rules', 'utf8') }
+  firestore: {
+    ...(process.env.FIRESTORE_EMULATOR_HOST ? {} : { host, port: 8082 }),
+    rules: fs.readFileSync('firestore.rules', 'utf8')
+  },
+  storage: {
+    ...(process.env.FIREBASE_STORAGE_EMULATOR_HOST ? {} : { host, port: 9199 }),
+    rules: fs.readFileSync('storage.rules', 'utf8')
+  }
 });
 
 const authenticated = (id, verified) => env.authenticatedContext(id, {
@@ -20,10 +26,12 @@ const authenticated = (id, verified) => env.authenticatedContext(id, {
 });
 const alice = authenticated('alice', true);
 const bob = authenticated('bob', true);
+const charlie = authenticated('charlie', true);
 const unverified = authenticated('unverified', false);
 const publicUser = env.unauthenticatedContext();
 const dbA = alice.firestore();
 const dbB = bob.firestore();
+const dbC = charlie.firestore();
 const dbU = unverified.firestore();
 const dbGuest = publicUser.firestore();
 
@@ -98,6 +106,28 @@ try {
 
   await assertSucceeds(updateDoc(tuned, {serviceHistory:deleteField()}));
 
+  const photoDetails = { '0': { kind: 'damage', note: 'Small scratch on right door' } };
+  const batteryReport = { health: 94.7, measuredAt: '2026-10-15', issuer: 'Example Inspection', url: 'https://example.test/report.pdf' };
+  const electric = doc(dbA, 'listings', 'electric');
+  await assertSucceeds(setDoc(electric, { ...car('electric'), fuel: 'electric', photoDetails, batteryReport }));
+  await assertSucceeds(updateDoc(electric, { conditionNote: 'Legacy editor update' }));
+  await assertFails(updateDoc(electric, { photoDetails: { '1': photoDetails['0'] } }));
+  await assertFails(updateDoc(electric, { photoDetails: { '0': { kind: 'damage', note: 'x'.repeat(161) } } }));
+  await assertFails(updateDoc(electric, { batteryReport: { ...batteryReport, health: 101 } }));
+  await assertFails(updateDoc(electric, { batteryReport: { ...batteryReport, url: 'http://example.test/report.pdf' } }));
+  await assertSucceeds(updateDoc(electric, { photoDetails: {}, batteryReport: deleteField() }));
+
+  const allPhotos = Array.from({ length: 6 }, (_, slot) => photoUrl('all-photos', 'alice', `${slot}.jpg`));
+  const allPhotoDetails = Object.fromEntries(allPhotos.map((_, slot) => [String(slot), photoDetails['0']]));
+  const fullListing = doc(dbA, 'listings', 'all-photos');
+  await assertSucceeds(setDoc(fullListing, {
+    ...car('all-photos'), fuel: 'electric', image: allPhotos[0], images: allPhotos,
+    photoDetails: allPhotoDetails, batteryReport, modelExtension: 'Special', title: 'Nissan GT-R Special',
+    serviceHistory: 'Service details', modificationNotes: 'Modification details', documentNotes: 'Documents on request',
+    engineName: 'Electric', engineCapacity: 0
+  }));
+  await assertSucceeds(updateDoc(fullListing, { price: 29000 }));
+
   await assertSucceeds(getDocs(query(collection(dbGuest, 'listings'), where('status', '==', 'active'))));
 
   // Public-list exploit and authentication/ownership attacks.
@@ -129,6 +159,63 @@ try {
   await assertFails(getDoc(doc(dbB, 'listings', 'car1')));
   await assertSucceeds(getDoc(listed));
   await assertSucceeds(updateDoc(listed, { status: 'active' }));
+
+  // Release 1.7 collections are populated by the trusted backend.
+  const sentAt = new Date();
+  await env.withSecurityRulesDisabled(async (context) => {
+    const database = context.firestore();
+    await Promise.all([
+      setDoc(doc(database, 'chatThreads', 'thread1'), {
+        listingId: 'car1', listingTitle: 'Nissan GT-R', buyerUid: 'bob', sellerUid: 'alice',
+        participants: ['bob', 'alice'], blockedBy: [], updatedAt: sentAt, createdAt: sentAt, lastMessage: 'Is it available?'
+      }),
+      setDoc(doc(database, 'chatThreads', 'thread1', 'messages', 'message1'), {
+        text: 'Is it available?', senderUid: 'bob', createdAt: sentAt
+      }),
+      setDoc(doc(database, 'listings', 'car1', 'priceHistory', 'event1'), {
+        price: 28000, previousPrice: 29000, changedAt: sentAt
+      }),
+      setDoc(doc(database, 'users', 'bob', 'searchAlerts', 'alert1'), { ...validSearch, createdAt: sentAt }),
+      setDoc(doc(database, 'users', 'bob', 'notifications', 'notice1'), {
+        listingId: 'car1', listingTitle: 'Nissan GT-R', searchName: 'Nissan', createdAt: sentAt, read: false
+      })
+    ]);
+  });
+
+  const inbox = (database, uid) => query(collection(database, 'chatThreads'),
+    where('participants', 'array-contains', uid), orderBy('updatedAt', 'desc'), limit(50));
+  await assertSucceeds(getDocs(inbox(dbB, 'bob')));
+  await assertSucceeds(getDocs(inbox(dbA, 'alice')));
+  await assertFails(getDocs(inbox(dbC, 'bob')));
+  await assertFails(getDocs(query(collection(dbB, 'chatThreads'), where('participants', 'array-contains', 'bob'))));
+  await assertFails(getDoc(doc(dbC, 'chatThreads', 'thread1')));
+  await assertSucceeds(getDocs(collection(dbB, 'chatThreads', 'thread1', 'messages')));
+  await assertFails(getDocs(collection(dbC, 'chatThreads', 'thread1', 'messages')));
+  await assertFails(updateDoc(doc(dbB, 'chatThreads', 'thread1'), { blockedBy: ['bob'] }));
+  await assertFails(setDoc(doc(dbB, 'chatThreads', 'thread1', 'messages', 'message2'), {
+    text: 'Yes', senderUid: 'bob', createdAt: serverTimestamp()
+  }));
+
+  const priceEvent = (database) => doc(database, 'listings', 'car1', 'priceHistory', 'event1');
+  await assertSucceeds(getDoc(priceEvent(dbGuest)));
+  await assertFails(updateDoc(priceEvent(dbA), { price: 1 }));
+  await assertSucceeds(updateDoc(listed, { status: 'paused' }));
+  await assertFails(getDoc(priceEvent(dbGuest)));
+  await assertFails(getDoc(priceEvent(dbB)));
+  await assertSucceeds(getDoc(priceEvent(dbA)));
+  await assertSucceeds(updateDoc(listed, { status: 'active' }));
+
+  const alert = (database) => doc(database, 'users', 'bob', 'searchAlerts', 'alert1');
+  await assertSucceeds(getDoc(alert(dbB)));
+  await assertFails(getDoc(alert(dbA)));
+  await assertFails(updateDoc(alert(dbB), { name: 'Other search' }));
+  const notification = (database) => doc(database, 'users', 'bob', 'notifications', 'notice1');
+  await assertSucceeds(getDoc(notification(dbB)));
+  await assertFails(getDoc(notification(dbA)));
+  await assertFails(updateDoc(notification(dbA), { read: true }));
+  await assertFails(updateDoc(notification(dbB), { read: true, listingId: 'electric' }));
+  await assertSucceeds(updateDoc(notification(dbB), { read: true }));
+  await assertFails(updateDoc(notification(dbB), { read: false }));
 
   const favorite = doc(dbA, 'users', 'alice', 'favorites', 'car1');
   await assertSucceeds(setDoc(favorite, { createdAt: serverTimestamp() }));
@@ -180,7 +267,8 @@ try {
   await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/invalid id/1.jpg'), bytes, { contentType: 'image/jpeg' }));
 
   await assertSucceeds(deleteDoc(listed));
-  console.log('PASS: Limba rules block public-list, ownership, PII, update, schema, replay and Storage attacks');
+  await assertFails(getDoc(priceEvent(dbA)));
+  console.log('PASS: Limba listing, chat, alert, price history and Storage access rules');
 } finally {
   await env.cleanup();
 }

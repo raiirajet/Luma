@@ -8,6 +8,7 @@ on:
       - 'firestore.rules'
       - 'storage.rules'
       - 'firestore.indexes.json'
+      - 'functions/**'
       - '.github/workflows/firebase-rules.yml'
       - 'tests/firebase_rules.test.mjs'
   push:
@@ -17,7 +18,9 @@ on:
       - 'firestore.rules'
       - 'storage.rules'
       - 'firestore.indexes.json'
+      - 'functions/**'
       - '.github/workflows/firebase-rules.yml'
+      - 'tests/firebase_rules.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -36,10 +39,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install Firebase modular SDK and compatible rules tests
-        run: npm install --no-save firebase@12.6.0 @firebase/rules-unit-testing@5.0.0
-      - name: Start emulators and verify access-control rules
-        run: npx -y firebase-tools@latest emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs"
+      - name: Install Firebase rules and Cloud Functions test dependencies
+        run: |
+          npm ci --prefix functions
+          npm install --no-save firebase@12.6.0 @firebase/rules-unit-testing@5.0.0
+      - name: Start emulators and verify access-control rules and Cloud Functions
+        run: npx -y firebase-tools@latest emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs && npm test --prefix functions"
 
       - name: Deploy validated Firestore rules when production credentials exist
         if: github.event_name == 'push'

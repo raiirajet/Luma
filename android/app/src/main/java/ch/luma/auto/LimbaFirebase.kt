@@ -3,18 +3,26 @@ package ch.luma.auto
 import android.app.Activity
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
+import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.functions.HttpsCallableResult
 import com.google.firebase.storage.FirebaseStorage
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
+import java.net.URI
+import java.time.LocalDate
 
 /**
  * Shared Limba production backend, opt-in by supplying assets/firebase-config.json.
@@ -25,6 +33,7 @@ class LimbaFirebase(private val activity: Activity) {
     val auth: FirebaseAuth?
     private val db: FirebaseFirestore?
     private val storage: FirebaseStorage?
+    private val functions: FirebaseFunctions?
     private var publicListener: ListenerRegistration? = null
     private var ownListener: ListenerRegistration? = null
     private var favoritesListener: ListenerRegistration? = null
@@ -56,6 +65,7 @@ class LimbaFirebase(private val activity: Activity) {
         auth = app?.let { FirebaseAuth.getInstance(it) }
         db = app?.let { FirebaseFirestore.getInstance(it) }
         storage = app?.let { FirebaseStorage.getInstance(it) }
+        functions = app?.let { FirebaseFunctions.getInstance(it, "europe-west1") }
     }
 
     fun watchAuth(onChanged: (FirebaseUser?) -> Unit) {
@@ -78,11 +88,37 @@ class LimbaFirebase(private val activity: Activity) {
             item.put(key, snapshot.getLong(key) ?: 0)
         }
         snapshot.getLong("engineCapacity")?.let {item.put("engineCapacity",it)}
+        for (key in listOf("photoDetails", "batteryReport")) {
+            (snapshot.get(key) as? Map<*, *>)?.let { item.put(key, toJsonValue(it)) }
+        }
         val images = JSONArray()
         (snapshot.get("images") as? List<*>)?.forEach { images.put(it.toString()) }
         item.put("images", images)
         return item
     }
+
+    private fun toJsonValue(value: Any?): Any = when (value) {
+        null -> JSONObject.NULL
+        is Timestamp -> value.toDate().time
+        is Map<*, *> -> JSONObject().apply {
+            for ((key, entry) in value) if (key is String) put(key, toJsonValue(entry))
+        }
+        is List<*> -> JSONArray().apply { value.forEach { put(toJsonValue(it)) } }
+        else -> value
+    }
+
+    private fun toFirestoreMap(value: JSONObject): Map<String, Any?> =
+        value.keys().asSequence().associateWith { toFirestoreValue(value.get(it)) }
+
+    private fun toFirestoreValue(value: Any): Any? = when (value) {
+        JSONObject.NULL -> null
+        is JSONObject -> toFirestoreMap(value)
+        is JSONArray -> List(value.length()) { toFirestoreValue(value.get(it)) }
+        else -> value
+    }
+
+    private fun featureDocument(snapshot: DocumentSnapshot): JSONObject =
+        (toJsonValue(snapshot.data.orEmpty()) as JSONObject).put("id", snapshot.id)
 
     fun watchPublic(onChanged: (List<JSONObject>) -> Unit, onError: (String) -> Unit) {
         val service = db ?: return
@@ -120,6 +156,190 @@ class LimbaFirebase(private val activity: Activity) {
         task.addOnSuccessListener { result(null) }.addOnFailureListener { result(it.localizedMessage) }
     }
 
+    private fun accountCollection(name: String): CollectionReference? {
+        val uid = auth?.currentUser?.uid ?: return null
+        return db?.collection("users")?.document(uid)?.collection(name)
+    }
+
+    private fun watchQuery(
+        query: Query?,
+        reverse: Boolean = false,
+        done: (List<JSONObject>, String?) -> Unit
+    ): ListenerRegistration? {
+        val uid = auth?.currentUser?.uid
+        if (query == null || uid == null) {
+            done(emptyList(), "Sign in required")
+            return null
+        }
+        return query.addSnapshotListener { snapshot, error ->
+            if (auth?.currentUser?.uid != uid) return@addSnapshotListener
+            val rows = snapshot?.documents.orEmpty().map(::featureDocument)
+            done(if (reverse) rows.asReversed() else rows, error?.let { it.localizedMessage ?: "Firestore read failed" })
+        }
+    }
+
+    private fun isDocumentId(id: String): Boolean = id.isNotBlank() && '/' !in id
+
+    fun fetchListing(id: String, done: (JSONObject?, String?) -> Unit) {
+        val service = db ?: return done(null, "Firestore unavailable")
+        if (!isDocumentId(id)) return done(null, "Listing unavailable")
+        val uid = auth?.currentUser?.uid
+        service.collection("listings").document(id).get()
+            .addOnSuccessListener { snapshot ->
+                if (auth?.currentUser?.uid == uid) {
+                    if (snapshot.exists()) done(asJson(snapshot), null)
+                    else done(null, "Listing unavailable")
+                }
+            }.addOnFailureListener { error ->
+                if (auth?.currentUser?.uid == uid) done(null, error.localizedMessage ?: "Listing unavailable")
+            }
+    }
+
+    fun watchThreads(done: (List<JSONObject>, String?) -> Unit): ListenerRegistration? {
+        val uid = auth?.currentUser?.uid
+        val query = uid?.let {
+            db?.collection("chatThreads")?.whereArrayContains("participants", it)
+                ?.orderBy("updatedAt", Query.Direction.DESCENDING)?.limit(50)
+        }
+        return watchQuery(query, done = done)
+    }
+
+    fun watchThread(threadId: String, done: (JSONObject?, String?) -> Unit): ListenerRegistration? {
+        val uid = auth?.currentUser?.uid
+        val service = db
+        if (!isDocumentId(threadId) || uid == null || service == null) {
+            done(null, "Conversation unavailable")
+            return null
+        }
+        return service.collection("chatThreads").document(threadId).addSnapshotListener { snapshot, error ->
+            if (auth?.currentUser?.uid != uid) return@addSnapshotListener
+            if (snapshot?.exists() == true) done(featureDocument(snapshot), null)
+            else done(null, error?.localizedMessage ?: "Conversation unavailable")
+        }
+    }
+
+    fun watchMessages(threadId: String, done: (List<JSONObject>, String?) -> Unit): ListenerRegistration? {
+        if (!isDocumentId(threadId)) {
+            done(emptyList(), "Conversation unavailable")
+            return null
+        }
+        val query = db?.collection("chatThreads")?.document(threadId)?.collection("messages")
+            ?.orderBy("createdAt", Query.Direction.DESCENDING)?.limit(100)
+        return watchQuery(query, reverse = true, done = done)
+    }
+
+    fun watchNotifications(done: (List<JSONObject>, String?) -> Unit): ListenerRegistration? =
+        watchQuery(accountCollection("notifications")?.orderBy("createdAt", Query.Direction.DESCENDING)?.limit(100), done = done)
+
+    fun watchSavedSearchAlerts(done: (List<JSONObject>, String?) -> Unit): ListenerRegistration? =
+        watchQuery(accountCollection("searchAlerts")?.limit(20), done = done)
+
+    fun watchSavedSearches(uid: String, done: (List<JSONObject>, String?) -> Unit): ListenerRegistration? {
+        if (auth?.currentUser?.uid != uid) {
+            done(emptyList(), "Sign in required")
+            return null
+        }
+        val searches = accountCollection("data")?.document("searches")
+        if (searches == null) {
+            done(emptyList(), "Firestore unavailable")
+            return null
+        }
+        return searches.addSnapshotListener { snapshot, error ->
+            if (auth?.currentUser?.uid != uid) return@addSnapshotListener
+            val items = (snapshot?.get("items") as? List<*>).orEmpty()
+                .filterIsInstance<Map<*, *>>().map { toJsonValue(it) as JSONObject }
+            done(items, error?.let { it.localizedMessage ?: "Firestore read failed" })
+        }
+    }
+
+    private data class SavedSearchKey(val name: String, val filters: Map<String, String>, val countries: Set<String>)
+
+    private fun savedSearchKey(item: Map<*, *>): SavedSearchKey {
+        val filters = (item["filters"] as? Map<*, *>).orEmpty().entries.mapNotNull { (key, value) ->
+            val field = key as? String ?: return@mapNotNull null
+            val filter = (value as? String)?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            field to filter
+        }.toMap()
+        val countries = (item["countries"] as? List<*>).orEmpty().filterIsInstance<String>().toSet()
+        return SavedSearchKey((item["name"] as? String).orEmpty().trim(), filters, countries)
+    }
+
+    fun sameSavedSearch(first: JSONObject, second: JSONObject): Boolean =
+        savedSearchKey(toFirestoreMap(first)) == savedSearchKey(toFirestoreMap(second))
+
+    fun saveSearch(item: JSONObject, done: (String?) -> Unit) {
+        val searches = accountCollection("data")?.document("searches") ?: return done("Sign in required")
+        val saved = toFirestoreMap(item)
+        val key = savedSearchKey(saved)
+        finish(searches.firestore.runTransaction { transaction ->
+            val existing = (transaction.get(searches).get("items") as? List<*>).orEmpty().filterIsInstance<Map<*, *>>()
+            val remaining = existing.distinctBy(::savedSearchKey).filterNot { savedSearchKey(it) == key }
+            check(remaining.size < 20) { "Saved search limit reached" }
+            val items = listOf(saved) + remaining
+            if (items != existing) transaction.set(searches, mapOf("items" to items))
+            Unit
+        }, done)
+    }
+
+    fun listPriceHistory(listingId: String, done: (List<JSONObject>, String?) -> Unit) {
+        val service = db ?: return done(emptyList(), "Firestore unavailable")
+        if (!isDocumentId(listingId)) return done(emptyList(), "Listing unavailable")
+        val uid = auth?.currentUser?.uid
+        service.collection("listings").document(listingId).collection("priceHistory")
+            .orderBy("changedAt", Query.Direction.DESCENDING).limit(50).get()
+            .addOnSuccessListener { snapshot ->
+                if (auth?.currentUser?.uid == uid) done(snapshot.documents.map(::featureDocument), null)
+            }.addOnFailureListener { error ->
+                if (auth?.currentUser?.uid == uid) done(emptyList(), error.localizedMessage ?: "Firestore read failed")
+            }
+    }
+
+    fun markNotificationRead(notificationId: String, done: (String?) -> Unit) {
+        if (!isDocumentId(notificationId)) return done("Notification unavailable")
+        val ref = accountCollection("notifications")?.document(notificationId) ?: return done("Sign in required")
+        finish(ref.update("read", true), done)
+    }
+
+    private fun finish(task: Task<*>, done: (String?) -> Unit) {
+        task.addOnSuccessListener { done(null) }
+            .addOnFailureListener { done(it.localizedMessage ?: "Firebase request failed") }
+    }
+
+    private fun callFeature(name: String, data: Map<String, Any>): Task<HttpsCallableResult>? =
+        functions?.getHttpsCallable(name)?.call(data)
+
+    private fun callFeature(name: String, data: Map<String, Any>, done: (String?) -> Unit) {
+        if (auth?.currentUser == null) return done("Sign in required")
+        finish(callFeature(name, data) ?: return done("Firebase unavailable"), done)
+    }
+
+    fun startListingChat(listingId: String, done: (String?, String?) -> Unit) {
+        val uid = auth?.currentUser?.uid ?: return done(null, "Sign in required")
+        val task = callFeature("startListingChat", mapOf("listingId" to listingId))
+            ?: return done(null, "Firebase unavailable")
+        task.addOnSuccessListener { result ->
+            if (auth?.currentUser?.uid != uid) return@addOnSuccessListener
+            val id = (result.data as? Map<*, *>)?.get("threadId") as? String
+            if (id == null || !isDocumentId(id)) done(null, "Conversation unavailable") else done(id, null)
+        }.addOnFailureListener { error ->
+            if (auth?.currentUser?.uid == uid) done(null, error.localizedMessage ?: "Firebase request failed")
+        }
+    }
+
+    fun sendListingMessage(threadId: String, text: String, messageId: String, done: (String?) -> Unit) =
+        callFeature("sendListingMessage", mapOf("threadId" to threadId, "text" to text, "messageId" to messageId), done)
+
+    fun setListingChatBlocked(threadId: String, blocked: Boolean, done: (String?) -> Unit) =
+        callFeature("setListingChatBlocked", mapOf("threadId" to threadId, "blocked" to blocked), done)
+
+    fun reportListingChat(threadId: String, reason: String, done: (String?) -> Unit) =
+        callFeature("reportListingChat", mapOf("threadId" to threadId, "reason" to reason), done)
+
+    fun setSavedSearchAlert(name: String, filters: JSONObject, countries: List<String>, enabled: Boolean, done: (String?) -> Unit) =
+        callFeature("setSavedSearchAlert", mapOf(
+            "name" to name, "filters" to toFirestoreMap(filters), "countries" to countries, "enabled" to enabled
+        ), done)
+
     fun signIn(email: String, password: String, done: (String?) -> Unit) {
         val a = auth ?: return done("Firebase not configured")
         a.signInWithEmailAndPassword(email, password).addOnSuccessListener { done(null) }
@@ -153,7 +373,39 @@ class LimbaFirebase(private val activity: Activity) {
             ?.addOnFailureListener { done(it.localizedMessage) } ?: done("Firebase not configured")
     }
 
-    private fun data(car: JSONObject): MutableMap<String, Any> {
+    private fun photoDetails(input: JSONObject, photoCount: Int): Map<String, Map<String, String>> =
+        input.keys().asSequence().associateWith { slot ->
+            require(slot.length == 1 && slot[0] - '0' in 0 until photoCount.coerceAtMost(6)) { "Invalid photo position" }
+            val detail = input.getJSONObject(slot)
+            val kind = detail.getString("kind")
+            val note = detail.optString("note").trim()
+            require(kind in setOf("exterior", "interior", "odometer", "damage", "other") && note.length <= 160) {
+                "Invalid photo details"
+            }
+            mapOf("kind" to kind, "note" to note)
+        }
+
+    private fun batteryReport(input: JSONObject): Map<String, Any> {
+        val health = input.optDouble("health")
+        val measuredAt = input.optString("measuredAt").trim()
+        val issuer = input.optString("issuer").trim()
+        val url = input.optString("url").trim()
+        require(health in 0.0..100.0 && measuredAt.length == 10 &&
+            runCatching { LocalDate.parse(measuredAt) }.isSuccess && issuer.length in 1..120) {
+            "Invalid battery report"
+        }
+        return mutableMapOf<String, Any>("health" to health, "measuredAt" to measuredAt, "issuer" to issuer).apply {
+            if (url.isNotEmpty()) {
+                val uri = runCatching { URI(url) }.getOrNull()
+                require(url.length <= 500 && uri?.scheme == "https" && !uri.host.isNullOrBlank() && uri.userInfo == null) {
+                    "Invalid battery report link"
+                }
+                put("url", url)
+            }
+        }
+    }
+
+    private fun data(car: JSONObject, editing: Boolean, photoCount: Int): MutableMap<String, Any> {
         val fields = mutableMapOf<String,Any>()
         for (key in listOf("make","model","description","city","country","fuel","transmission",
             "body","condition","accidentStatus","conditionNote","sellerType")) {
@@ -180,6 +432,16 @@ class LimbaFirebase(private val activity: Activity) {
         fields["title"] = listOf(car.optString("make"),car.optString("model"),car.optString("modelExtension")).filter{it.isNotBlank()}.joinToString(" ")
         fields["category"] = "vehicles"
         for (key in listOf("year","mileage","power","price")) fields[key] = car.optInt(key)
+        if (car.has("photoDetails")) {
+            val photos = if (car.isNull("photoDetails")) null else car.getJSONObject("photoDetails")
+            if (photos != null && photos.length() > 0) fields["photoDetails"] = photoDetails(photos, photoCount)
+            else if (editing) fields["photoDetails"] = FieldValue.delete()
+        }
+        if (car.has("batteryReport")) {
+            val report = if (car.isNull("batteryReport")) null else car.getJSONObject("batteryReport")
+            if (report != null && report.length() > 0) fields["batteryReport"] = batteryReport(report)
+            else if (editing) fields["batteryReport"] = FieldValue.delete()
+        }
         return fields
     }
 
@@ -205,6 +467,8 @@ class LimbaFirebase(private val activity: Activity) {
         if (selected.isEmpty() || selected.size > 6) return done("Select 1 to 6 photos")
         val service = db ?: return done("Firestore unavailable")
         val store = storage ?: return done("Storage unavailable")
+        val fields = runCatching { data(car, editing = false, photoCount = selected.size) }
+            .getOrElse { return done(it.localizedMessage ?: "Invalid vehicle data") }
         val document = service.collection("listings").document()
         val uploaded = mutableListOf<com.google.firebase.storage.StorageReference>()
         val urls = mutableListOf<String>()
@@ -214,7 +478,6 @@ class LimbaFirebase(private val activity: Activity) {
         }
         fun uploadAt(index: Int) {
             if (index == selected.size) {
-                val fields = data(car)
                 fields["uid"] = user.uid
                 fields["status"] = "active"
                 fields["createdAt"] = FieldValue.serverTimestamp()
@@ -250,7 +513,9 @@ class LimbaFirebase(private val activity: Activity) {
     fun update(car: JSONObject, done: (String?) -> Unit) {
         val user = auth?.currentUser ?: return done("Sign in required")
         if (car.optString("uid") != user.uid) return done("Not your listing")
-        val fields = data(car)
+        val photoCount = car.optJSONArray("images")?.length() ?: 6
+        val fields = runCatching { data(car, editing = true, photoCount = photoCount) }
+            .getOrElse { return done(it.localizedMessage ?: "Invalid vehicle data") }
         db?.collection("listings")?.document(car.optString("id"))?.update(fields)
             ?.addOnSuccessListener { done(null) }
             ?.addOnFailureListener { done(it.localizedMessage) } ?: done("Firestore unavailable")

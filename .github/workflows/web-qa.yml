@@ -8,9 +8,11 @@ on:
       - '*.py'
       - '*.html'
       - 'styles.css'
+      - 'assets/**'
+      - 'scripts/stage_web.py'
       - '.github/workflows/web-qa.yml'
       - 'tests/web_mvp.py'
-      - 'tests/model_catalog.test.mjs'
+      - 'tests/*.test.mjs'
       - 'android/app/src/main/assets/brands.json'
   push:
     branches: [main]
@@ -19,11 +21,11 @@ on:
       - '*.py'
       - '*.html'
       - 'styles.css'
+      - 'assets/**'
+      - 'scripts/stage_web.py'
       - '.github/workflows/web-qa.yml'
-      - 'tests/model_catalog.test.mjs'
       - 'tests/web_mvp.py'
-      - 'tests/lux_experiences.test.mjs'
-      - 'tests/search_filters.test.mjs'
+      - 'tests/*.test.mjs'
       - 'android/app/src/main/assets/brands.json'
   workflow_dispatch:
 
@@ -38,12 +40,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate JavaScript syntax
+      - name: Stage web files and validate JavaScript syntax
         run: |
-          for path in app.js cars-i18n.js car-brands.js feature-i18n.js mvp-i18n.js i18n.js translations-extra.js icons.js limba-lux.js limba-lux-ui.js search-filters-i18n.js; do
+          python3 scripts/stage_web.py
+          for path in dist/web/*.js; do
             node --input-type=module --check < "$path"
           done
-          node --check config.js
       - name: Check bundled vehicle model catalogue
         run: |
           node --experimental-default-type=module tests/model_catalog.test.mjs
@@ -51,9 +53,8 @@ jobs:
           node --experimental-default-type=module tests/search_filters.test.mjs
       - name: Validate Python source and create preview
         run: |
-          python3 -m py_compile build_preview.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py
-          python3 build_preview.py
-          test -s preview.html
+          python3 -m py_compile build_preview.py scripts/stage_web.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py
+          cp dist/web/preview.html preview.html
       - name: Install Playwright and Chromium
         run: |
           python3 -m pip install --disable-pip-version-check playwright

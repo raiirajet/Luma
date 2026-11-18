@@ -11,6 +11,22 @@ server=ThreadingHTTPServer(('127.0.0.1',0),handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
 base=f'http://127.0.0.1:{server.server_port}/preview.html'
 
+
+def assert_header_available(page):
+ widths=page.evaluate("""() => {
+  const row=document.querySelector('.head-row').getBoundingClientRect();
+  const actions=['brandBtn','inboxBtn','language','settingsBtn','loginBtn','sellBtn'];
+  const clipped=actions.filter(id=>{
+   const bounds=document.getElementById(id).getBoundingClientRect();
+   return bounds.width>0 && (bounds.left<row.left-1 || bounds.right>row.right+1);
+  });
+  return {viewport:window.innerWidth,document:document.documentElement.scrollWidth,clipped};
+ }""")
+ assert not widths['clipped'], widths
+ assert widths['document']<=widths['viewport']+2, widths
+ assert page.locator('#sellBtn').is_visible()
+ assert page.locator('#sellBtn').get_attribute('aria-label')
+
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
  for width,height in [(1440,970),(390,844)]:
@@ -27,16 +43,18 @@ with sync_playwright() as p:
   assert page.locator('#carGrid .car-card').count()==1,'expected exactly one demo car'
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
 
-  # Clean search should keep 6 primary fields available as compact pairs.
-  assert page.locator('#searchForm #fuel').count()==1
-  assert page.locator('#advancedFilters #fuel').count()==0
-  assert page.locator('#searchForm #advancedFilters #transmission').count()==1
+  # The four primary controls stay visible, while every advanced filter remains available.
+  for field in ['yearFrom', 'mileageTo', 'fuel', 'transmission']:
+   assert page.locator(f'#advancedFilters #{field}').count()==1
+   assert page.locator(f'#advancedFilters #{field}').is_hidden()
+  for field in ['make', 'model', 'priceTo', 'searchCountryToggle']:
+   assert page.locator(f'#searchForm #{field}').is_visible()
   if width < 500:
    positions=page.evaluate("""() => {
-     const fields=['make','model','priceTo','yearFrom','mileageTo','fuel','keyword'];
+     const fields=['make','model','priceTo','searchCountryToggle'];
      return Object.fromEntries(fields.map(k=>{const r=document.getElementById(k).getBoundingClientRect();return[k,{x:r.x,y:r.y,w:r.width,right:r.right}]}));
    }""")
-   for left,right in [('make','model'),('priceTo','yearFrom'),('mileageTo','fuel')]:
+   for left,right in [('make','model'),('priceTo','searchCountryToggle')]:
     assert abs(positions[left]['y']-positions[right]['y'])<4, (left,right,positions)
     assert positions[left]['right']<=positions[right]['x']+2, (left,right,positions)
     assert positions[left]['w']>=125 and positions[right]['w']>=125, positions
@@ -140,6 +158,12 @@ with sync_playwright() as p:
   assert page.locator('#favoritesGrid .car-card').count()==1
   home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'
   page.locator(home_nav).click()
+  # Temporary country filters are visible and removable without leaving search.
+  page.locator('#searchCountryToggle').click()
+  page.locator('#searchCountryChoices input[value="TR"]').check()
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('[data-filter-remove="country:TR"]').click()
+  assert page.locator('#carGrid .car-card').count()==1
   # User country preference
   page.locator('#settingsBtn').click()
   page.locator('#countryChoices input[value="TR"]').check()
@@ -212,6 +236,7 @@ with sync_playwright() as p:
   assert len(locales)==14,locales
   for code in locales:
    page.locator('#language').select_option(code)
+   assert_header_available(page)
    assert page.locator('h1').inner_text().strip()
    assert page.locator('[data-i18n="singleDemoNotice"]').first.inner_text()!='singleDemoNotice'
    page.locator('#carGrid .car-card').first.click(position={'x':50,'y':160})
@@ -230,6 +255,15 @@ with sync_playwright() as p:
   page.screenshot(path=str(root/f'qa_{width}.png'),full_page=False,animations='disabled')
   assert not errors, f'JS errors: {errors}'
   print('PASS',width,'locales',len(locales),'car',page.locator('#carGrid .car-card').count(),'errors',len(errors))
+  if width==1440:
+   for responsive_width in [1181,1024,768,600,360,320]:
+    page.set_viewport_size({'width':responsive_width,'height':844})
+    assert_header_available(page)
+   page.locator('#sellBtn').click()
+   assert page.locator('#modal').is_visible()
+   page.locator('#modalClose').click()
+   page.locator('#settingsBtn').click()
+   assert page.locator('#settingsLanguage').is_visible()
   context.close()
  browser.close()
 server.shutdown()

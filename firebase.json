@@ -8,21 +8,17 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs22",
+    "ignore": ["node_modules", ".git", "*-debug.log", "test"]
+  },
   "hosting": {
     "site": "limba-auto",
-    "public": ".",
+    "public": "dist/web",
     "ignore": [
-      "firebase.json",
-      ".firebaserc",
       "**/.*",
-      "**/node_modules/**",
-      "android/**",
-      "tests/**",
-      "scripts/**",
-      "**/*.md",
-      "**/*.py",
-      "preview.html",
-      "work-auth-export.json"
+      "preview.html"
     ],
     "cleanUrls": false,
     "trailingSlash": false,
@@ -48,6 +44,7 @@
     "auth": { "port": 9099 },
     "firestore": { "port": 8082 },
     "storage": { "port": 9199 },
+    "functions": { "port": 5001 },
     "ui": { "enabled": true }
   },
   "auth": {

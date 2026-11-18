@@ -9,8 +9,8 @@ android {
     applicationId = "ch.luma.auto"
     minSdk = 26
     targetSdk = 35
-    versionCode = 9
-    versionName = "1.6.0"
+    versionCode = 10
+    versionName = "1.7.0"
   }
   signingConfigs {
     create("limbaRelease") {
@@ -43,5 +43,6 @@ dependencies {
   implementation("com.google.firebase:firebase-auth")
   implementation("com.google.firebase:firebase-firestore")
   implementation("com.google.firebase:firebase-storage")
+  implementation("com.google.firebase:firebase-functions")
   implementation("com.github.bumptech.glide:glide:4.16.0")
 }

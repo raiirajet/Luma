@@ -1,0 +1,12 @@
+{
+  "name": "limba-functions",
+  "private": true,
+  "version": "1.7.0",
+  "main": "index.js",
+  "engines": { "node": "22" },
+  "scripts": { "test": "node --test" },
+  "dependencies": {
+    "firebase-admin": "^13.8.0",
+    "firebase-functions": "^7.2.0"
+  }
+}

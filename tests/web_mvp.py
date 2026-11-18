@@ -2,6 +2,7 @@
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+import base64
 import functools
 import threading
 
@@ -42,6 +43,15 @@ try:
    form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
    form.locator('[name="serviceHistory"]').fill('Service recorded at 50000 km.')
    form.locator('[name="documentNotes"]').fill('Invoices available on request.')
+   form.locator('[name="fuel"]').select_option('electric')
+   form.locator('[name="batteryHealth"]').fill('91.5')
+   form.locator('[name="batteryMeasuredAt"]').fill('2025-01-10')
+   form.locator('[name="batteryIssuer"]').fill('Independent EV service')
+   form.locator('[name="batteryUrl"]').fill('https://example.test/report')
+   png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/rpsAAAAASUVORK5CYII=')
+   form.locator('#sellImages').set_input_files({'name':'bumper.png','mimeType':'image/png','buffer':png})
+   form.locator('[name="photoKind0"]').select_option('damage')
+   form.locator('[name="photoNote0"]').fill('Scratch on the rear bumper.')
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
@@ -50,6 +60,8 @@ try:
    assert form.is_visible()
    assert form.locator('[name="city"]').input_value()=='Sarajevo'
    assert '50000' in form.locator('[name="serviceHistory"]').input_value()
+   assert form.locator('[name="photoNote0"]').input_value()=='Scratch on the rear bumper.'
+   assert form.locator('[name="batteryHealth"]').input_value()=='91.5'
    form.locator('[name="city"]').fill('Tirana')
    form.locator('[name="price"]').fill('14500')
    form.locator('#sellSubmit').click()
@@ -58,6 +70,9 @@ try:
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
    page.locator('#mineGrid .car-card').first.click()
    assert '50000' in page.locator('.limba-passport').inner_text()
+   assert 'Scratch on the rear bumper.' in page.locator('#detailPhotoCaption').inner_text()
+   assert '91,5' in page.locator('.market-battery').inner_text()
+   assert page.locator('.market-battery a').get_attribute('href')=='https://example.test/report'
    page.locator('#detailLike').click()
    page.locator('#detailBack').click()
    page.locator('#fabAdd').click()
@@ -95,6 +110,13 @@ try:
    page.locator('[data-compare-open]').click()
    assert 'Toyota' in page.locator('#modalContent').inner_text()
    assert 'Audi' in page.locator('#modalContent').inner_text()
+   comparison=page.locator('#compareImportForm')
+   comparison.locator('[name="destination"]').select_option('CH')
+   comparison.locator('[name="transport-0"]').fill('1000')
+   comparison.locator('[name="transport-1"]').fill('1000')
+   comparison.locator('button[type="submit"]').click()
+   totals=page.locator('#compareImportResult .import-total').inner_text()
+   assert '15.500' in totals and '98.000' in totals,totals
    page.locator('#modalClose').click()
    page.evaluate('showView("mine")')
    page.locator('#mineGrid .my-car-item').first.locator('[data-status="sold"]').click()

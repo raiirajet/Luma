@@ -8,9 +8,17 @@ rules_version = '2';
 // as an empty compatibility field so no personally identifiable information is
 // exposed in a publicly readable document. There are 1..6 project-owned image
 // URLs, each scoped to listings/{uid}/{listingId}/{0..5}.(jpg|png|webp).
+// Optional seller metadata: photoDetails maps image slots to {kind, note},
+// batteryReport contains {health, measuredAt, issuer, url?}.
+// listings/{listingId}/priceHistory/{eventId}: server-recorded price changes.
+// chatThreads/{threadId}: server-owned, readable by the participants only.
+// chatThreads/{threadId}/messages/{messageId}: server-authored message records.
 // users/{uid}/favorites/{listingId}: owner-only {createdAt: timestamp}.
 // users/{uid}/data/searches: owner-only {items: list}, maximum 20 validated
 // search maps. users/{uid}/data/preferences: owner-only country list.
+// users/{uid}/searchAlerts/{alertId}: server-managed search alert configuration.
+// users/{uid}/notifications/{notificationId}: server-owned search notifications.
+// The recipient can set the read flag to true.
 // reports/{uid_listingId}: one immutable, owner-authored report per listing.
 // All unspecified paths are denied.
 
@@ -39,103 +47,133 @@ service cloud.firestore {
       return request.resource.data.uid == resource.data.uid;
     }
 
+    function canReadListing(data) {
+      return data.status == 'active' || isOwner(data.uid);
+    }
+
+    function isChatParticipant(data) {
+      return isAuthenticated() && request.auth.uid in data.participants;
+    }
+
     // =============================================================
     // Listing validators
     // =============================================================
-    function isValidImageUrl(url, uid, listingId) {
-      return url is string
-        && url.size() <= 2048
-        && url.matches('https://firebasestorage[.]googleapis[.]com/v0/b/limba-auto[.]firebasestorage[.]app/o/listings%2F'
-          + uid + '%2F' + listingId + '%2F[0-5][.](jpg|png|webp)[?].*');
+    function isValidImageUrl(url, pattern) {
+      return url.matches(pattern) && url.size() <= 2048;
     }
 
     function isValidImages(data, listingId) {
-      return data.images is list
-        && data.images.size() >= 1
-        && data.images.size() <= 6
-        && data.image == data.images[0]
-        && isValidImageUrl(data.images[0], data.uid, listingId)
-        && (data.images.size() < 2 || isValidImageUrl(data.images[1], data.uid, listingId))
-        && (data.images.size() < 3 || isValidImageUrl(data.images[2], data.uid, listingId))
-        && (data.images.size() < 4 || isValidImageUrl(data.images[3], data.uid, listingId))
-        && (data.images.size() < 5 || isValidImageUrl(data.images[4], data.uid, listingId))
-        && (data.images.size() < 6 || isValidImageUrl(data.images[5], data.uid, listingId));
+      let images = data.images;
+      let count = images.size();
+      let pattern = 'https://firebasestorage[.]googleapis[.]com/v0/b/limba-auto[.]firebasestorage[.]app/o/listings%2F'
+        + data.uid + '%2F' + listingId + '%2F[0-5][.](jpg|png|webp)[?].*';
+      return images is list && count >= 1 && count <= 6
+        && data.image == images[0]
+        && isValidImageUrl(images[0], pattern)
+        && (count < 2 || isValidImageUrl(images[1], pattern))
+        && (count < 3 || isValidImageUrl(images[2], pattern))
+        && (count < 4 || isValidImageUrl(images[3], pattern))
+        && (count < 5 || isValidImageUrl(images[4], pattern))
+        && (count < 6 || isValidImageUrl(images[5], pattern));
     }
 
-    function isValidListing(data, listingId) {
-      return data.keys().hasAll([
-          'title', 'description', 'price', 'country', 'category', 'city',
-          'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
-          'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
-          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
-        ])
-        && data.keys().hasOnly([
-          'title', 'description', 'price', 'country', 'category', 'city',
-          'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
-          'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
-          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
-          'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes',
-          'engineName', 'engineCapacity'
-        ])
-        && data.uid is string
-        && data.uid.size() >= 1
-        && data.uid.size() <= 128
-        && data.title is string
-        && data.title == data.make + ' ' + data.model
-          + (data.get('modelExtension', '') == '' ? '' : ' ' + data.get('modelExtension', ''))
-        && data.title.size() >= 5
-        && data.title.size() <= 110
-        && data.description is string
-        && data.description.size() >= 15
-        && data.description.size() <= 3000
-        && data.city is string
-        && data.city.size() >= 1
-        && data.city.size() <= 90
+    function isValidPhotoDetail(detail) {
+      return detail.keys().hasOnly(['kind', 'note'])
+        && detail.kind in ['exterior', 'interior', 'odometer', 'damage', 'other']
+        && detail.note.matches('(?s).{0,160}');
+    }
+
+    function isValidPhotoDetails(details, imageCount) {
+      let validSlots = ['0', '1', '2', '3', '4', '5'][0:imageCount];
+      return details.keys().hasOnly(validSlots)
+        && (!('0' in details) || isValidPhotoDetail(details['0']))
+        && (!('1' in details) || isValidPhotoDetail(details['1']))
+        && (!('2' in details) || isValidPhotoDetail(details['2']))
+        && (!('3' in details) || isValidPhotoDetail(details['3']))
+        && (!('4' in details) || isValidPhotoDetail(details['4']))
+        && (!('5' in details) || isValidPhotoDetail(details['5']));
+    }
+
+    function isTextOfLength(value, minLength, maxLength) {
+      return value is string && value.size() >= minLength && value.size() <= maxLength;
+    }
+
+    function isTextAtMost(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function isIntegerInRange(value, minValue, maxValue) {
+      return value is int && value >= minValue && value <= maxValue;
+    }
+
+    function isValidBatteryReport(report) {
+      let url = report.get('url', '');
+      let health = report.health;
+      let measuredAt = report.measuredAt;
+      return report.keys().hasOnly(['health', 'measuredAt', 'issuer', 'url'])
+        && health is number && health >= 0 && health <= 100
+        && measuredAt is string
+        && measuredAt.matches('[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])')
+        && isTextOfLength(report.issuer, 1, 120)
+        && isTextAtMost(url, 500)
+        && (url == '' || url.matches('https://[^/?#\\s]+([/?#][^\\s]*)?'));
+    }
+
+    function hasListingFields(data) {
+      // The validators below access every required field directly.
+      return data.keys().hasOnly([
+        'title', 'description', 'price', 'country', 'category', 'city',
+        'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
+        'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
+        'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
+        'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes',
+        'engineName', 'engineCapacity', 'photoDetails', 'batteryReport'
+      ]);
+    }
+
+    function hasValidListingText(data) {
+      let modelExtension = data.get('modelExtension', '');
+      return data.uid.matches('(?s).{1,128}')
+        && data.title.matches('(?s).{5,110}')
+        && data.make.matches('(?s).{2,35}')
+        && data.model.matches('(?s).{1,65}')
+        && modelExtension.matches('(?s).{0,40}')
+        && data.title == data.make + ' ' + data.model + (modelExtension == '' ? '' : ' ' + modelExtension)
+        && data.description.matches('(?s).{15,1000}.{0,1000}.{0,1000}')
+        && data.city.matches('(?s).{1,90}')
         && data.contactEmail == ''
-        && data.price is int
-        && data.price >= 1
-        && data.price <= 999999999
+        && data.get('serviceHistory', '').matches('(?s).{0,500}')
+        && data.get('modificationNotes', '').matches('(?s).{0,500}')
+        && data.get('documentNotes', '').matches('(?s).{0,240}')
+        && data.get('engineName', '').matches('(?s).{0,80}')
+        && data.conditionNote.matches('(?s).{0,240}');
+    }
+
+    function hasValidListingSpecs(data) {
+      return isIntegerInRange(data.price, 1, 999999999)
+        && isIntegerInRange(data.get('engineCapacity', 0), 0, 12000)
         && data.category == 'vehicles'
         && data.country in ['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']
         && data.condition in ['new', 'used']
         && data.status in ['active', 'sold', 'paused']
-        && data.make is string
-        && data.make.size() >= 2
-        && data.make.size() <= 35
-        && data.model is string
-        && data.model.size() >= 1
-        && data.model.size() <= 65
-        && data.get('modelExtension', '') is string
-        && data.get('modelExtension', '').size() <= 40
-        && data.get('serviceHistory', '') is string
-        && data.get('serviceHistory', '').size() <= 500
-        && data.get('modificationNotes', '') is string
-        && data.get('modificationNotes', '').size() <= 500
-        && data.get('documentNotes', '') is string
-        && data.get('documentNotes', '').size() <= 240
-        && data.get('engineName', '') is string
-        && data.get('engineName', '').size() <= 80
-        && data.get('engineCapacity', 0) is int
-        && data.get('engineCapacity', 0) >= 0
-        && data.get('engineCapacity', 0) <= 12000
         && data.accidentStatus in ['yes', 'no', 'unknown']
-        && data.conditionNote is string
-        && data.conditionNote.size() <= 240
-        && data.year is int
-        && data.year >= 1950
-        && data.year <= 2100
-        && data.mileage is int
-        && data.mileage >= 0
-        && data.mileage <= 1500000
-        && data.power is int
-        && data.power >= 1
-        && data.power <= 2000
+        && isIntegerInRange(data.year, 1950, 2100)
+        && isIntegerInRange(data.mileage, 0, 1500000)
+        && isIntegerInRange(data.power, 1, 2000)
         && data.fuel in ['petrol', 'diesel', 'hybrid', 'electric']
         && data.transmission in ['manual', 'automatic']
         && data.body in ['suv', 'sedan', 'wagon', 'hatchback', 'coupe']
-        && data.sellerType in ['privateSeller', 'dealer']
+        && data.sellerType in ['privateSeller', 'dealer'];
+    }
+
+    function isValidListing(data, listingId) {
+      return hasListingFields(data) && hasValidListingText(data) && hasValidListingSpecs(data)
         && data.createdAt is timestamp
-        && isValidImages(data, listingId);
+        && isValidImages(data, listingId)
+        && isValidPhotoDetails(data.get('photoDetails', {}), data.images.size())
+        && (!('batteryReport' in data) || (
+          data.batteryReport is map && isValidBatteryReport(data.batteryReport)
+        ));
     }
 
     // =============================================================
@@ -235,6 +273,10 @@ service cloud.firestore {
         && data.countries.hasOnly(['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']);
     }
 
+    function isValidNotificationRead(data, previous) {
+      return data.read == true && data.diff(previous).affectedKeys().hasOnly(['read']);
+    }
+
     function isValidReport(data, reportId) {
       return data.keys().hasAll(['listingId', 'reporterUid', 'reason', 'createdAt'])
         && data.keys().hasOnly(['listingId', 'reporterUid', 'reason', 'createdAt'])
@@ -256,8 +298,7 @@ service cloud.firestore {
     // =============================================================
     match /listings/{listingId} {
       // Public marketplace reads are explicitly limited to active listings.
-      allow get, list: if resource.data.status == 'active'
-        || (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow read: if canReadListing(resource.data);
       allow create: if isVerified()
         && uidUnchanged()
         && request.resource.data.status == 'active'
@@ -269,6 +310,28 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && isValidListing(request.resource.data, listingId);
       allow delete: if isVerified() && isOwner(resource.data.uid);
+
+      match /priceHistory/{eventId} {
+        allow read: if canReadListing(get(/databases/$(database)/documents/listings/$(listingId)).data);
+      }
+    }
+
+    match /chatThreads/{threadId} {
+      allow get: if isChatParticipant(resource.data);
+      allow list: if isChatParticipant(resource.data) && request.query.limit <= 50;
+
+      match /messages/{messageId} {
+        allow read: if isChatParticipant(get(/databases/$(database)/documents/chatThreads/$(threadId)).data);
+      }
+    }
+
+    match /users/{uid}/searchAlerts/{alertId} {
+      allow read: if isOwner(uid);
+    }
+
+    match /users/{uid}/notifications/{notificationId} {
+      allow read: if isOwner(uid);
+      allow update: if isOwner(uid) && isValidNotificationRead(request.resource.data, resource.data);
     }
 
     match /users/{uid}/favorites/{listingId} {

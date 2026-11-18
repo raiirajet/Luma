@@ -65,18 +65,38 @@
 #loginBtn span,#sellBtn span{white-space:nowrap}
 @media(max-width:760px){.limba-wordmark{width:116px}.limba-wordmark-footer{width:130px}.brand-limba small{font-size:7px;margin-left:0;padding:3px 4px}}
 
-/* Keep header actions tappable and within 390px-wide Android browser viewports. */
-@media(max-width:590px){
- .head-row{gap:6px}
- .brand-limba{gap:1px;min-width:0;flex-shrink:1}
- .brand-limba .limba-wordmark{width:min(27vw,116px);min-width:82px}
- .header-right{gap:5px;min-width:0}
- .header-right #loginBtn{width:40px;min-width:40px;height:40px;padding:6px}
- .header-right #loginBtn span{display:none}
- .header-right #loginBtn .limba-3d-icon{width:25px;height:25px}
- .header-right #settingsBtn{width:42px;min-width:42px;height:42px}
- .header-right .language-select{max-width:84px;padding-left:5px;padding-right:4px;font-size:11px}
+/* Marketplace navigation and account actions share the available header width. */
+.head-row{gap:14px}
+.site-header .brand-limba{flex:none}
+.site-header .limba-wordmark{width:120px}
+.main-nav{flex:1;min-width:0;align-self:stretch;gap:2px;margin-left:0}
+.main-nav .nav-link{min-width:0;min-height:44px;flex:0 1 auto;padding:0 6px;gap:4px}
+.main-nav .nav-link span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.main-nav .nav-link .ui-icon{width:18px;height:18px}
+.header-right{margin-left:auto;gap:6px;flex:none}
+.header-right #loginBtn{min-width:44px;min-height:44px;padding:8px 4px}
+.header-right #loginBtn span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.header-right #sellBtn{min-height:44px;padding:8px 12px}
+@media(min-width:761px) and (max-width:1180px){
+ .site-header{height:109px}
+ .head-row{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:64px 45px;gap:0 12px}
+ .header-right{grid-area:1/2;justify-self:end}
+ .main-nav{grid-area:2/1/3/3;justify-content:center;gap:8px}
+ .main-nav .nav-link{padding:0 12px}
 }
+@media(max-width:760px){
+ .head-row{gap:6px}
+ .header-right{gap:4px}
+ .header-right #loginBtn,.header-right #sellBtn{width:44px;min-width:44px;height:44px;padding:6px}
+ .header-right #sellBtn span,.header-right #loginBtn span{display:none}
+ .header-right #loginBtn .limba-3d-icon{width:25px;height:25px}
+}
+@media(max-width:590px){
+ .site-header .limba-wordmark{width:clamp(64px,22vw,106px)}
+ .site-header .brand-limba small{display:none}
+ .header-right .language-select{width:72px;font-size:11px}
+}
+@media(max-width:379px){.header-right .language-select{display:none}}
 
 /* Limba floating vehicle creation and account controls */
 .fab-add{position:fixed;right:max(23px,env(safe-area-inset-right));bottom:max(25px,calc(env(safe-area-inset-bottom) + 22px));z-index:42;display:inline-flex;align-items:center;gap:10px;min-height:60px;border:0;border-radius:36px;padding:9px 20px 9px 11px;background:linear-gradient(135deg,#0d68db,#248cff);color:#fff;font-size:14px;font-weight:800;box-shadow:0 14px 30px #0b508b55;cursor:pointer}
@@ -249,3 +269,89 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 }
 .sell-catalog-label{display:flex;flex-direction:column;gap:7px;min-width:0}.sell-catalog-label>label{font-size:12px;font-weight:800;color:#48616c}.sell-catalog-label input{width:100%;min-height:46px;background:#f7fafb;border:1px solid #d7e3e8;border-radius:9px;padding:12px;color:#173542;font-size:13px}.sell-catalog-label .catalog-trigger{min-height:42px}
 #modelDropdown,#sellModelDropdown{left:auto;right:0}
+
+/* Limba 1.7 search, vehicle details and account tools */
+.search-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.search-grid>.wide-field{grid-column:span 3}
+.search-grid>.search-main{grid-column:4;grid-row:2;align-self:end}
+.search-country{position:relative;min-width:0}
+.search-country-toggle{width:100%;padding:0 12px;border:1px solid #d3e0e6;border-radius:10px;background:#f8fafb;color:#142f3f;font:inherit;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;min-height:44px;min-width:0;overflow:hidden}
+.search-country-toggle::after{content:"▾";flex:none;color:#28566a}
+.search-country-toggle span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-country-panel{position:absolute;right:0;top:100%;width:min(450px,calc(100vw - 45px));padding:15px;border:1px solid #d5e2e8;border-radius:12px;background:#fff;box-shadow:0 18px 60px #082a3c29;z-index:11}
+.search-country-panel .country-choices{margin:0 0 8px}
+.search-country-panel .country-choice{min-height:44px}
+.active-filters{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:0 0 15px}
+.active-filters button{padding:7px 12px;border-radius:999px;min-height:44px;background:#eaf2f9;color:#173f51;border:1px solid #d1e2ec;font:inherit;font-size:.78rem;cursor:pointer}
+.active-filters button span{margin-left:6px}
+.showroom-spotlight{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);border-radius:16px}
+.showroom-spotlight .showroom-copy{padding:clamp(24px,4vw,48px)}
+.showroom-spotlight .showroom-picture img{object-position:center}
+.car-img{height:auto;aspect-ratio:16/10}
+.car-price-overview{display:block;color:#1162b4;font-weight:850;font-size:1.35rem;margin-bottom:6px}
+.car-img img[src="assets/limba/icons/car.png"]{object-fit:contain;padding:16%}
+.car-card:focus-visible,.outline-btn:focus-visible,.primary-btn:focus-visible,.card-heart:focus-visible{outline:2px solid #1859ad;outline-offset:3px}
+.market-inbox-button{position:relative;min-width:44px;min-height:44px}
+.market-inbox-count{position:absolute;top:0;right:0;min-width:18px;padding:2px 4px;border-radius:20px;background:#125cae;color:#fff;font-size:10px;font-weight:800}
+.detail-gallery{margin:16px 0 8px}
+.detail-gallery .details-image{display:block;margin:0;aspect-ratio:16/10;height:auto;max-height:420px;object-fit:contain;background:#eaf1f5}
+.detail-photo-caption{min-height:1.3em;margin:7px 0 0}
+.detail-thumbnails{display:flex;gap:8px;padding:2px 2px 8px;overflow-x:auto}
+.detail-thumbnails button{flex:0 0 88px;padding:4px;background:white;cursor:pointer;border:1px solid #cddde6;border-radius:8px;text-align:left;color:#234a5b;min-height:44px}
+.detail-thumbnails button[aria-current="true"]{border:2px solid #1b67bb;padding:3px}
+.detail-thumbnails img{display:block;border-radius:4px;aspect-ratio:16/10;object-fit:cover;width:100%}
+.detail-thumbnails span{display:block;overflow-wrap:anywhere;font-size:.72rem;padding:4px 0}
+.detail-contact-bar{display:flex;align-items:center;gap:10px;padding:13px 0;margin-top:8px;background:#fff}
+.detail-contact-bar .primary-btn,.detail-contact-bar .outline-btn{min-height:44px}
+.detail-contact-bar .primary-btn{flex:1}
+.market-listing-section,.market-import-columns fieldset{border:1px solid #ccdae3;border-radius:10px;padding:16px;margin:16px 0;min-width:0}
+.market-listing-section legend,.market-import-columns legend{max-width:100%;overflow-wrap:anywhere;font-weight:800}
+.market-listing-section h3{margin:0 0 8px}
+.market-paired-fields,.market-import-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.market-photo-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.market-photo-slot{display:grid;gap:8px;border:1px solid #dbe7ef;border-radius:8px;padding:12px;min-width:0}
+.market-photo-slot small{overflow-wrap:anywhere;color:#3e5d6d}
+.market-battery dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:12px;margin:14px 0}
+.market-battery dt{font-size:.85rem;color:#3e5d6d}
+.market-battery dd{margin:4px 0 0;font-weight:750;overflow-wrap:anywhere}
+.market-battery a{display:inline-flex;text-decoration:none;align-items:center;min-height:44px}
+.price-history-list{list-style:none;padding:0;margin:0}
+.price-history-list li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #e3ebef;font-size:.85rem}
+.price-history-list time,.price-history-list span{color:#3d5c6e}
+.market-tabs,.market-chat-actions,.market-quick-replies{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.market-tabs button,.market-chat-actions button,.market-quick-replies button{min-height:44px}
+.market-list{display:grid;gap:8px}
+.market-list-row{display:grid;gap:4px;text-align:left;background:#f5f9fc;border:1px solid #d8e5ee;border-radius:9px;padding:12px;min-height:44px;color:#173e52;cursor:pointer;font:inherit}
+.market-list-row span,.market-list-row strong,.market-message p{overflow-wrap:anywhere}
+.market-list-row small,.market-message small{color:#456272}
+.market-list-row.market-unread{border-left:4px solid #146ac3;background:#eff6ff}
+.market-messages{max-height:46dvh;min-height:4rem;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px;background:#f6f9fb;border:1px solid #e0eaf1;border-radius:12px}
+.market-message{max-width:min(86%,38rem);align-self:flex-start;padding:8px 12px;border-radius:10px;background:#fff;color:#1b3c4c}
+.market-message.mine{align-self:flex-end;background:#e0effd}
+.market-message p{margin:0;white-space:pre-wrap;color:inherit}
+.market-compose,.market-report-form{display:grid;gap:8px}
+.market-compose textarea,.market-report-form textarea{width:100%;padding:9px 11px;border:1px solid #c1d3de;border-radius:8px;font:inherit}
+.market-compose>.primary-btn,.market-report-form>.outline-btn{justify-self:start;min-height:44px}
+.saved-search-row{flex-wrap:wrap}
+.saved-search-row button{min-height:44px}
+.market-import-columns fieldset{display:grid;gap:8px;margin:0}
+.market-import-columns label{display:grid;gap:3px;color:#325265;font-size:.85rem}
+.market-import-columns input,.market-import-destination select{width:100%;min-width:0;padding:8px;background:white;border:1px solid #bfcfda;border-radius:7px;font:inherit}
+.market-import-destination{display:grid;gap:5px;margin-bottom:12px}
+.market-import-result{margin-top:12px}
+.market-import-form>.primary-btn{margin:13px 0 0}
+.modal-panel.market-detail{width:min(900px,100%)}
+@media(max-width:760px){
+ .search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .search-grid>.wide-field,.search-grid>.search-main{grid-column:1/-1;grid-row:auto}
+ .search-country-panel .country-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .showroom-spotlight{grid-template-columns:1fr}
+ .showroom-spotlight .showroom-picture{aspect-ratio:16/9}
+ .detail-contact-bar{position:sticky;bottom:-16px;z-index:3;margin-inline:-16px;padding:10px 16px max(10px,env(safe-area-inset-bottom));box-shadow:0 -2px 16px #0b32541a}
+ .price-history-list li{grid-template-columns:1fr auto}
+ .price-history-list time{grid-column:1/-1}
+}
+@media(max-width:430px){
+ .market-photo-fields,.market-paired-fields,.market-import-columns{grid-template-columns:1fr}
+ .market-inbox-button{min-width:44px;flex-shrink:0}
+}

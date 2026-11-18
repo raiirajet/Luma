@@ -9,21 +9,43 @@ on:
       - 'android/**'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Build debug, build a signed artifact, or publish a signed prerelease
+        type: choice
+        required: true
+        default: debug
+        options:
+          - debug
+          - signed
+          - publish
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: android-apk
-  cancel-in-progress: true
+  group: android-apk-${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'debug' && 'release' || 'debug' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' || inputs.mode == 'debug' }}
 
 jobs:
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    outputs:
+      artifact: ${{ steps.apk.outputs.artifact }}
+      apk: ${{ steps.apk.outputs.apk }}
+      version: ${{ steps.apk.outputs.version }}
     steps:
+      - name: Require main for a signed build
+        if: github.event_name == 'workflow_dispatch' && inputs.mode != 'debug' && github.ref != 'refs/heads/main'
+        run: |
+          echo '::error::Select the main branch for a signed Limba build.'
+          exit 1
+
       - name: Checkout Luma
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Java 17
         uses: actions/setup-java@v4
@@ -57,64 +79,109 @@ jobs:
       - name: Inject optional Android Firebase configuration
         env:
           LIMBA_ANDROID_CONFIG_B64: ${{ secrets.LIMBA_ANDROID_CONFIG_B64 }}
-          LIMBA_RELEASE_KEYSTORE_B64: ${{ secrets.LIMBA_RELEASE_KEYSTORE_B64 }}
         run: |
           if [ -n "$LIMBA_ANDROID_CONFIG_B64" ]; then
             printf '%s' "$LIMBA_ANDROID_CONFIG_B64" | base64 -d > android/app/src/main/assets/firebase-config.json
             python3 -m json.tool android/app/src/main/assets/firebase-config.json >/dev/null
           fi
-          if [ -n "$LIMBA_RELEASE_KEYSTORE_B64" ] && [ "${{ github.event_name }}" = "push" ]; then
-            printf '%s' "$LIMBA_RELEASE_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/limba-release.jks"
-            echo "LIMBA_KEYSTORE_FILE=$GITHUB_WORKSPACE/limba-release.jks" >> "$GITHUB_ENV"
-          fi
 
-      - name: Compile native APK
+      - name: Test Android and build debug APK
+        if: github.event_name != 'workflow_dispatch' || inputs.mode == 'debug'
         working-directory: android
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
 
-      - name: Build signed release when signing secrets exist
-        if: github.event_name == 'push'
+      - name: Build APK with the configured release key
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode != 'debug'
         working-directory: android
         env:
+          LIMBA_RELEASE_KEYSTORE_B64: ${{ secrets.LIMBA_RELEASE_KEYSTORE_B64 }}
           LIMBA_KEYSTORE_PASSWORD: ${{ secrets.LIMBA_KEYSTORE_PASSWORD }}
           LIMBA_KEY_ALIAS: ${{ secrets.LIMBA_KEY_ALIAS }}
           LIMBA_KEY_PASSWORD: ${{ secrets.LIMBA_KEY_PASSWORD }}
         run: |
-          if [ -n "$LIMBA_KEYSTORE_FILE" ] && [ -n "$LIMBA_KEYSTORE_PASSWORD" ] && [ -n "$LIMBA_KEY_ALIAS" ] && [ -n "$LIMBA_KEY_PASSWORD" ]; then
-            gradle --no-daemon --stacktrace :app:assembleRelease
-          fi
+          set -euo pipefail
+          for name in LIMBA_RELEASE_KEYSTORE_B64 LIMBA_KEYSTORE_PASSWORD LIMBA_KEY_ALIAS LIMBA_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing Android signing secret $name."
+              exit 1
+            fi
+          done
+          umask 077
+          LIMBA_KEYSTORE_FILE=$(mktemp "$RUNNER_TEMP/limba-release.XXXXXX.jks")
+          export LIMBA_KEYSTORE_FILE
+          trap 'unlink "$LIMBA_KEYSTORE_FILE"' EXIT
+          printf '%s' "$LIMBA_RELEASE_KEYSTORE_B64" | base64 -d > "$LIMBA_KEYSTORE_FILE"
+          unset LIMBA_RELEASE_KEYSTORE_B64
+          gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleRelease
 
-      - name: Prepare download
+      - name: Verify APK signature and prepare download
+        id: apk
+        env:
+          BUILD_MODE: ${{ inputs.mode || 'debug' }}
         run: |
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            APK_PATH=Limba-Auto-Android-v1.6.0.apk
-            cp android/app/build/outputs/apk/release/app-release.apk "$APK_PATH"
-            echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
-            echo "SIGNED_RELEASE=true" >> "$GITHUB_ENV"
+          set -euo pipefail
+          version=$(sed -nE 's/^[[:space:]]*versionName = "([0-9.]+)"$/\1/p' android/app/build.gradle.kts)
+          test -n "$version"
+          artifact="Limba-Auto-Android-v$version"
+          if [ "$BUILD_MODE" = debug ]; then
+            artifact="$artifact-debug"
+            source_apk=android/app/build/outputs/apk/debug/app-debug.apk
           else
-            APK_PATH=Limba-Auto-Android-v1.6.0-debug.apk
-            cp android/app/build/outputs/apk/debug/app-debug.apk "$APK_PATH"
-            echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
-            echo "SIGNED_RELEASE=false" >> "$GITHUB_ENV"
+            source_apk=android/app/build/outputs/apk/release/app-release.apk
           fi
-          sha256sum "$APK_PATH"
+          apk="$artifact.apk"
+          mkdir -p apk-output
+          cp "$source_apk" "apk-output/$apk"
+          cd apk-output
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk" | tee "$apk.certificates.txt"
+          if [ "$BUILD_MODE" != debug ] && grep -qi 'CN=Android Debug' "$apk.certificates.txt"; then
+            echo '::error::The release APK uses an Android debug certificate.'
+            exit 1
+          fi
+          sha256sum "$apk" | tee "$apk.sha256"
+          printf 'artifact=%s\napk=%s\nversion=%s\n' "$artifact" "$apk" "$version" >> "$GITHUB_OUTPUT"
 
       - name: Upload installable APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Limba-Auto-Android-APK
-          path: ${{ env.APK_PATH }}
+          name: ${{ steps.apk.outputs.artifact }}
+          path: apk-output/
+          if-no-files-found: error
           retention-days: 30
 
+  publish:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode == 'publish'
+    needs: android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.android.outputs.artifact }}
+          path: apk-output
       - name: Publish permanently signed APK in GitHub Releases
-        if: github.event_name == 'push' && env.SIGNED_RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          APK_FILE: ${{ needs.android.outputs.apk }}
+          VERSION: ${{ needs.android.outputs.version }}
+        working-directory: apk-output
         run: |
-          if ! gh release view android-v1.6.0 >/dev/null 2>&1; then
-            gh release create android-v1.6.0 \
-              --title 'Limba Auto Android 1.4.2' \
-              --notes 'Limba 1.4.2 with the limba-auto Firebase production client configuration. This release is published only when the permanent release-signing secrets are configured.' \
+          set -euo pipefail
+          sha256sum --check "$APK_FILE.sha256"
+          tag="android-v$VERSION"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            release_commit=$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha)
+            if [ "$release_commit" != "$GITHUB_SHA" ]; then
+              echo '::error::This Android version already points to another commit.'
+              exit 1
+            fi
+            gh release upload "$tag" "$APK_FILE" "$APK_FILE.sha256" "$APK_FILE.certificates.txt" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" "$APK_FILE" "$APK_FILE.sha256" "$APK_FILE.certificates.txt" \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Limba Auto Android $VERSION" \
+              --notes "Signed Limba Auto Android $VERSION APK, checksum and signing certificate." \
               --prerelease
           fi
-          gh release upload android-v1.6.0 "$APK_PATH" --clobber

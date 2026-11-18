@@ -1,7 +1,8 @@
 {
   "indexes": [
     {"collectionGroup":"listings","queryScope":"COLLECTION","fields":[{"fieldPath":"status","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]},
-    {"collectionGroup":"listings","queryScope":"COLLECTION","fields":[{"fieldPath":"uid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+    {"collectionGroup":"listings","queryScope":"COLLECTION","fields":[{"fieldPath":"uid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]},
+    {"collectionGroup":"chatThreads","queryScope":"COLLECTION","fields":[{"fieldPath":"participants","arrayConfig":"CONTAINS"},{"fieldPath":"updatedAt","order":"DESCENDING"}]}
   ],
   "fieldOverrides": []
 }
