@@ -233,3 +233,12 @@ button.card-heart{width:44px;height:44px}
  .site-footer{padding-bottom:115px}
 }
 @media(max-width:360px){.mobile-nav button small{font-size:8px}.mobile-nav button .limba-3d-icon{width:21px;height:21px}}
+
+/* Clear price negotiation with transparent, server-enforced anti-spam allowance. */
+.offer-negotiation{margin-top:14px;padding:15px;border:1px solid #cfe0ec;border-radius:14px;background:#f5faff}
+.offer-negotiation h3{margin:0 0 7px;color:#12394b;font-size:16px}
+.offer-guidance{font-size:12px!important;margin:4px 0 7px!important;color:#526d7a!important}
+.offer-quota-info{font-size:12px!important;font-weight:800;color:#0c5189!important;margin:7px 0 13px!important}
+.offer-form{margin-top:0}
+.offer-form button:disabled{opacity:.55}
+@media(max-width:390px){.offer-negotiation{padding:12px}}

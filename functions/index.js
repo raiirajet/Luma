@@ -396,6 +396,14 @@ exports.notifyNewMessage = onDocumentCreated({region,
   const target=conv.data().sellerUid===data.senderUid?conv.data().buyerUid:conv.data().sellerUid;
   if(target)await pushTo(target,'Neue Nachricht','message');
 });
+// Notify only after successful server-side offer creation; push never leaks the price.
+exports.notifyNewOffer = onDocumentCreated({region,
+  document:'conversations/{conversationId}/offers/{offerId}'},async event=>{
+  const offer=event.data?.data();if(!offer||offer.status!=='open')return;
+  const conv=await convRef(event.params.conversationId).get();
+  if(conv.exists&&offer.creatorUid===conv.data().buyerUid)
+    await pushTo(conv.data().sellerUid,'Neues Preisangebot','offer');
+});
 exports.notifyOfferStatus = onDocumentUpdated({region,
   document:'conversations/{conversationId}/offers/{offerId}'},async event=>{
   const before=event.data?.before?.data(),after=event.data?.after?.data();

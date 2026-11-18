@@ -47,7 +47,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Nachrichten",
     "keywordMore": "Stichwort (optional)",
     "noSuggestions": "Keine passenden Vorschläge",
-    "navSwipe": "Swipe"
+    "navSwipe": "Swipe",
+    "proposePrice": "Preis vorschlagen",
+    "offerGuidance": "Schlage einen unverbindlichen Preis vor. Der Verkäufer kann ihn annehmen oder ablehnen.",
+    "offerQuotaLoading": "Noch verfügbare Preisangebote werden geprüft …",
+    "offerQuotaRemaining": "Heute noch {remaining} von {limit} Preisangeboten frei.",
+    "offerQuotaUnavailable": "Verbleibende Angebote derzeit nicht abrufbar.",
+    "offerSent": "Preisangebot gesendet."
   },
   "en": {
     "message": "Message",
@@ -96,7 +102,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Messages",
     "keywordMore": "Keyword (optional)",
     "noSuggestions": "No matching suggestions",
-    "navSwipe": "Swipe"
+    "navSwipe": "Swipe",
+    "proposePrice": "Propose a price",
+    "offerGuidance": "Make a non-binding price offer. The seller may accept or decline.",
+    "offerQuotaLoading": "Checking remaining price offers …",
+    "offerQuotaRemaining": "{remaining} of {limit} price offers left today.",
+    "offerQuotaUnavailable": "Remaining offers currently unavailable.",
+    "offerSent": "Price offer sent."
   },
   "sq": {
     "message": "Mesazh",
@@ -145,7 +157,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Mesazhet",
     "keywordMore": "Fjalë kyçe (opsionale)",
     "noSuggestions": "Nuk ka sugjerime të përshtatshme",
-    "navSwipe": "Rrëshqit"
+    "navSwipe": "Rrëshqit",
+    "proposePrice": "Propozo çmimin",
+    "offerGuidance": "Dërgo një ofertë çmimi pa detyrim. Shitësi mund ta pranojë ose refuzojë.",
+    "offerQuotaLoading": "Po kontrollohen ofertat …",
+    "offerQuotaRemaining": "{remaining} nga {limit} oferta të mbetura sot.",
+    "offerQuotaUnavailable": "Ofertat e mbetura nuk janë të disponueshme.",
+    "offerSent": "Oferta u dërgua."
   },
   "tr": {
     "message": "Mesaj",
@@ -194,7 +212,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Mesajlar",
     "keywordMore": "Anahtar kelime (isteğe bağlı)",
     "noSuggestions": "Eşleşen öneri yok",
-    "navSwipe": "Kaydır"
+    "navSwipe": "Kaydır",
+    "proposePrice": "Fiyat teklif et",
+    "offerGuidance": "Bağlayıcı olmayan bir fiyat teklifi gönder. Satıcı kabul veya reddedebilir.",
+    "offerQuotaLoading": "Kalan teklifler kontrol ediliyor …",
+    "offerQuotaRemaining": "Bugün {limit} tekliften {remaining} kaldı.",
+    "offerQuotaUnavailable": "Kalan teklifler şu anda görüntülenemiyor.",
+    "offerSent": "Fiyat teklifi gönderildi."
   },
   "el": {
     "message": "Μήνυμα",
@@ -243,7 +267,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Μηνύματα",
     "keywordMore": "Λέξη-κλειδί (προαιρετικά)",
     "noSuggestions": "Δεν βρέθηκαν προτάσεις",
-    "navSwipe": "Σάρωση"
+    "navSwipe": "Σάρωση",
+    "proposePrice": "Πρότεινε τιμή",
+    "offerGuidance": "Στείλε μη δεσμευτική προσφορά. Ο πωλητής μπορεί να τη δεχτεί ή να την απορρίψει.",
+    "offerQuotaLoading": "Έλεγχος διαθέσιμων προσφορών …",
+    "offerQuotaRemaining": "Απομένουν {remaining} από {limit} προσφορές σήμερα.",
+    "offerQuotaUnavailable": "Οι διαθέσιμες προσφορές δεν είναι ορατές.",
+    "offerSent": "Η προσφορά στάλθηκε."
   },
   "sr-Latn": {
     "message": "Poruka",
@@ -292,7 +322,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Poruke",
     "keywordMore": "Ključna reč (opciono)",
     "noSuggestions": "Nema odgovarajućih predloga",
-    "navSwipe": "Swipe"
+    "navSwipe": "Swipe",
+    "proposePrice": "Predloži cijenu",
+    "offerGuidance": "Pošalji neobavezujuću ponudu. Prodavac je može prihvatiti ili odbiti.",
+    "offerQuotaLoading": "Provjera preostalih ponuda …",
+    "offerQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "offerQuotaUnavailable": "Broj ponuda trenutno nije dostupan.",
+    "offerSent": "Ponuda je poslata."
   },
   "sr-Cyrl": {
     "message": "Порука",
@@ -341,7 +377,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Поруке",
     "keywordMore": "Кључна реч (опционо)",
     "noSuggestions": "Нема одговарајућих предлога",
-    "navSwipe": "Свaјп"
+    "navSwipe": "Свaјп",
+    "proposePrice": "Предложи цену",
+    "offerGuidance": "Пошаљи необавезујућу понуду. Продавац може да прихвати или одбије.",
+    "offerQuotaLoading": "Провера преосталих понуда …",
+    "offerQuotaRemaining": "Данас је остало {remaining} од {limit} понуда.",
+    "offerQuotaUnavailable": "Број понуда није доступан.",
+    "offerSent": "Понуда је послата."
   },
   "sl": {
     "message": "Sporočilo",
@@ -390,7 +432,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Sporočila",
     "keywordMore": "Ključna beseda (neobvezno)",
     "noSuggestions": "Ni ujemajočih predlogov",
-    "navSwipe": "Podrsaj"
+    "navSwipe": "Podrsaj",
+    "proposePrice": "Predlagaj ceno",
+    "offerGuidance": "Pošlji nezavezujočo ponudbo. Prodajalec jo lahko sprejme ali zavrne.",
+    "offerQuotaLoading": "Preverjanje preostalih ponudb …",
+    "offerQuotaRemaining": "Danes je ostalo {remaining} od {limit} ponudb.",
+    "offerQuotaUnavailable": "Podatki o ponudbah niso na voljo.",
+    "offerSent": "Ponudba je poslana."
   },
   "hr": {
     "message": "Poruka",
@@ -439,7 +487,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Poruke",
     "keywordMore": "Ključna riječ (neobavezno)",
     "noSuggestions": "Nema odgovarajućih prijedloga",
-    "navSwipe": "Swipe"
+    "navSwipe": "Swipe",
+    "proposePrice": "Predloži cijenu",
+    "offerGuidance": "Pošalji neobvezujuću ponudu. Prodavatelj je može prihvatiti ili odbiti.",
+    "offerQuotaLoading": "Provjera preostalih ponuda …",
+    "offerQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "offerQuotaUnavailable": "Broj ponuda trenutno nije dostupan.",
+    "offerSent": "Ponuda je poslana."
   },
   "mk": {
     "message": "Порака",
@@ -488,7 +542,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Пораки",
     "keywordMore": "Клучен збор (опционално)",
     "noSuggestions": "Нема соодветни предлози",
-    "navSwipe": "Лизгај"
+    "navSwipe": "Лизгај",
+    "proposePrice": "Предложи цена",
+    "offerGuidance": "Испрати необврзувачка понуда. Продавачот може да ја прифати или одбие.",
+    "offerQuotaLoading": "Проверка на преостанати понуди …",
+    "offerQuotaRemaining": "Денес остануваат {remaining} од {limit} понуди.",
+    "offerQuotaUnavailable": "Бројот на понуди не е достапен.",
+    "offerSent": "Понудата е испратена."
   },
   "bs": {
     "message": "Poruka",
@@ -537,7 +597,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Poruke",
     "keywordMore": "Ključna riječ (opcionalno)",
     "noSuggestions": "Nema odgovarajućih prijedloga",
-    "navSwipe": "Swipe"
+    "navSwipe": "Swipe",
+    "proposePrice": "Predloži cijenu",
+    "offerGuidance": "Pošalji neobavezujuću ponudu. Prodavač je može prihvatiti ili odbiti.",
+    "offerQuotaLoading": "Provjera preostalih ponuda …",
+    "offerQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "offerQuotaUnavailable": "Broj ponuda trenutno nije dostupan.",
+    "offerSent": "Ponuda je poslana."
   },
   "cnr": {
     "message": "Poruka",
@@ -586,7 +652,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Poruke",
     "keywordMore": "Ključna riječ (opciono)",
     "noSuggestions": "Nema odgovarajućih predloga",
-    "navSwipe": "Swipe"
+    "navSwipe": "Swipe",
+    "proposePrice": "Predloži cijenu",
+    "offerGuidance": "Pošalji neobavezujuću ponudu. Prodavac je može prihvatiti ili odbiti.",
+    "offerQuotaLoading": "Provjera preostalih ponuda …",
+    "offerQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "offerQuotaUnavailable": "Broj ponuda trenutno nije dostupan.",
+    "offerSent": "Ponuda je poslata."
   },
   "bg": {
     "message": "Съобщение",
@@ -635,7 +707,13 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Съобщения",
     "keywordMore": "Ключова дума (по избор)",
     "noSuggestions": "Няма съвпадащи предложения",
-    "navSwipe": "Плъзни"
+    "navSwipe": "Плъзни",
+    "proposePrice": "Предложи цена",
+    "offerGuidance": "Изпрати необвързваща оферта. Продавачът може да я приеме или отхвърли.",
+    "offerQuotaLoading": "Проверка на оставащите оферти …",
+    "offerQuotaRemaining": "Днес остават {remaining} от {limit} оферти.",
+    "offerQuotaUnavailable": "Броят оферти временно не е наличен.",
+    "offerSent": "Офертата е изпратена."
   },
   "ro": {
     "message": "Mesaj",
@@ -684,6 +762,12 @@ export const SOCIAL_TRANSLATIONS = {
     "inboxTitle": "Mesaje",
     "keywordMore": "Cuvânt-cheie (opțional)",
     "noSuggestions": "Nu există sugestii potrivite",
-    "navSwipe": "Glisează"
+    "navSwipe": "Glisează",
+    "proposePrice": "Propune un preț",
+    "offerGuidance": "Trimite o ofertă neobligatorie. Vânzătorul o poate accepta sau refuza.",
+    "offerQuotaLoading": "Se verifică ofertele rămase …",
+    "offerQuotaRemaining": "Astăzi mai ai {remaining} din {limit} oferte.",
+    "offerQuotaUnavailable": "Ofertele rămase nu sunt disponibile.",
+    "offerSent": "Oferta a fost trimisă."
   }
 };

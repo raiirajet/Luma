@@ -45,9 +45,9 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
       return true;
     }catch(e){error(e);return false;}
   }
-  async function startConversation(listingId) {
+  async function startConversation(listingId,focusOffer=false) {
     if(!(await requirePhone()))return;
-    try{const res=await run('createConversation',{listingId});openChat(res.conversationId);}
+    try{const res=await run('createConversation',{listingId});openChat(res.conversationId,{focusOffer});}
     catch(e){error(e);}
   }
   function openPhoneVerification() {
@@ -83,11 +83,11 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
     const container=document.createElement('section');container.className='seller-panel';
     container.innerHTML='<div class="seller-panel-head"><h3>'+esc(tr('sellerProfile'))+'</h3><span id="sellerTrust">'+trustFor(car.uid)+'</span></div>'+
       '<div class="detail-cta"><button id="marketMessage" class="primary-btn">'+esc(tr('message'))+'</button>'+
-      '<button id="marketOffer" class="outline-btn">'+esc(tr('offer'))+'</button></div>'+
+      '<button id="marketOffer" class="outline-btn">'+esc(tr('proposePrice'))+'</button></div>'+
       '<div id="sellerReviews" class="review-list"></div>';
     $('detailShare').parentElement.insertAdjacentElement('afterend',container);
     $('marketMessage').addEventListener('click',()=>startConversation(car.id));
-    $('marketOffer').addEventListener('click',()=>startConversation(car.id));
+    $('marketOffer').addEventListener('click',()=>startConversation(car.id,true));
     loadSellerReviews(car.uid,container);
   }
   async function loadSellerReviews(uid,container) {
@@ -111,7 +111,7 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
           esc(d.data().comment||d.data().tags?.join(' · ')||'')+'</p></div>').join('');
     }catch(e){console.warn('reviews',e)}
   }
-  function openChat(conversationId) {
+  function openChat(conversationId,{focusOffer=false}={}) {
     stopStreams();
     currentChat=conversationId;
     const f=getFirebase();if(!f){notify(tr('offline'));return;}
@@ -121,9 +121,12 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
       '<form id="chatForm" class="chat-form"><label class="sr-only" for="chatText">'+esc(tr('message'))+
       '</label><input id="chatText" maxlength="1000" required placeholder="'+esc(tr('writeMessage'))+'">'+
       '<button class="primary-btn">'+esc(tr('send'))+'</button></form>'+
+      '<div class="offer-negotiation"><h3>'+esc(tr('proposePrice'))+'</h3>'+
+      '<p class="offer-guidance">'+esc(tr('offerGuidance'))+'</p>'+
+      '<p id="offerQuotaInfo" class="offer-quota-info" role="status" aria-live="polite">'+esc(tr('offerQuotaLoading'))+'</p>'+
       '<form id="offerForm" class="market-form offer-form"><label>'+esc(tr('offerAmount'))+
       '<input id="offerAmount" type="number" min="1" max="999999999" step="1" required></label>'+
-      '<button class="outline-btn">'+esc(tr('submitOffer'))+'</button></form>'+
+      '<button id="offerSendBtn" class="outline-btn">'+esc(tr('submitOffer'))+'</button></form></div>'+
       '<p class="muted-copy">'+esc(tr('noPayment'))+'</p></div>');
     $('chatForm').addEventListener('submit',async e=>{
       e.preventDefault();const text=$('chatText').value.trim();if(!text)return;
@@ -131,11 +134,42 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
       try{await run('sendMessage',{conversationId,text});$('chatText').value=''}
       catch(err){error(err)}finally{button.disabled=false;}
     });
+    const offerInfo=$('offerQuotaInfo'),offerBtn=$('offerSendBtn');
+    const refreshQuota=async()=>{
+      try{
+        const quota=await run('getOfferQuota',{});
+        if(currentChat!==conversationId||!offerInfo)return;
+        offerInfo.textContent=tr('offerQuotaRemaining')
+          .replace('{remaining}',String(quota.remaining)).replace('{limit}',String(quota.limit));
+        offerBtn.disabled=quota.remaining<=0;
+        $('offerAmount').disabled=quota.remaining<=0;
+      }catch(e){if(currentChat===conversationId&&offerInfo)offerInfo.textContent=tr('offerQuotaUnavailable')}
+    };
+    const convDoc=f.modules.doc(f.db,'conversations',conversationId);
+    f.modules.getDoc(convDoc).then(snap=>{
+      if(currentChat!==conversationId||!$('offerForm'))return;
+      if(snap.data()?.buyerUid!==current()?.uid){
+        $('offerForm').classList.add('hidden');
+        offerInfo.classList.add('hidden');
+        document.querySelector('.offer-negotiation')?.classList.add('hidden');
+      }else{
+        refreshQuota();
+        if(focusOffer)$('offerAmount')?.focus();
+      }
+    }).catch(error);
     $('offerForm').addEventListener('submit',async e=>{
       e.preventDefault();const amountEur=Number($('offerAmount').value);
       const button=e.submitter;button.disabled=true;
-      try{await run('createOffer',{conversationId,amountEur,validUntil:new Date(Date.now()+86400000).toISOString()});
-        $('offerAmount').value='';}
+      try{const offer=await run('createOffer',{conversationId,amountEur,validUntil:new Date(Date.now()+86400000).toISOString()});
+        $('offerAmount').value='';
+        notify(tr('offerSent'));
+        if(typeof offer.quotaRemaining==='number'){
+          offerInfo.textContent=tr('offerQuotaRemaining')
+            .replace('{remaining}',String(offer.quotaRemaining)).replace('{limit}','3');
+          offerBtn.disabled=offer.quotaRemaining<=0;
+          $('offerAmount').disabled=offer.quotaRemaining<=0;
+        }
+      }
       catch(err){error(err)}finally{button.disabled=false;}
     });
     const c=f.modules.doc(f.db,'conversations',conversationId);
