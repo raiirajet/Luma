@@ -86,8 +86,17 @@ with sync_playwright() as p:
   page.locator('#advancedToggle').click()
   assert page.locator('#keyword').is_visible()
   page.locator('#keyword').fill('GT-R')
+  if width<500:
+   page.locator('#filterApplyBtn').click()
+  else:
+   page.locator('#advancedToggle').click()
   page.locator('#saveSearchBtn').click()
+  page.locator('#advancedToggle').click()
   page.locator('#keyword').fill('nonexistent')
+  if width<500:
+   page.locator('#filterApplyBtn').click()
+  else:
+   page.locator('#advancedToggle').click()
   assert page.locator('#carGrid .car-card').count()==0
   page.locator('#settingsBtn').click()
   assert page.locator('#savedSearchesList [data-apply]').count()>=1

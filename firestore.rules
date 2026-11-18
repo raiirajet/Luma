@@ -67,13 +67,13 @@ service cloud.firestore {
           'title', 'description', 'price', 'country', 'category', 'city',
           'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
           'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
-          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote', 'allowOffers'
+          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
         ])
         && data.keys().hasOnly([
           'title', 'description', 'price', 'country', 'category', 'city',
           'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
           'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
-          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
+          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote', 'allowOffers'
         ])
         && data.uid is string
         && data.uid.size() >= 1
