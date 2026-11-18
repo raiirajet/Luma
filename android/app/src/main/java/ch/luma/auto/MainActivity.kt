@@ -1038,6 +1038,50 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun showPhotoGallery(car:JSONObject?=null) {
+        val pics=mutableListOf<String>()
+        val list=car?.optJSONArray("images")
+        if(list!=null)for(i in 0 until list.length())list.optString(i).takeIf{it.isNotBlank()}?.let{pics.add(it)}
+        if(pics.isEmpty() && car?.optString("image")?.isNotBlank()==true)pics.add(car.optString("image"))
+        val dialog=android.app.Dialog(this)
+        val frame=FrameLayout(this).apply{setBackgroundColor(0xff061420.toInt())}
+        val image=ImageView(this).apply{scaleType=ImageView.ScaleType.FIT_CENTER}
+        frame.addView(image,fp(-1,-1,Gravity.CENTER))
+        val controls=col().apply{
+            setPadding(px(16),px(12),px(16),px(16))
+            background=c(0xe90b2333.toInt(),14)
+        }
+        val status=text("",14f,Color.WHITE,true).apply{gravity=Gravity.CENTER}
+        controls.addView(status)
+        controls.addView(space(10))
+        val buttons=row()
+        val back=btn("‹  "+t("photoPrevious"),false){ }
+        val next=btn(t("photoNext")+"  ›",false){ }
+        buttons.addView(back,LinearLayout.LayoutParams(0,px(47),1f))
+        buttons.addView(spaceHorizontal(8))
+        buttons.addView(next,LinearLayout.LayoutParams(0,px(47),1f))
+        controls.addView(buttons)
+        controls.addView(space(8))
+        controls.addView(btn(t("cancelPreview"),true){dialog.dismiss()})
+        frame.addView(controls,fp(-1,-2,Gravity.BOTTOM))
+        var index=0
+        fun update(){
+            status.text=(index+1).toString()+" / "+maxOf(1,pics.size)
+            if(car==null && carPhoto!=null)image.setImageBitmap(carPhoto)
+            else if(pics.isNotEmpty())com.bumptech.glide.Glide.with(this@MainActivity)
+                .load(pics[index]).fitCenter().into(image)
+            else image.setImageResource(R.drawable.limba_car)
+            back.isEnabled=pics.size>1;next.isEnabled=pics.size>1
+        }
+        back.setOnClickListener{if(pics.size>1){index=(index-1+pics.size)%pics.size;update()}}
+        next.setOnClickListener{if(pics.size>1){index=(index+1)%pics.size;update()}}
+        dialog.setContentView(frame)
+        dialog.show()
+        dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT)
+        update()
+    }
+
     private fun renderPreviewDetails() {
         val car=activePreviewCar ?: return
         val main=container();toolbar(main,t("vehicleProfile"),{activePreviewCar=null;navigate(backFromDetail)})
@@ -1048,7 +1092,11 @@ class MainActivity : Activity() {
         if(live && car.optString("image").startsWith("https://")){
             val photo=ImageView(this).apply{scaleType=ImageView.ScaleType.CENTER_CROP}
             content.addView(photo,lp(-1,240))
+            photo.setOnClickListener{showPhotoGallery(car)}
             com.bumptech.glide.Glide.with(this).load(car.optString("image")).centerCrop().into(photo)
+            content.addView(btn(t("fullscreenPhoto")+" · "+(car.optJSONArray("images")?.length()?:1),false) {
+                showPhotoGallery(car)
+            })
             content.addView(space(12))
         }
         content.addView(text(car.optString("make")+" "+car.optString("model"),25f,ink,true))
@@ -1111,11 +1159,13 @@ class MainActivity : Activity() {
         if(activePreviewCar!=null){renderPreviewDetails();return}
         val main=container();toolbar(main,"NISSAN GT-R",{navigate(backFromDetail)})
         val content=col()
-        content.addView(image(280),lp(-1,280))
+        val heroPhoto=image(280).apply{setOnClickListener{showPhotoGallery()}}
+        content.addView(heroPhoto,lp(-1,280))
         val info=col().apply {setPadding(px(19),px(22),px(19),px(25))}
         info.addView(text(t("demoOnly"),11f,orange,true))
         info.addView(space(8))
         info.addView(text("Nissan GT-R R35 Black Edition",26f,ink,true))
+        info.addView(btn(t("fullscreenPhoto"),false){showPhotoGallery()})
         info.addView(space(9));info.addView(text(euro(68900),28f,orange,true))
         info.addView(space(7));val locationRow = row()
         locationRow.addView(drawableIcon(R.drawable.limba_location, orange, 20), lp(20, 20))
