@@ -37,7 +37,7 @@ try:
     assert page.locator('.mobile-nav button').count()==5
     assert page.locator('.mobile-nav [data-view="swipe"]').is_visible()
    if width<=390:
-    assert page.locator('.mobile-nav button').count()==6
+    assert page.locator('.mobile-nav button').count()==5
     assert page.locator('#fabSell').is_visible()
     assert page.locator('#mobileSell').count()==0
     for key in ['settings','nav']:
