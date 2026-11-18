@@ -637,7 +637,7 @@ class MainActivity : Activity() {
         results.addView(space(7))
         results.addView(btn(t("swipe"), false) { navigate("swipe") })
         results.addView(space(10))
-        results.addView(text(t("singleDemoNotice"), 12f, muted))
+        if(cloudCars.isEmpty() && previewCars.isEmpty())results.addView(text(t("singleDemoNotice"), 12f, muted))
         results.addView(space(17))
         var listed = false
         cloudCars.filter { matchesCar(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
@@ -647,7 +647,6 @@ class MainActivity : Activity() {
         results.addView(space(16))
         results.addView(btn(t("yourSavedSearch"), false) { navigate("searches") })
         results.addView(space(9))
-        results.addView(btn(t("addVehicle"), false) { showCarForm() })
         content.addView(results)
         body(main, content)
         navigation(main)
@@ -725,6 +724,11 @@ class MainActivity : Activity() {
         view.addView(text(car.optString("make")+" "+car.optString("model"),20f,ink,true))
         view.addView(space(5))
         view.addView(text(car.optInt("year").toString()+" · "+number(car.optInt("mileage"))+" km · "+car.optInt("power")+" PS",13f,muted))
+        view.addView(space(5))
+        view.addView(text(t(if(car.optString("condition")=="new")"conditionNew"else "conditionUsed")+
+            " · "+t(when(car.optString("accidentStatus")){
+                "yes"->"accidentYes";"no"->"accidentNo";else->"accidentUnknown"
+            }),12f,muted,true))
         view.addView(text(car.optString("city")+" · "+car.optString("country"),12f,muted))
         view.addView(space(8))
         view.addView(text(euro(car.optInt("price")),23f,orange,true))
@@ -790,7 +794,13 @@ class MainActivity : Activity() {
                 fuel=chosenFuel;transmission=chosenTransmission;body=chosenBody;sellerType=chosenSeller
                 renderHome()
             }
-            .setNegativeButton(t("cancel"),null).show()
+            .setNegativeButton(t("cancel"),null)
+            .create().also { dialog ->
+                dialog.show()
+                val availableHeight=(resources.displayMetrics.heightPixels-px(55))
+                    .coerceAtLeast(px(350))
+                dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT,availableHeight)
+            }
     }
     private fun clearFilters() {
         keyword="";make="";model="";maxPrice="";minPrice="";yearFrom="";yearTo=""
@@ -1567,7 +1577,6 @@ class MainActivity : Activity() {
                     .setNegativeButton(t("cancelPreview"),null).show()
             });content.addView(space(16))
         }
-        content.addView(iconText(R.drawable.limba_add_car,t("addVehicle"),{showCarForm()},true))
         if(previewUser.isNotBlank()){content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))}
         body(main,content);navigation(main)
     }
