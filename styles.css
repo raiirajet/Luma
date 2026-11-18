@@ -194,3 +194,19 @@ button.card-heart{width:44px;height:44px}
   .mobile-nav button.market-sell small{margin-top:-7px}
   .site-footer{padding-bottom:108px}
 }
+
+/* Native-feeling scrollable lists: all installed brands visible on tap, filtered while typing. */
+.search-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.search-grid .search-main{grid-column:auto}
+.search-field:has(.catalogue-dropdown){position:relative}
+.search-secondary-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-width:0}
+.search-swipe-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;color:#174f96;border-color:#b1cff4;background:#f1f7ff}
+.search-swipe-btn img{width:23px;height:23px}
+.catalogue-dropdown{position:absolute;z-index:45;left:0;right:0;top:calc(100% + 5px);max-height:min(290px,45vh);overflow-y:auto;overscroll-behavior:contain;border:1px solid #b7cbd8;background:#fff;border-radius:12px;box-shadow:0 14px 38px #082e4650}
+.catalogue-dropdown-head{position:sticky;top:0;background:#edf5fb;padding:12px 13px;color:#375872;font-size:12px;font-weight:800;border-bottom:1px solid #dae7ef;z-index:1}
+.catalogue-option{display:block;width:100%;text-align:left;white-space:normal;min-height:44px;padding:10px 14px;border:0;border-bottom:1px solid #edf2f5;background:white;color:#153345;font-size:13px}
+.catalogue-option:hover,.catalogue-option.is-highlighted{background:#e2f0ff;color:#064b95}
+.catalogue-option:focus-visible{outline:2px solid #1479ed;outline-offset:-2px}
+.catalogue-dropdown-empty{padding:18px 13px;color:#6c7e8a;font-size:12px}
+@media(max-width:760px){.search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.search-grid .search-main{grid-column:1/-1}.filter-ext{gap:9px}.search-swipe-btn{padding:9px 12px;min-height:44px}}
+@media(max-width:350px){.search-grid{grid-template-columns:1fr}.catalogue-dropdown{max-height:250px}.search-secondary-actions{gap:3px}.search-swipe-btn{padding:9px 10px}}

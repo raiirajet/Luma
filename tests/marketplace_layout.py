@@ -43,7 +43,8 @@ try:
     page.locator('.mobile-nav [data-view="profile"]').click()
     assert page.locator('#profileView').is_visible()
     page.locator('.mobile-nav [data-view="home"]').click()
-   page.locator('.swipe-inline').click()
+   assert page.locator('#keyword').is_hidden(), 'optional keyword is in more filters only'
+   page.locator('.search-swipe-btn').click()
    assert page.locator('#swipeView').is_visible()
    if page.locator('#swipeTutorial').is_visible():
     page.locator('#swipeDone').click()
