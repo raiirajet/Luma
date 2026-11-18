@@ -70,7 +70,10 @@ class MainActivity : Activity() {
     private var make = ""
     private var model = ""
     private var maxPrice = ""
+    private var minPrice = ""
     private var yearFrom = ""
+    private var yearTo = ""
+    private var sellerType = ""
     private var maxMileage = ""
     private var fuel = ""
     private var transmission = ""
@@ -366,11 +369,14 @@ class MainActivity : Activity() {
         if (make.isNotBlank() && !"nissan".contains(make.trim().lowercase())) return false
         if (model.isNotBlank() && !"gt-r".contains(model.trim().lowercase())) return false
         if (maxPrice.toIntOrNull()?.let { 68900 > it } == true) return false
+        if (minPrice.toIntOrNull()?.let { 68900 < it } == true) return false
         if (yearFrom.toIntOrNull()?.let { 2013 < it } == true) return false
+        if (yearTo.toIntOrNull()?.let { 2013 > it } == true) return false
         if (maxMileage.toIntOrNull()?.let { 49500 > it } == true) return false
         if (fuel.isNotBlank() && fuel != "petrol") return false
         if (transmission.isNotBlank() && transmission != "automatic") return false
         if (body.isNotBlank() && body != "coupe") return false
+        if (sellerType.isNotBlank() && sellerType != "privateSeller") return false
         return true
     }
 
@@ -386,11 +392,18 @@ class MainActivity : Activity() {
     private fun autoComplete(value: String, hint: String, suggestions: List<String>, callback: (String) -> Unit): AutoCompleteTextView {
         val field = AutoCompleteTextView(this).apply {
             setSingleLine(true); setTextSize(15f); setTextColor(ink); setHintTextColor(muted)
-            setHint(hint); setText(value); threshold = 1
+            setHint(hint); setText(value); threshold = 0
             setPadding(px(13), px(11), px(13), px(11))
             background = c(paper, 11, border)
             setAdapter(ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, suggestions))
-            setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) callback(text.toString().trim()) }
+            dropDownHeight = px(280)
+            dropDownVerticalOffset = px(3)
+            // On tap: show the complete offline list. Native filtering starts on typing.
+            setOnClickListener { if (adapter?.count ?: 0 > 0) showDropDown() }
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) post { if (adapter?.count ?: 0 > 0) showDropDown() }
+                else callback(text.toString().trim())
+            }
             setOnItemClickListener { _, _, _, _ -> callback(text.toString().trim()) }
         }
         return field
@@ -439,7 +452,8 @@ class MainActivity : Activity() {
         val form = col(paper).apply { setPadding(px(18), px(18), px(18), px(19)) }
         form.addView(text(t("findCar"), 19f, ink, true))
         form.addView(space(10))
-        val keywordField = editField(form, t("searchTerms"), keyword, t("keywordExample"))
+        form.addView(iconText(R.drawable.limba_vehicle_cards, t("swipe"), { navigate("swipe") }, true))
+        form.addView(space(12))
         val makes = brands.optJSONArray("makes")
         val makeItems = mutableListOf<String>()
         if (makes != null) for (i in 0 until makes.length()) makeItems.add(makes.optString(i))
@@ -466,7 +480,7 @@ class MainActivity : Activity() {
         val yearField = editField(form, t("yearFrom"), yearFrom, "2013", true)
         val kmField = editField(form, t("mileageTo"), maxMileage, "km", true)
         val search = btn(t("showResults"), true) {
-            keyword = keywordField.text.toString().trim(); make = makeField.text.toString().trim()
+            make = makeField.text.toString().trim()
             model = modelField.text.toString().trim(); maxPrice = priceField.text.toString().trim()
             yearFrom = yearField.text.toString().trim(); maxMileage = kmField.text.toString().trim()
             renderHome()
@@ -474,9 +488,7 @@ class MainActivity : Activity() {
         form.addView(space(17))
         form.addView(search)
         form.addView(space(8))
-        form.addView(iconText(R.drawable.limba_vehicle_cards,"Swipe", { navigate("swipe") }))
-        form.addView(space(8))
-        form.addView(iconText(R.drawable.limba_filter, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
+        form.addView(iconText(R.drawable.limba_filter, t("moreFilters"), { showAdvanced() }))
         val actions = row()
         actions.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() }, LinearLayout.LayoutParams(0, px(46), 1f))
         actions.addView(spaceHorizontal(8))
@@ -486,6 +498,8 @@ class MainActivity : Activity() {
         val results = col().apply { setPadding(px(17), px(22), px(17), px(20)) }
         results.addView(text(t("latestCars"), 21f, ink, true))
         results.addView(space(7))
+        results.addView(btn(t("swipe"), false) { navigate("swipe") })
+        results.addView(space(10))
         results.addView(text(t("singleDemoNotice"), 12f, muted))
         results.addView(space(17))
         var listed = false
@@ -546,11 +560,14 @@ class MainActivity : Activity() {
         if (make.isNotBlank() && !x.optString("make").contains(make,ignoreCase=true)) return false
         if (model.isNotBlank() && !x.optString("model").contains(model,ignoreCase=true)) return false
         if (maxPrice.toIntOrNull()?.let { x.optInt("price") > it } == true) return false
+        if (minPrice.toIntOrNull()?.let { x.optInt("price") < it } == true) return false
         if (yearFrom.toIntOrNull()?.let { x.optInt("year") < it } == true) return false
+        if (yearTo.toIntOrNull()?.let { x.optInt("year") > it } == true) return false
         if (maxMileage.toIntOrNull()?.let { x.optInt("mileage") > it } == true) return false
         if (fuel.isNotBlank() && fuel != x.optString("fuel")) return false
         if (transmission.isNotBlank() && transmission != x.optString("transmission")) return false
         if (body.isNotBlank() && body != x.optString("body")) return false
+        if (sellerType.isNotBlank() && sellerType != x.optString("sellerType")) return false
         return true
     }
     private fun previewCard(car: JSONObject): LinearLayout {
@@ -605,21 +622,41 @@ class MainActivity : Activity() {
     }
 
     private fun showAdvanced() {
-        val panel = col().apply { setPadding(px(14), 0, px(14), px(12)) }
-        picker(panel, t("fuel"), listOf("" to t("allFuel"), "petrol" to t("petrol"), "diesel" to t("diesel"), "hybrid" to t("hybrid"), "electric" to t("electric")), fuel) { fuel = it }
-        picker(panel, t("transmission"), listOf("" to t("allTransmission"), "automatic" to t("automatic"), "manual" to t("manual")), transmission) { transmission = it }
-        picker(panel, t("body"), listOf("" to t("allBody"), "suv" to t("suv"), "sedan" to t("sedan"), "wagon" to t("wagon"), "hatchback" to t("hatchback"), "coupe" to t("coupe")), body) { body = it }
-        AlertDialog.Builder(this).setTitle(t("moreFilters")).setView(panel)
-            .setPositiveButton(t("showResults")) { _, _ -> renderHome() }
-            .setNegativeButton(t("cancel"), null).show()
+        val panel=col().apply { setPadding(px(14),px(2),px(14),px(16)) }
+        val freeText=editField(panel,t("searchTerms"),keyword,t("keywordExample"))
+        val min=editField(panel,t("priceFrom"),minPrice,"€",true)
+        val latestYear=editField(panel,t("yearTo"),yearTo,"2020",true)
+        var chosenFuel=fuel;var chosenTransmission=transmission;var chosenBody=body;var chosenSeller=sellerType
+        picker(panel,t("fuel"),listOf("" to t("allFuel"),"petrol" to t("petrol"),
+            "diesel" to t("diesel"),"hybrid" to t("hybrid"),"electric" to t("electric")),chosenFuel){ chosenFuel=it }
+        picker(panel,t("transmission"),listOf("" to t("allTransmission"),
+            "automatic" to t("automatic"),"manual" to t("manual")),chosenTransmission){ chosenTransmission=it }
+        picker(panel,t("body"),listOf("" to t("allBody"),"suv" to t("suv"),
+            "sedan" to t("sedan"),"wagon" to t("wagon"),
+            "hatchback" to t("hatchback"),"coupe" to t("coupe")),chosenBody){ chosenBody=it }
+        picker(panel,t("sellerType"),listOf("" to t("allSeller"),
+            "privateSeller" to t("privateSeller"),"dealer" to t("dealer")),chosenSeller){ chosenSeller=it }
+        val scroller=ScrollView(this).apply {addView(panel);isFillViewport=false}
+        AlertDialog.Builder(this).setTitle(t("moreFilters")).setView(scroller)
+            .setPositiveButton(t("showResults")) { _,_ ->
+                keyword=freeText.text.toString().trim()
+                minPrice=min.text.toString().trim()
+                yearTo=latestYear.text.toString().trim()
+                fuel=chosenFuel;transmission=chosenTransmission;body=chosenBody;sellerType=chosenSeller
+                renderHome()
+            }
+            .setNegativeButton(t("cancel"),null).show()
     }
-    private fun clearFilters() { keyword="";make="";model="";maxPrice="";yearFrom="";maxMileage="";fuel="";transmission="";body="" }
+    private fun clearFilters() {
+        keyword="";make="";model="";maxPrice="";minPrice="";yearFrom="";yearTo=""
+        maxMileage="";fuel="";transmission="";body="";sellerType=""
+    }
     private fun saveSearch() {
         val arr = runCatching { JSONArray(prefs.getString("searches", "[]")) }.getOrElse { JSONArray() }
         arr.put(JSONObject().apply {
             put("keyword", keyword);put("make", make);put("model", model)
-            put("maxPrice", maxPrice);put("yearFrom", yearFrom);put("maxMileage", maxMileage)
-            put("fuel", fuel);put("transmission", transmission);put("body", body)
+            put("maxPrice", maxPrice);put("minPrice", minPrice);put("yearFrom", yearFrom);put("yearTo", yearTo);put("maxMileage", maxMileage)
+            put("fuel", fuel);put("transmission", transmission);put("body", body);put("sellerType",sellerType)
             put("countries", JSONArray(activeCountry.toList()))
         })
         prefs.edit().putString("searches", arr.toString()).apply()
@@ -666,8 +703,8 @@ class MainActivity : Activity() {
             cell.addView(space(6));cell.addView(text(t("searchSaveLabel")+" #${i+1}",12f,muted))
             cell.setOnClickListener {
                 keyword=item.optString("keyword");make=item.optString("make");model=item.optString("model")
-                maxPrice=item.optString("maxPrice");yearFrom=item.optString("yearFrom");maxMileage=item.optString("maxMileage")
-                fuel=item.optString("fuel");transmission=item.optString("transmission");body=item.optString("body")
+                maxPrice=item.optString("maxPrice");minPrice=item.optString("minPrice");yearFrom=item.optString("yearFrom");yearTo=item.optString("yearTo");maxMileage=item.optString("maxMileage")
+                fuel=item.optString("fuel");transmission=item.optString("transmission");body=item.optString("body");sellerType=item.optString("sellerType")
                 val arr=item.optJSONArray("countries");activeCountry=mutableSetOf()
                 if(arr!=null) for(z in 0 until arr.length()) activeCountry.add(arr.optString(z))
                 navigate("home")
