@@ -32,6 +32,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Validate JavaScript syntax
         run: |
           for path in app.js cars-i18n.js car-brands.js feature-i18n.js mvp-i18n.js i18n.js translations-extra.js icons.js; do
