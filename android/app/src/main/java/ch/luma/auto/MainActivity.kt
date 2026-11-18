@@ -303,6 +303,7 @@ class MainActivity : Activity() {
         val nav = row(paper).apply { gravity = Gravity.CENTER }
         val routes = listOf(
             Triple("home", R.drawable.limba_search, if(locale=="de")"Finden"else t("carsNav")),
+            Triple("swipe", R.drawable.limba_vehicle_cards, t("swipe")),
             Triple("favorites", R.drawable.limba_favorites, t("saved")),
             Triple("sell", R.drawable.limba_add_car, if(locale=="de")"Verkaufen"else t("sellCar")),
             Triple("messages", R.drawable.limba_messages, t("socialMessages")),
@@ -312,16 +313,16 @@ class MainActivity : Activity() {
             val selected = screen == route
             val cell = col().apply {
                 gravity = Gravity.CENTER
-                setPadding(px(3), px(6), px(3), px(6))
+                setPadding(px(1), px(6), px(1), px(6))
                 isClickable = true; isFocusable = true; minimumHeight = px(64)
                 contentDescription = name
                 if (selected) background = c(mist, 11)
             }
-            val glyph = drawableIcon(icon, if (selected) orange else muted, 23)
+            val glyph = drawableIcon(icon, if (selected) orange else muted, 21)
             val center = FrameLayout(this)
             center.addView(glyph, fp(23, 23, Gravity.CENTER))
-            cell.addView(center, lp(-1, 27))
-            cell.addView(text(name, 10f, if (selected) ink else muted, selected).apply {
+            cell.addView(center, lp(-1, 26))
+            cell.addView(text(name, 9f, if (selected) ink else muted, selected).apply {
                 gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
@@ -759,19 +760,22 @@ class MainActivity : Activity() {
         return cars
     }
     private fun renderSwipe() {
-        root.removeAllViews();root.setBackgroundColor(navy)
+        val main=container()
+        main.setBackgroundColor(navy)
         val all=swipeCandidates()
         if (all.isEmpty()) {
             val empty=col().apply {gravity=Gravity.CENTER;setPadding(px(20),px(20),px(20),px(20))}
             empty.addView(text(t("emptyCars"),20f,paper,true))
             empty.addView(space(20));empty.addView(btn(t("backToMarket"),true){navigate("home")})
-            root.addView(empty,fp())
+            main.addView(empty,LinearLayout.LayoutParams(-1,0,1f))
+            navigation(main)
             return
         }
         swipeIndex=swipeIndex.coerceIn(0,all.size-1)
         val current=all[swipeIndex]
         val full=FrameLayout(this)
-        root.addView(full,fp())
+        main.addView(full,LinearLayout.LayoutParams(-1,0,1f))
+        navigation(main)
         val placeholder=if(current==null) image() else FrameLayout(this).apply {
             setBackgroundColor(navy)
             if(current.optString("image").startsWith("https://")) {

@@ -98,7 +98,7 @@ function showView(view,{fromHistory=false}={}){
  if(changed&&!fromHistory)history.pushState({lumaView:view},'',location.pathname+location.search);
  state.view=view;
  views.forEach(v=>$(v==='home'?'homeView':`${v}View`).classList.toggle('hidden',v!==view));
- document.querySelectorAll('.nav-link,.mobile-nav [data-view]').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
+ document.querySelectorAll('.nav-link,.mobile-nav [data-view]').forEach(b=>{const active=b.dataset.view===view;b.classList.toggle('is-active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
  document.body.style.overflow=view==='swipe'?'hidden':'';
  if(view!=='swipe')$('swipeTutorial').classList.add('hidden');
  window.scrollTo(0,0);

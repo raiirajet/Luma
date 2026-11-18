@@ -93,7 +93,7 @@ body:has(#swipeView:not(.hidden)) .fab-add{display:none}
 .mobile-nav{position:fixed;inset:auto 0 0;z-index:90;isolation:isolate;pointer-events:auto;transform:translateZ(0);touch-action:manipulation}
 .mobile-nav button{position:relative;z-index:1;pointer-events:auto;touch-action:manipulation}
 .fab-add{z-index:91}
-body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
+body:has(#swipeView:not(.hidden)) .mobile-nav{display:flex}
 }
 /* Limba MVP 1.4: uniform owner actions and vehicle reports. */
 .my-car-item { min-width: 0; }
@@ -214,3 +214,22 @@ button.card-heart{width:44px;height:44px}
 /* Keep selectable dropdown buttons outside HTML labels for reliable touch and screenreader events. */
 .catalogue-field>label{display:block;min-height:16px;font-size:11px;font-weight:800;color:#546b76}
 @media(max-width:760px){.catalogue-field>label{font-size:10px}}
+
+/* Six fixed bottom actions: Find, Swipe, Saved, Sell, Messages, Profile. */
+@media(max-width:760px){
+ .mobile-nav{display:flex!important;gap:1px;padding-left:3px;padding-right:3px;padding-bottom:max(5px,env(safe-area-inset-bottom));height:calc(68px + env(safe-area-inset-bottom));}
+ .mobile-nav button{flex:1 1 16.666%;width:16.666%;min-width:0;min-height:55px;padding:3px 0;gap:2px}
+ .mobile-nav button>span{height:25px}
+ .mobile-nav button .limba-3d-icon{width:24px;height:24px}
+ .mobile-nav button small{font-size:clamp(8px,2.25vw,10px);letter-spacing:-.15px;overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
+ .mobile-nav .nav-swipe.is-active{color:#0753ba;background:#ecf5ff;border-radius:12px}
+ .mobile-nav .nav-swipe.is-active .limba-3d-icon{filter:drop-shadow(0 2px 5px #1479ed44)}
+ .mobile-nav button.market-sell>span{width:38px;height:38px;border-radius:12px;transform:translateY(-5px)}
+ .mobile-nav button.market-sell small{transform:translateY(-3px)}
+ .swipe-full{bottom:calc(68px + env(safe-area-inset-bottom))}
+ .swipe-details{bottom:20px;right:75px}
+ .swipe-heart{bottom:16px}
+ .swipe-tutorial{padding-bottom:12px}
+ .site-footer{padding-bottom:115px}
+}
+@media(max-width:360px){.mobile-nav button small{font-size:8px}.mobile-nav button .limba-3d-icon{width:21px;height:21px}}
