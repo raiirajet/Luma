@@ -74,6 +74,10 @@ try {
   // Positive marketplace path.
   await assertSucceeds(setDoc(listed, car('car1')));
   await assertSucceeds(getDoc(doc(dbGuest, 'listings', 'car1')));
+  const tuned = doc(dbA, 'listings', 'tuned');
+  await assertSucceeds(setDoc(tuned, {...car('tuned'),modelExtension:'MTM',title:'Nissan GT-R MTM'}));
+  await assertFails(updateDoc(tuned, {modelExtension:'x'.repeat(41),title:'Nissan GT-R '+ 'x'.repeat(41)}));
+  await assertFails(updateDoc(tuned, {modelExtension:'ABT'}));
   await assertSucceeds(getDocs(query(collection(dbGuest, 'listings'), where('status', '==', 'active'))));
 
   // Public-list exploit and authentication/ownership attacks.

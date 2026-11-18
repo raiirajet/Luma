@@ -387,6 +387,10 @@ class MainActivity : Activity() {
         }
         return target
     }
+    private fun vehicleDisplayName(car: JSONObject): String =
+        listOf(car.optString("make"),car.optString("model"),car.optString("modelExtension"))
+            .filter { it.isNotBlank() }.joinToString(" ")
+
     private fun autoComplete(value: String, hint: String, suggestions: List<String>, callback: (String) -> Unit): AutoCompleteTextView {
         val field = AutoCompleteTextView(this).apply {
             setSingleLine(true); setTextSize(15f); setTextColor(ink); setHintTextColor(muted)
@@ -544,7 +548,7 @@ class MainActivity : Activity() {
         if (x.optString("status","active") != "active") return false
         val country = x.optString("country")
         if (activeCountry.isNotEmpty() && country !in activeCountry) return false
-        if (keyword.isNotBlank() && !(x.optString("make")+" "+x.optString("model")+" "+x.optString("city")+" "+x.optString("description")).contains(keyword,ignoreCase=true)) return false
+        if (keyword.isNotBlank() && !(x.optString("make")+" "+x.optString("model")+" "+x.optString("modelExtension")+" "+x.optString("city")+" "+x.optString("description")).contains(keyword,ignoreCase=true)) return false
         if (make.isNotBlank() && !x.optString("make").contains(make,ignoreCase=true)) return false
         if (model.isNotBlank() && !x.optString("model").contains(model,ignoreCase=true)) return false
         if (maxPrice.toIntOrNull()?.let { x.optInt("price") > it } == true) return false
@@ -566,7 +570,7 @@ class MainActivity : Activity() {
             com.bumptech.glide.Glide.with(this).load(car.optString("image")).centerCrop().into(photo)
         }
         view.addView(space(8))
-        view.addView(text(car.optString("make")+" "+car.optString("model"),20f,ink,true))
+        view.addView(text(vehicleDisplayName(car),20f,ink,true))
         view.addView(space(5))
         view.addView(text(car.optInt("year").toString()+" · "+number(car.optInt("mileage"))+" km · "+car.optInt("power")+" PS",13f,muted))
         view.addView(text(car.optString("city")+" · "+car.optString("country"),12f,muted))
@@ -706,6 +710,11 @@ class MainActivity : Activity() {
         content.addView(iconText(R.drawable.limba_notifications, t("yourSavedSearch"), {navigate("searches")}))
         content.addView(space(12))
         content.addView(iconText(R.drawable.limba_vehicle_cards,t("myAds"),{navigate("mine")}))
+        content.addView(space(18))
+        content.addView(text("Vehicle data by VehiclesDB (vehiclesdb.com) · CC BY 4.0",12f,muted))
+        content.addView(btn("Sources & licenses",false) {
+            startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/raiirajet/Luma/blob/main/docs/VEHICLESDB_ATTRIBUTION.md")))
+        })
         body(main,content);navigation(main)
     }
 
@@ -776,7 +785,7 @@ class MainActivity : Activity() {
         val live=current!=null && current.optString("id") !in previewCars.map{it.optString("id")}
         overlay.addView(text((if(live)t("carsNav")else t("previewOnly")).uppercase()+"  ·  "+(swipeIndex+1)+"/"+all.size,11f,orange,true))
         overlay.addView(space(7))
-        val title=if(current==null)"Nissan GT-R R35 Black Edition"else current.optString("make")+" "+current.optString("model")
+        val title=if(current==null)"Nissan GT-R R35 Black Edition"else vehicleDisplayName(current)
         overlay.addView(text(title,27f,paper,true));overlay.addView(space(5))
         overlay.addView(text(euro(current?.optInt("price")?:68900),26f,paper,true));overlay.addView(space(5))
         val info=if(current==null)"2013 · 49.500 km · 550 PS · 🇭🇷 Zagreb"
@@ -842,10 +851,11 @@ class MainActivity : Activity() {
             com.bumptech.glide.Glide.with(this).load(car.optString("image")).centerCrop().into(photo)
             content.addView(space(12))
         }
-        content.addView(text(car.optString("make")+" "+car.optString("model"),25f,ink,true))
+        content.addView(text(vehicleDisplayName(car),25f,ink,true))
         content.addView(space(7));content.addView(text(euro(car.optInt("price")),25f,orange,true));content.addView(space(16))
         val details=listOf(
             t("make") to car.optString("make"),t("model") to car.optString("model"),
+             t("modelExtension") to car.optString("modelExtension").ifBlank { "—" },
             t("firstReg") to car.optString("year"),t("mileage") to (number(car.optInt("mileage"))+" km"),
             t("power") to (car.optString("power")+" PS"),t("fuel") to t(car.optString("fuel")),
             t("transmission") to t(car.optString("transmission")),t("body") to t(car.optString("body")),
@@ -1092,7 +1102,12 @@ class MainActivity : Activity() {
         col.addView(label(t("make")))
         val makeField=autoComplete(existing?.optString("make")?:"",t("make"),makeList) { };col.addView(makeField,lp(-1,48))
         col.addView(label(t("model")))
-        val modelField=autoComplete(existing?.optString("model")?:"",t("model"),emptyList()){};col.addView(modelField,lp(-1,48))
+        val initialModels=mutableListOf<String>()
+        brands.optJSONObject("models")?.optJSONArray(canonicalBrand(makeField.text.toString()))?.let { arr ->
+            for(i in 0 until arr.length())initialModels.add(arr.optString(i))
+        }
+        val modelField=autoComplete(existing?.optString("model")?:"",t("model"),initialModels){};col.addView(modelField,lp(-1,48))
+        val extension=editField(col,t("modelExtension"),existing?.optString("modelExtension")?:"",t("modelExtensionHint"))
         makeField.addTextChangedListener(object:android.text.TextWatcher {
             override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int){}
             override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){
@@ -1158,12 +1173,14 @@ class MainActivity : Activity() {
             .create().also{dlg->
                 dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     val mk=canonicalBrand(makeField.text.toString());val mdl=modelField.text.toString().trim()
+                     val modelExtension=extension.text.toString().trim().replace(Regex("\\s+")," ")
+                     val fullTitle=listOf(mk,mdl,modelExtension).filter{it.isNotBlank()}.joinToString(" ")
                     val yr=year.text.toString().toIntOrNull();val km=mileage.text.toString().toIntOrNull();val hp=power.text.toString().toIntOrNull();val eur=price.text.toString().toIntOrNull()
                     val town=city.text.toString().trim();val description=desc.text.toString().trim()
-                    if(mk.length !in 2..35||mdl.length !in 1..65||yr==null||yr !in 1950..(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)+1)||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
+                    if(mk.length !in 2..35||mdl.length !in 1..65||modelExtension.length>40||fullTitle.length>110||yr==null||yr !in 1950..(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)+1)||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
                     val car=JSONObject().put("id",existing?.optString("id") ?: "preview-"+System.currentTimeMillis())
                         .put("uid",if(isPreview)previewUser else cloudUser?.uid ?: "")
-                        .put("make",mk).put("model",mdl).put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
+                        .put("make",mk).put("model",mdl).put("modelExtension",modelExtension).put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
                         .put("city",town).put("country",countries[country.selectedItemPosition].first).put("fuel",fuels[fuel.selectedItemPosition])
                         .put("transmission",gearbox[trans.selectedItemPosition]).put("body",bodies[body.selectedItemPosition])
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])

@@ -73,13 +73,15 @@ service cloud.firestore {
           'title', 'description', 'price', 'country', 'category', 'city',
           'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
           'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
-          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
+          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
+          'modelExtension'
         ])
         && data.uid is string
         && data.uid.size() >= 1
         && data.uid.size() <= 128
         && data.title is string
         && data.title == data.make + ' ' + data.model
+          + (data.get('modelExtension', '') == '' ? '' : ' ' + data.get('modelExtension', ''))
         && data.title.size() >= 5
         && data.title.size() <= 110
         && data.description is string
@@ -102,6 +104,8 @@ service cloud.firestore {
         && data.model is string
         && data.model.size() >= 1
         && data.model.size() <= 65
+        && data.get('modelExtension', '') is string
+        && data.get('modelExtension', '').size() <= 40
         && data.accidentStatus in ['yes', 'no', 'unknown']
         && data.conditionNote is string
         && data.conditionNote.size() <= 240

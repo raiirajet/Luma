@@ -40,3 +40,16 @@ jobs:
         run: npm install --no-save firebase@12.6.0 @firebase/rules-unit-testing@5.0.0
       - name: Start emulators and verify access-control rules
         run: npx -y firebase-tools@latest emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs"
+
+      - name: Deploy validated Firestore rules when production credentials exist
+        if: github.event_name == 'push'
+        env:
+          LIMBA_FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.LIMBA_FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          if [ -z "$LIMBA_FIREBASE_SERVICE_ACCOUNT_B64" ]; then
+            echo "::warning::Firestore rules were validated but NOT deployed: configure LIMBA_FIREBASE_SERVICE_ACCOUNT_B64 to enable deployment."
+            exit 0
+          fi
+          printf '%s' "$LIMBA_FIREBASE_SERVICE_ACCOUNT_B64" | base64 -d > "$RUNNER_TEMP/limba-firebase-service-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/limba-firebase-service-account.json"
+          npx -y firebase-tools@latest deploy --project limba-auto --only firestore:rules --non-interactive

@@ -69,7 +69,7 @@ class LimbaFirebase(private val activity: Activity) {
     private fun asJson(snapshot: DocumentSnapshot): JSONObject {
         val item = JSONObject()
         item.put("id", snapshot.id)
-        for (key in listOf("uid","make","model","title","description","city","country","fuel",
+        for (key in listOf("uid","make","model","modelExtension","title","description","city","country","fuel",
             "transmission","body","condition","accidentStatus","conditionNote","sellerType",
             "contactEmail","image","status")) {
             item.put(key, snapshot.getString(key) ?: "")
@@ -154,13 +154,13 @@ class LimbaFirebase(private val activity: Activity) {
 
     private fun data(car: JSONObject): MutableMap<String, Any> {
         val fields = mutableMapOf<String,Any>()
-        for (key in listOf("make","model","description","city","country","fuel","transmission",
+        for (key in listOf("make","model","modelExtension","description","city","country","fuel","transmission",
             "body","condition","accidentStatus","conditionNote","sellerType")) {
             fields[key] = car.optString(key)
         }
         // Public listing documents never contain seller PII.
         fields["contactEmail"] = ""
-        fields["title"] = (car.optString("make")+" "+car.optString("model")).take(110)
+        fields["title"] = listOf(car.optString("make"),car.optString("model"),car.optString("modelExtension")).filter{it.isNotBlank()}.joinToString(" ")
         fields["category"] = "vehicles"
         for (key in listOf("year","mileage","power","price")) fields[key] = car.optInt(key)
         return fields
