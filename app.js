@@ -98,7 +98,7 @@ function setupCatalogChooser(ids=['make','model']){const controller=new AbortCon
   button.addEventListener('click',()=>{const expanded=input.getAttribute('aria-expanded')==='true';if(expanded){close(id);input.blur()}else{input.focus();open(id,true)}});
   input.addEventListener('keydown',e=>{
    const isOpen=input.getAttribute('aria-expanded')==='true';
-   if(e.key==='Escape'&&isOpen){e.preventDefault();close(id);return}
+   if(e.key==='Escape'&&isOpen){e.preventDefault();e.stopPropagation();close(id);return}
    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
     e.preventDefault();if(!isOpen)open(id);
     const choices=[...$(id+'Dropdown').querySelectorAll('.catalog-option:not(.catalog-clear)')];
