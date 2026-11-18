@@ -23,6 +23,7 @@ on:
       - 'tests/model_catalog.test.mjs'
       - 'tests/web_mvp.py'
       - 'tests/lux_experiences.test.mjs'
+      - 'tests/search_filters.test.mjs'
       - 'android/app/src/main/assets/brands.json'
   workflow_dispatch:
 
@@ -39,7 +40,7 @@ jobs:
           node-version: '22'
       - name: Validate JavaScript syntax
         run: |
-          for path in app.js cars-i18n.js car-brands.js feature-i18n.js mvp-i18n.js i18n.js translations-extra.js icons.js limba-lux.js limba-lux-ui.js; do
+          for path in app.js cars-i18n.js car-brands.js feature-i18n.js mvp-i18n.js i18n.js translations-extra.js icons.js limba-lux.js limba-lux-ui.js search-filters-i18n.js; do
             node --input-type=module --check < "$path"
           done
           node --check config.js
@@ -47,6 +48,7 @@ jobs:
         run: |
           node --experimental-default-type=module tests/model_catalog.test.mjs
           node --experimental-default-type=module tests/lux_experiences.test.mjs
+          node --experimental-default-type=module tests/search_filters.test.mjs
       - name: Validate Python source and create preview
         run: |
           python3 -m py_compile build_preview.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py

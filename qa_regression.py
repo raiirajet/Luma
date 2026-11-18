@@ -72,6 +72,36 @@ with sync_playwright() as p:
   assert page.locator('#performanceView').is_visible()
   assert page.locator('#performanceGrid .car-card').count()==0
   page.locator(('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]').click()
+  # The built-in catalogs open without typing and offer live narrowing.
+  page.locator('[data-catalog-toggle="make"]').click()
+  assert page.locator('#makeDropdown .catalog-option').count()>=400
+  page.locator('#makeDropdown [data-catalog-choice="Nissan"]').click()
+  assert page.locator('#make').input_value()=='Nissan'
+  page.locator('[data-catalog-toggle="model"]').click()
+  assert page.locator('#modelDropdown [data-catalog-choice="GT-R"]').count()==1
+  page.locator('#modelDropdown [data-catalog-choice="GT-R"]').click()
+  assert page.locator('#model').input_value()=='GT-R'
+  assert page.locator('#carGrid .car-card').count()==1
+  page.locator('#clearAll').click()
+  # Exact search ranges (not just fixed coarse mileage tiers).
+  page.locator('#advancedToggle').click()
+  page.locator('#powerFrom').fill('551')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
+  page.locator('#mileageFrom').fill('49501')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
+  page.locator('#yearTo').select_option('2012')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
+  page.locator('#engineTerm').fill('V6')
+  assert page.locator('#carGrid .car-card').count()==1
+  page.locator('#capacityFrom').fill('3801')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
+  page.locator('#mileageTo').fill('49499')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
   # Form and dynamic filters
   page.locator('#make').fill('Nissan')
   assert page.locator('#carGrid .car-card').count()==1
@@ -83,6 +113,7 @@ with sync_playwright() as p:
   assert page.locator('#carGrid .car-card').count()==1
   page.locator('#make').fill('Mercedes-Benz')
   assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#make').press('Escape')
   page.locator('#clearAll').click()
   assert page.locator('#carGrid .car-card').count()==1
   page.locator('#priceTo').fill('5000')

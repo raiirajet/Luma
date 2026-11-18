@@ -74,7 +74,8 @@ service cloud.firestore {
           'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
           'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
           'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
-          'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes'
+          'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes',
+          'engineName', 'engineCapacity'
         ])
         && data.uid is string
         && data.uid.size() >= 1
@@ -112,6 +113,11 @@ service cloud.firestore {
         && data.get('modificationNotes', '').size() <= 500
         && data.get('documentNotes', '') is string
         && data.get('documentNotes', '').size() <= 240
+        && data.get('engineName', '') is string
+        && data.get('engineName', '').size() <= 80
+        && data.get('engineCapacity', 0) is int
+        && data.get('engineCapacity', 0) >= 0
+        && data.get('engineCapacity', 0) <= 12000
         && data.accidentStatus in ['yes', 'no', 'unknown']
         && data.conditionNote is string
         && data.conditionNote.size() <= 240
@@ -154,7 +160,8 @@ service cloud.firestore {
         ])
         && filters.keys().hasOnly([
           'keyword', 'make', 'model', 'priceTo', 'yearFrom', 'mileageTo',
-          'fuel', 'transmission', 'body', 'sellerType', 'priceFrom', 'yearTo'
+          'fuel', 'transmission', 'body', 'sellerType', 'priceFrom', 'yearTo',
+          'mileageFrom', 'powerFrom', 'powerTo', 'engineTerm', 'capacityFrom', 'capacityTo'
         ])
         && filters.keyword is string && filters.keyword.size() <= 120
         && filters.make is string && filters.make.size() <= 35
@@ -167,7 +174,13 @@ service cloud.firestore {
         && filters.body is string && filters.body.size() <= 16
         && filters.sellerType is string && filters.sellerType.size() <= 20
         && filters.priceFrom is string && filters.priceFrom.size() <= 12
-        && filters.yearTo is string && filters.yearTo.size() <= 4;
+        && filters.yearTo is string && filters.yearTo.size() <= 4
+        && filters.get('mileageFrom','') is string && filters.get('mileageFrom','').size() <= 12
+        && filters.get('powerFrom','') is string && filters.get('powerFrom','').size() <= 10
+        && filters.get('powerTo','') is string && filters.get('powerTo','').size() <= 10
+        && filters.get('engineTerm','') is string && filters.get('engineTerm','').size() <= 80
+        && filters.get('capacityFrom','') is string && filters.get('capacityFrom','').size() <= 10
+        && filters.get('capacityTo','') is string && filters.get('capacityTo','').size() <= 10;
     }
 
     function isValidSearchItem(item) {

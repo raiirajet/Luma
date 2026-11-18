@@ -71,6 +71,15 @@ class MainActivity : Activity() {
     private var maxPrice = ""
     private var yearFrom = ""
     private var maxMileage = ""
+    private var minMileage = ""
+    private var yearTo = ""
+    private var minPrice = ""
+    private var minPower = ""
+    private var maxPower = ""
+    private var engineQuery = ""
+    private var minCapacity = ""
+    private var maxCapacity = ""
+    private var sellerFilter = ""
     private var fuel = ""
     private var transmission = ""
     private var body = ""
@@ -374,6 +383,15 @@ class MainActivity : Activity() {
         if (model.isNotBlank() && !"gt-r".contains(model.trim().lowercase())) return false
         if (maxPrice.toIntOrNull()?.let { 68900 > it } == true) return false
         if (yearFrom.toIntOrNull()?.let { 2013 < it } == true) return false
+        if (yearTo.toIntOrNull()?.let { 2013 > it } == true) return false
+        if (minMileage.toIntOrNull()?.let { 49500 < it } == true) return false
+        if (minPrice.toIntOrNull()?.let { 68900 < it } == true) return false
+        if (minPower.toIntOrNull()?.let { 550 < it } == true) return false
+        if (maxPower.toIntOrNull()?.let { 550 > it } == true) return false
+        if (engineQuery.isNotBlank() && !"3.8 V6 Bi-Turbo VR38DETT".contains(engineQuery,ignoreCase=true)) return false
+        if (minCapacity.toIntOrNull()?.let { 3800 < it } == true) return false
+        if (maxCapacity.toIntOrNull()?.let { 3800 > it } == true) return false
+        if (sellerFilter.isNotBlank() && sellerFilter != "privateSeller") return false
         if (maxMileage.toIntOrNull()?.let { 49500 > it } == true) return false
         if (fuel.isNotBlank() && fuel != "petrol") return false
         if (transmission.isNotBlank() && transmission != "automatic") return false
@@ -397,12 +415,21 @@ class MainActivity : Activity() {
     private fun autoComplete(value: String, hint: String, suggestions: List<String>, callback: (String) -> Unit): AutoCompleteTextView {
         val field = AutoCompleteTextView(this).apply {
             setSingleLine(true); setTextSize(15f); setTextColor(ink); setHintTextColor(muted)
-            setHint(hint); setText(value); threshold = 1
+            setHint(hint); setText(value); threshold = 0
+            dropDownHeight=px(310)
+            setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.arrow_down_float,0)
+            compoundDrawablePadding=px(5)
             setPadding(px(13), px(11), px(13), px(11))
             background = c(paper, 11, border)
             setAdapter(ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, suggestions))
-            setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) callback(text.toString().trim()) }
-            setOnItemClickListener { _, _, _, _ -> callback(text.toString().trim()) }
+            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) post { showDropDown() } else callback(text.toString().trim()) }
+            setOnClickListener { showDropDown() }
+            setOnTouchListener { _, event ->
+                if(event.action==MotionEvent.ACTION_UP && event.x>=width-px(46)) {
+                    setText(text,false);showDropDown();true
+                } else false
+            }
+            setOnItemClickListener { _, _, _, _ -> callback(text.toString().trim());dismissDropDown() }
         }
         return field
     }
@@ -631,23 +658,54 @@ class MainActivity : Activity() {
         }
         content.addView(space(10));content.addView(spotlight)
         content.addView(iconText(R.drawable.limba_car,t("performance"),{navigate("performance")}))
-        val results = col().apply { setPadding(px(17), px(22), px(17), px(20)) }
-        results.addView(text(t("latestCars"), 21f, ink, true))
-        results.addView(space(7))
-        results.addView(text(t("singleDemoNotice"), 12f, muted))
-        results.addView(space(17))
-        var listed = false
-        cloudCars.filter { matchesCar(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
-        previewCars.filter { matchesPreview(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
-        if (listingAvailable()) { results.addView(carCard());listed = true }
-        if (!listed) emptyState(results,t("emptyCars"))
-        results.addView(space(16))
-        results.addView(btn(t("yourSavedSearch"), false) { navigate("searches") })
-        results.addView(space(9))
-        results.addView(btn(t("addVehicle"), false) { showCarForm() })
+        val results=col().apply{setPadding(px(17),px(22),px(17),px(20))}
+        fun refreshResults(){
+            results.removeAllViews()
+            val available=cloudCars.filter{matchesCar(it)}
+            val preview=previewCars.filter{matchesPreview(it)}
+            val demo=listingAvailable()
+            val total=available.size+preview.size+(if(demo)1 else 0)
+            results.addView(text(t("latestCars"),21f,ink,true))
+            results.addView(space(5))
+            results.addView(text(total.toString()+" "+t("searchResultCount"),12f,orange,true))
+            results.addView(space(13))
+            available.forEach{results.addView(previewCard(it));results.addView(space(12))}
+            preview.forEach{results.addView(previewCard(it));results.addView(space(12))}
+            if(demo){results.addView(carCard());results.addView(space(12))}
+            if(total==0)emptyState(results,t("emptyCars"))
+            results.addView(space(16))
+            results.addView(btn(t("yourSavedSearch"),false){navigate("searches")})
+            results.addView(space(9))
+            results.addView(btn(t("addVehicle"),false){showCarForm()})
+        }
+        refreshResults()
         content.addView(results)
-        body(main, content)
+        body(main,content)
         navigation(main)
+        // Live search updates only result cards. Keep the input/keyboard and chosen dropdown open.
+        val uiHandler=android.os.Handler(android.os.Looper.getMainLooper())
+        var scheduled:Runnable?=null
+        val scheduleSearch={
+            scheduled?.let{uiHandler.removeCallbacks(it)}
+            scheduled=Runnable {
+                if(screen=="home" && results.parent!=null){
+                    captureFields()
+                    refreshResults()
+                }
+            }
+            uiHandler.postDelayed(scheduled!!,130)
+        }
+        for(field in listOf(keywordField,makeField,modelField,priceField,yearField,kmField)){
+            field.addTextChangedListener(object:android.text.TextWatcher{
+                override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int){}
+                override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){scheduleSearch()}
+                override fun afterTextChanged(s:android.text.Editable?){}
+            })
+        }
+        fuelField.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent:android.widget.AdapterView<*>?){}
+            override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long){scheduleSearch()}
+        }
     }
     private fun spaceHorizontal(width: Int) = View(this).apply { layoutParams = lp(width, 1) }
     private fun carCard(): LinearLayout {
@@ -696,6 +754,16 @@ class MainActivity : Activity() {
         if (maxPrice.toIntOrNull()?.let { x.optInt("price") > it } == true) return false
         if (yearFrom.toIntOrNull()?.let { x.optInt("year") < it } == true) return false
         if (maxMileage.toIntOrNull()?.let { x.optInt("mileage") > it } == true) return false
+        if (minMileage.toIntOrNull()?.let { x.optInt("mileage") < it } == true) return false
+        if (yearTo.toIntOrNull()?.let { x.optInt("year") > it } == true) return false
+        if (minPrice.toIntOrNull()?.let { x.optInt("price") < it } == true) return false
+        if (minPower.toIntOrNull()?.let { x.optInt("power") < it } == true) return false
+        if (maxPower.toIntOrNull()?.let { x.optInt("power") > it } == true) return false
+        if (engineQuery.isNotBlank() && !x.optString("engineName").contains(engineQuery,ignoreCase=true)) return false
+        if ((minCapacity.isNotBlank() || maxCapacity.isNotBlank()) && (!x.has("engineCapacity") || x.isNull("engineCapacity"))) return false
+        if (minCapacity.toIntOrNull()?.let { x.optInt("engineCapacity") < it } == true) return false
+        if (maxCapacity.toIntOrNull()?.let { x.optInt("engineCapacity") > it } == true) return false
+        if (sellerFilter.isNotBlank() && sellerFilter!=x.optString("sellerType")) return false
         if (fuel.isNotBlank() && fuel != x.optString("fuel")) return false
         if (transmission.isNotBlank() && transmission != x.optString("transmission")) return false
         if (body.isNotBlank() && body != x.optString("body")) return false
@@ -745,21 +813,47 @@ class MainActivity : Activity() {
     }
 
     private fun showAdvanced() {
-        val panel = col().apply { setPadding(px(14), 0, px(14), px(12)) }
-        picker(panel, t("fuel"), listOf("" to t("allFuel"), "petrol" to t("petrol"), "diesel" to t("diesel"), "hybrid" to t("hybrid"), "electric" to t("electric")), fuel) { fuel = it }
-        picker(panel, t("transmission"), listOf("" to t("allTransmission"), "automatic" to t("automatic"), "manual" to t("manual")), transmission) { transmission = it }
-        picker(panel, t("body"), listOf("" to t("allBody"), "suv" to t("suv"), "sedan" to t("sedan"), "wagon" to t("wagon"), "hatchback" to t("hatchback"), "coupe" to t("coupe")), body) { body = it }
-        AlertDialog.Builder(this).setTitle(t("moreFilters")).setView(panel)
-            .setPositiveButton(t("showResults")) { _, _ -> renderHome() }
-            .setNegativeButton(t("cancel"), null).show()
+        val panel=col().apply{setPadding(px(15),px(5),px(15),px(15))}
+        var fuelDraft=fuel;var transDraft=transmission;var bodyDraft=body;var sellerDraft=sellerFilter
+        picker(panel,t("fuel"),listOf("" to t("allFuel"),"petrol" to t("petrol"),"diesel" to t("diesel"),"hybrid" to t("hybrid"),"electric" to t("electric")),fuelDraft){fuelDraft=it}
+        picker(panel,t("transmission"),listOf("" to t("allTransmission"),"automatic" to t("automatic"),"manual" to t("manual")),transDraft){transDraft=it}
+        picker(panel,t("body"),listOf("" to t("allBody"),"suv" to t("suv"),"sedan" to t("sedan"),"wagon" to t("wagon"),"hatchback" to t("hatchback"),"coupe" to t("coupe")),bodyDraft){bodyDraft=it}
+        picker(panel,t("sellerType"),listOf("" to t("allSeller"),"privateSeller" to t("privateSeller"),"dealer" to t("dealer")),sellerDraft){sellerDraft=it}
+        val mileageStart=editField(panel,t("mileageFrom"),minMileage,t("minKm"),true)
+        val yearEnd=editField(panel,t("yearTo"),yearTo,"2020",true)
+        val priceStart=editField(panel,t("priceFrom"),minPrice,"€",true)
+        val hpStart=editField(panel,t("powerFrom"),minPower,t("minHp"),true)
+        val hpEnd=editField(panel,t("powerTo"),maxPower,t("maxHp"),true)
+        val motor=editField(panel,t("engineTerm"),engineQuery,t("engineInfo"))
+        val capacityStart=editField(panel,t("capacityFrom"),minCapacity,"cm³",true)
+        val capacityEnd=editField(panel,t("capacityTo"),maxCapacity,"cm³",true)
+        panel.addView(space(9))
+        val scroll=ScrollView(this).apply{addView(panel)}
+        AlertDialog.Builder(this).setTitle(t("moreFilters")).setView(scroll)
+            .setPositiveButton(t("showResults")) { _, _ ->
+                fuel=fuelDraft;transmission=transDraft;body=bodyDraft;sellerFilter=sellerDraft
+                minMileage=mileageStart.text.toString().trim()
+                yearTo=yearEnd.text.toString().trim()
+                minPrice=priceStart.text.toString().trim()
+                minPower=hpStart.text.toString().trim()
+                maxPower=hpEnd.text.toString().trim()
+                engineQuery=motor.text.toString().trim()
+                minCapacity=capacityStart.text.toString().trim()
+                maxCapacity=capacityEnd.text.toString().trim()
+                renderHome()
+            }
+            .setNegativeButton(t("cancel"),null).show()
     }
-    private fun clearFilters() { keyword="";make="";model="";maxPrice="";yearFrom="";maxMileage="";fuel="";transmission="";body="" }
+    private fun clearFilters() { keyword="";make="";model="";maxPrice="";yearFrom="";maxMileage="";fuel="";transmission="";body="";minMileage="";yearTo="";minPrice="";minPower="";maxPower="";engineQuery="";minCapacity="";maxCapacity="";sellerFilter="" }
     private fun saveSearch() {
         val arr = runCatching { JSONArray(prefs.getString("searches", "[]")) }.getOrElse { JSONArray() }
         arr.put(JSONObject().apply {
             put("keyword", keyword);put("make", make);put("model", model)
             put("maxPrice", maxPrice);put("yearFrom", yearFrom);put("maxMileage", maxMileage)
             put("fuel", fuel);put("transmission", transmission);put("body", body)
+            put("minMileage",minMileage);put("yearTo",yearTo);put("minPrice",minPrice)
+            put("minPower",minPower);put("maxPower",maxPower);put("engineQuery",engineQuery)
+            put("minCapacity",minCapacity);put("maxCapacity",maxCapacity);put("sellerFilter",sellerFilter)
             put("countries", JSONArray(activeCountry.toList()))
         })
         prefs.edit().putString("searches", arr.toString()).apply()
@@ -861,6 +955,9 @@ class MainActivity : Activity() {
                 keyword=item.optString("keyword");make=item.optString("make");model=item.optString("model")
                 maxPrice=item.optString("maxPrice");yearFrom=item.optString("yearFrom");maxMileage=item.optString("maxMileage")
                 fuel=item.optString("fuel");transmission=item.optString("transmission");body=item.optString("body")
+                minMileage=item.optString("minMileage");yearTo=item.optString("yearTo");minPrice=item.optString("minPrice")
+                minPower=item.optString("minPower");maxPower=item.optString("maxPower");engineQuery=item.optString("engineQuery")
+                minCapacity=item.optString("minCapacity");maxCapacity=item.optString("maxCapacity");sellerFilter=item.optString("sellerFilter")
                 val arr=item.optJSONArray("countries");activeCountry=mutableSetOf()
                 if(arr!=null) for(z in 0 until arr.length()) activeCountry.add(arr.optString(z))
                 navigate("home")
@@ -1052,7 +1149,9 @@ class MainActivity : Activity() {
             t("make") to car.optString("make"),t("model") to car.optString("model"),
              t("modelExtension") to car.optString("modelExtension").ifBlank { "—" },
             t("firstReg") to car.optString("year"),t("mileage") to (number(car.optInt("mileage"))+" km"),
-            t("power") to (car.optString("power")+" PS"),t("fuel") to t(car.optString("fuel")),
+            t("power") to (car.optString("power")+" PS"),t("engineName") to car.optString("engineName").ifBlank{t("noInfo")},
+            t("engineCapacity") to (if(car.has("engineCapacity")&&!car.isNull("engineCapacity"))car.optString("engineCapacity")+" cm³" else t("noInfo")),
+            t("fuel") to t(car.optString("fuel")),
             t("transmission") to t(car.optString("transmission")),t("body") to t(car.optString("body")),
             t("location") to (car.optString("city")+" · "+car.optString("country")),
             t("carCondition") to t(if(car.optString("condition")=="new")"conditionNew"else "conditionUsed"),
@@ -1337,6 +1436,8 @@ class MainActivity : Activity() {
         val year=editField(col,t("firstReg"),existing?.optString("year")?:"","2013",true)
         val mileage=editField(col,t("mileage"),existing?.optString("mileage")?:"","km",true)
         val power=editField(col,t("power"),existing?.optString("power")?:"","PS",true)
+        val engineName=editField(col,t("engineName"),existing?.optString("engineName")?:"",t("engineInfo"))
+        val engineCapacity=editField(col,t("engineCapacity"),existing?.optString("engineCapacity")?.takeUnless{it=="null"}?:"","cm³",true)
         val price=editField(col,t("price"),existing?.optString("price")?:"","€",true)
         val city=editField(col,t("location"),existing?.optString("city")?:"",t("location"))
         fun spinner(label:String,values:List<Pair<String,String>>):Spinner {
@@ -1399,12 +1500,19 @@ class MainActivity : Activity() {
                      val fullTitle=listOf(mk,mdl,modelExtension).filter{it.isNotBlank()}.joinToString(" ")
                     val yr=year.text.toString().toIntOrNull();val km=mileage.text.toString().toIntOrNull();val hp=power.text.toString().toIntOrNull();val eur=price.text.toString().toIntOrNull()
                     val town=city.text.toString().trim();val description=desc.text.toString().trim()
+                    val ccmText=engineCapacity.text.toString().trim()
+                    val ccm=ccmText.toIntOrNull()
+                    if(engineName.text.length>80||(ccmText.isNotEmpty()&&(ccm==null||ccm !in 0..12000))){toast(t("requiredFields"));return@setOnClickListener}
                     if(mk.length !in 2..35||mdl.length !in 1..65||modelExtension.length>40||fullTitle.length>110||yr==null||yr !in 1950..(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)+1)||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
                     val car=JSONObject().put("id",existing?.optString("id") ?: "preview-"+System.currentTimeMillis())
                         .put("uid",if(isPreview)previewUser else cloudUser?.uid ?: "")
                         .put("make",mk).put("model",mdl).put("modelExtension",modelExtension)
                         .put("clearModelExtension",existing?.optString("modelExtension")?.isNotBlank()==true && modelExtension.isBlank())
                         .put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
+                        .put("engineName",engineName.text.toString().trim().take(80))
+                        .put("engineCapacity",ccm ?: JSONObject.NULL)
+                        .put("clearEngineName",existing?.optString("engineName")?.isNotBlank()==true && engineName.text.isBlank())
+                        .put("clearEngineCapacity",existing?.has("engineCapacity")==true && !existing.isNull("engineCapacity") && ccm==null)
                         .put("city",town).put("country",countries[country.selectedItemPosition].first).put("fuel",fuels[fuel.selectedItemPosition])
                         .put("transmission",gearbox[trans.selectedItemPosition]).put("body",bodies[body.selectedItemPosition])
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])

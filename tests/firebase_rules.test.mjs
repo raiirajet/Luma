@@ -89,6 +89,13 @@ try {
   await assertFails(updateDoc(tuned, {documentNotes:'x'.repeat(241)}));
   await assertFails(updateDoc(tuned, {serviceHistory:{trusted:true}}));
   await assertFails(updateDoc(tuned, {documentsVerified:true}));
+  await assertSucceeds(updateDoc(tuned, {engineName:'2.0 TDI',engineCapacity:1968}));
+  await assertFails(updateDoc(tuned, {engineName:'x'.repeat(81)}));
+  await assertFails(updateDoc(tuned, {engineCapacity:12001}));
+  await assertFails(updateDoc(tuned, {engineCapacity:-1}));
+  await assertFails(updateDoc(tuned, {engineCapacity:'1968'}));
+  await assertSucceeds(updateDoc(tuned, {engineName:deleteField(),engineCapacity:deleteField()}));
+
   await assertSucceeds(updateDoc(tuned, {serviceHistory:deleteField()}));
 
   await assertSucceeds(getDocs(query(collection(dbGuest, 'listings'), where('status', '==', 'active'))));
@@ -137,6 +144,10 @@ try {
   await assertFails(setDoc(searches, { items: [{ ...validSearch, name: 'x'.repeat(121) }] }));
   await assertFails(setDoc(searches, { items: [{ ...validSearch, filters: { keyword: '' } }] }));
   await assertFails(setDoc(searches, { items: Array.from({ length: 21 }, () => validSearch) }));
+  await assertSucceeds(setDoc(searches,{items:[{...validSearch,filters:{...validSearch.filters,mileageFrom:'30000',powerFrom:'100',powerTo:'600',engineTerm:'TDI',capacityFrom:'1500',capacityTo:'3000'}}]}));
+  await assertFails(setDoc(searches,{items:[{...validSearch,filters:{...validSearch.filters,capacityFrom:100}}]}));
+  await assertFails(setDoc(searches,{items:[{...validSearch,filters:{...validSearch.filters,engineTerm:'x'.repeat(81)}}]}));
+
 
   const preferences = doc(dbA, 'users', 'alice', 'data', 'preferences');
   await assertSucceeds(setDoc(preferences, { countries: ['AL', 'HR'] }));

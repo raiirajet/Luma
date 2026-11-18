@@ -70,13 +70,14 @@ class LimbaFirebase(private val activity: Activity) {
         val item = JSONObject()
         item.put("id", snapshot.id)
         for (key in listOf("uid","make","model","modelExtension","title","description","city","country","fuel",
-            "transmission","body","condition","accidentStatus","conditionNote","serviceHistory","modificationNotes","documentNotes","sellerType",
+            "transmission","body","condition","accidentStatus","conditionNote","engineName","serviceHistory","modificationNotes","documentNotes","sellerType",
             "contactEmail","image","status")) {
             item.put(key, snapshot.getString(key) ?: "")
         }
         for (key in listOf("year","mileage","power","price")) {
             item.put(key, snapshot.getLong(key) ?: 0)
         }
+        snapshot.getLong("engineCapacity")?.let {item.put("engineCapacity",it)}
         val images = JSONArray()
         (snapshot.get("images") as? List<*>)?.forEach { images.put(it.toString()) }
         item.put("images", images)
@@ -158,6 +159,11 @@ class LimbaFirebase(private val activity: Activity) {
             "body","condition","accidentStatus","conditionNote","sellerType")) {
             fields[key] = car.optString(key)
         }
+        val motor=car.optString("engineName").trim().take(80)
+        if(motor.isNotBlank())fields["engineName"]=motor
+        else if(car.optBoolean("clearEngineName"))fields["engineName"]=FieldValue.delete()
+        if(car.has("engineCapacity")&&!car.isNull("engineCapacity"))fields["engineCapacity"]=car.optInt("engineCapacity")
+        else if(car.optBoolean("clearEngineCapacity"))fields["engineCapacity"]=FieldValue.delete()
         // Optional vehicle-passport seller statements, limited by Firestore validation.
         for ((field,limit) in listOf("serviceHistory" to 500, "modificationNotes" to 500, "documentNotes" to 240)) {
             val value = car.optString(field).trim().take(limit)
