@@ -210,3 +210,7 @@ button.card-heart{width:44px;height:44px}
 .catalogue-dropdown-empty{padding:18px 13px;color:#6c7e8a;font-size:12px}
 @media(max-width:760px){.search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.search-grid .search-main{grid-column:1/-1}.filter-ext{gap:9px}.search-swipe-btn{padding:9px 12px;min-height:44px}}
 @media(max-width:350px){.search-grid{grid-template-columns:1fr}.catalogue-dropdown{max-height:250px}.search-secondary-actions{gap:3px}.search-swipe-btn{padding:9px 10px}}
+
+/* Keep selectable dropdown buttons outside HTML labels for reliable touch and screenreader events. */
+.catalogue-field>label{display:block;min-height:16px;font-size:11px;font-weight:800;color:#546b76}
+@media(max-width:760px){.catalogue-field>label{font-size:10px}}
