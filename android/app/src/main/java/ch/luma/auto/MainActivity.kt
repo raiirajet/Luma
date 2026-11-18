@@ -306,7 +306,6 @@ class MainActivity : Activity() {
             Triple("home", R.drawable.limba_search, if(locale=="de")"Finden"else t("carsNav")),
             Triple("swipe", R.drawable.limba_vehicle_cards, t("swipe")),
             Triple("favorites", R.drawable.limba_favorites, t("saved")),
-            Triple("sell", R.drawable.limba_add_car, if(locale=="de")"Verkaufen"else t("sellCar")),
             Triple("messages", R.drawable.limba_messages, t("socialMessages")),
             Triple("profile", R.drawable.limba_profile, t("socialProfile"))
         )
@@ -327,9 +326,25 @@ class MainActivity : Activity() {
                 gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
-            cell.setOnClickListener { if(route=="sell")showCarForm() else navigate(route) }
+            cell.setOnClickListener { navigate(route) }
         }
         main.addView(nav, lp(-1, 66))
+        val plus=text("+",36f,paper,true).apply {
+            gravity=Gravity.CENTER
+            background=GradientDrawable().apply {
+                shape=GradientDrawable.OVAL
+                setColor(0xff1479ed.toInt())
+                setStroke(px(2),paper)
+            }
+            elevation=px(12).toFloat()
+            isClickable=true;isFocusable=true
+            contentDescription=t("sellCar")
+            setOnClickListener { showCarForm() }
+        }
+        val bubble=fp(56,56,Gravity.END or Gravity.BOTTOM).apply {
+            marginEnd=px(16);bottomMargin=px(82)
+        }
+        root.addView(plus,bubble)
     }
     private fun body(main: LinearLayout, content: LinearLayout) {
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }

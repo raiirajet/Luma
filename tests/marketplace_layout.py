@@ -34,16 +34,18 @@ try:
     r=metrics[key]
     assert r and r['left']>=-1 and r['right']<=width+1,(width,key,r)
    if width<=768:
-    assert page.locator('.mobile-nav button').count()==6
+    assert page.locator('.mobile-nav button').count()==5
     assert page.locator('.mobile-nav [data-view="swipe"]').is_visible()
    if width<=390:
     assert page.locator('.mobile-nav button').count()==6
-    assert page.locator('#mobileSell').is_visible()
+    assert page.locator('#fabSell').is_visible()
+    assert page.locator('#mobileSell').count()==0
     for key in ['settings','nav']:
      r=metrics[key];assert r and r['visible'] and r['right']<=width+1,(width,key,r)
     page.locator('.mobile-nav [data-view="swipe"]').click()
     assert page.locator('#swipeView').is_visible()
     assert page.locator('.mobile-nav [data-view="swipe"]').is_visible(), 'fixed navigation hidden inside swipe'
+    assert page.locator('#fabSell').is_hidden()
     assert page.locator('.mobile-nav [data-view="swipe"]').get_attribute('aria-current')=='page'
     page.locator('.mobile-nav [data-view="home"]').click()
     page.locator('.mobile-nav [data-view="messages"]').click()
