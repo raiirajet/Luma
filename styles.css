@@ -266,3 +266,125 @@ background:linear-gradient(145deg,#238aff,#075ac5);box-shadow:0 8px 22px #0654a3
 .fab-add{right:17px;bottom:calc(env(safe-area-inset-bottom) + 84px);width:56px;height:56px;min-height:56px}
 }
 body:has(#swipeView:not(.hidden)) .fab-add{display:none!important}
+
+/* Limba premium visual system – responsive, consistent focus and elevated cards. */
+:root{--premium-focus:#1479ed;--premium-panel:#fff;--premium-layer:#f3f8fc;--premium-text:#153345;--premium-edge:#dce8f0}
+.car-card{border-radius:17px;box-shadow:0 8px 27px #0d314613;transition:transform .2s,box-shadow .2s}
+.car-card:hover{box-shadow:0 14px 32px #0d314627}
+.car-img{isolation:isolate}
+.car-compare{position:absolute;right:11px;top:56px;z-index:2;display:grid;place-items:center;
+ width:39px;height:39px;border-radius:50%;border:1px solid #a9c5d9;background:#fffffff0;color:#14476a}
+.card-compare .ui-icon{width:19px;height:19px}
+.card-compare.is-selected{background:#1479ed;color:#fff;border-color:#fff}
+.photo-count{position:absolute;right:12px;bottom:10px;display:flex;gap:4px;align-items:center;
+ padding:5px 8px;font-size:11px;font-weight:800;border-radius:8px;background:#0b2433ba;color:white}
+.photo-count .ui-icon{width:14px;height:14px}
+.car-flags{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 13px}
+.flag-pill{border-radius:9px;border:1px solid #dbeaf2;padding:5px 8px;font-size:10px;
+ color:#496678;background:#f6f9fc;font-weight:750}
+.active-filter-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.active-filter-chips:empty{display:none}
+.filter-chip{border:1px solid #bfd5e6;background:#edf5fe;color:#124674;border-radius:999px;
+ padding:9px 11px;min-height:39px;display:inline-flex;gap:8px;align-items:center;font-size:11px;font-weight:750}
+.filter-chip span{font-size:19px;line-height:1}
+.filter-chip.filter-clear{background:#fff;color:#527085}
+.compare-dock{position:fixed;bottom:calc(81px + env(safe-area-inset-bottom));z-index:89;
+ left:50%;transform:translateX(-50%);width:min(440px,calc(100vw - 40px));display:flex;
+ align-items:center;justify-content:center;gap:10px;padding:9px 12px;
+ border:1px solid #c6dced;border-radius:18px;background:#fff;color:#143f62;
+ box-shadow:0 8px 30px #0c2b4b3b;font-weight:800;font-size:12px}
+.compare-dock .outline-btn{min-height:39px;padding:8px 12px}
+.compare-clear{min-width:34px;min-height:34px;border:0;border-radius:50%;background:#edf4fa;font-size:24px;color:#3b546b}
+.compare-scroll{max-width:100%;overflow-x:auto;margin-top:13px}
+.compare-table{border-collapse:separate;border-spacing:0;min-width:610px;width:100%;font-size:12px}
+.compare-table th,.compare-table td{min-width:130px;border-bottom:1px solid #e0ebf2;padding:11px;text-align:left;vertical-align:top}
+.compare-table tbody th{position:sticky;left:0;background:#f0f6fa;min-width:115px;font-weight:800}
+.compare-table thead th{background:#f5f9fd}
+.compare-table thead img{display:block;width:150px;height:94px;object-fit:cover;border-radius:9px;margin-bottom:8px}
+.compare-table thead span{display:block;font-size:13px}
+.compare-remove{display:block;margin-top:9px;border:0;background:transparent;color:#146cc9;padding:6px 0;font-size:11px}
+.detail-thumbnails{display:flex;overflow-x:auto;gap:8px;padding:11px 0 18px;scroll-snap-type:x proximity}
+.detail-thumbnails button{flex:0 0 68px;width:68px;height:56px;border:2px solid transparent;
+ padding:0;border-radius:8px;overflow:hidden;scroll-snap-align:start;background:#d9e4ee}
+.detail-thumbnails button.is-current{border-color:#1479ed}
+.detail-thumbnails img{width:100%;height:100%;object-fit:cover}
+.photo-counter{white-space:nowrap;font-size:12px;font-weight:850;color:#4b7085;padding:8px}
+.details-image{cursor:zoom-in}
+.photo-fullscreen{white-space:nowrap}
+.gallery-lightbox{position:fixed;inset:0;z-index:250;background:#061420f2;display:flex;
+ align-items:center;justify-content:center;gap:10px;padding:18px;color:#fff}
+.gallery-lightbox figure{margin:0;max-width:calc(100vw - 140px);max-height:93vh;text-align:center}
+.gallery-lightbox img{display:block;max-width:100%;width:auto;max-height:85vh;object-fit:contain;margin:auto}
+.gallery-lightbox figcaption{font-weight:800;font-size:13px;margin-top:10px}
+.gallery-close,.gallery-control{background:#1d3b50;color:#fff;border:1px solid #6e8ea9;cursor:pointer;
+ width:44px;height:44px;border-radius:50%;font-size:30px}
+.gallery-close{position:absolute;top:18px;right:18px;z-index:2}
+.price-watch-panel{background:#f5f9fd;border:1px solid #d9e7f1;padding:18px;border-radius:15px;margin:16px 0 23px}
+.price-watch-header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.price-watch-header h3{margin:0;font-size:18px}
+.price-watch-header button{min-height:44px}
+.price-history-body{margin-top:13px;font-size:12px;color:#466374}
+.price-history-list{margin:0;padding:0;list-style:none}
+.price-history-list li{display:grid;grid-template-columns:minmax(80px,1fr) 1fr auto;gap:9px;
+ align-items:center;min-height:42px;border-bottom:1px solid #dfebf2;padding:7px 0}
+.price-history-list strong{font-size:13px;color:#18416a}
+.price-history-list small{font-size:11px}
+.price-history-list .price-down{color:#116240;font-weight:850}
+.sell-toggle-line{display:flex;gap:11px;align-items:center;font-size:12px;font-weight:500}
+.sell-toggle-line input{width:22px;height:22px;flex:none;min-height:22px;accent-color:#1479ed}
+.filter-shade{position:fixed;inset:0;z-index:105;background:#051d31b5;backdrop-filter:blur(3px)}
+.filter-apply{display:none}
+.filter-sheet-open{overflow:hidden}
+@media(max-width:760px){
+ .compare-dock{bottom:calc(144px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 28px))}
+ .car-img{height:195px}.photo-fullscreen{padding:9px 12px;font-size:11px}
+ .gallery-lightbox figure{max-width:calc(100vw - 103px)}
+ .gallery-control{width:40px;height:42px;flex:0 0 40px}
+ .advanced[data-filter-drawer="true"]{position:fixed;z-index:110;left:0;right:0;bottom:0;
+ top:auto;width:100%;height:min(78dvh,690px);max-height:calc(100dvh - 32px);overflow:auto;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;
+ align-content:start;gap:11px;margin:0;padding:26px 18px calc(22px + env(safe-area-inset-bottom));
+ background:#fff;border:1px solid #d5e5ee;border-radius:23px 23px 0 0;
+ box-shadow:0 -20px 50px #001b373d;overscroll-behavior:contain}
+ .advanced[data-filter-drawer="true"]:before{content:"Filter";grid-column:1/-1;font-size:19px;
+ font-weight:850;color:#143d5b;border-bottom:1px solid #dbe7ee;padding-bottom:10px}
+ .advanced[data-filter-drawer="true"] .filter-apply{display:flex;grid-column:1/-1;position:sticky;
+ bottom:0;z-index:2;box-shadow:0 6px 16px #12416d34}
+ .advanced[data-filter-drawer="true"] .search-field{min-width:0}
+}
+@media(max-width:355px){.advanced[data-filter-drawer="true"]{grid-template-columns:1fr}.price-history-list li{grid-template-columns:1fr 1fr}}
+body:has(#swipeView:not(.hidden)) .compare-dock{display:none}
+[data-theme="dark"]{--ink:#f0f5fc;--paper:#102131;--soft:#0b1521;--border:#33485b;--muted:#b6c6d7;
+ --premium-panel:#132436;--premium-layer:#14293b;--premium-text:#f1f6ff;--premium-edge:#375166;
+ background:#0b1521;color-scheme:dark}
+[data-theme="dark"] body{background:#0b1521;color:#edf4fc}
+[data-theme="dark"] .site-header,[data-theme="dark"] .search-panel,
+[data-theme="dark"] .car-card,[data-theme="dark"] .settings-card,
+[data-theme="dark"] .mobile-nav,[data-theme="dark"] .modal-panel,
+[data-theme="dark"] .country-choice,[data-theme="dark"] .advanced,
+[data-theme="dark"] .outline-btn,[data-theme="dark"] .price-watch-panel,
+[data-theme="dark"] .compare-dock,[data-theme="dark"] .catalogue-dropdown,
+[data-theme="dark"] .catalogue-option,[data-theme="dark"] .thread-row,
+[data-theme="dark"] .offer-card,[data-theme="dark"] .transaction-panel{background:#122535;color:#eef5ff;border-color:#375166}
+[data-theme="dark"] .search-field input,[data-theme="dark"] .search-field select,
+[data-theme="dark"] .market-form input,[data-theme="dark"] .market-form select,
+[data-theme="dark"] .market-form textarea,[data-theme="dark"] .language-select,
+[data-theme="dark"] .settings-language-select,[data-theme="dark"] .sort-select,
+[data-theme="dark"] .chat-form input,[data-theme="dark"] .chat-frame,
+[data-theme="dark"] .chat-bubble,[data-theme="dark"] .spec-table>div,
+[data-theme="dark"] .quick-card,[data-theme="dark"] .filter-chip,
+[data-theme="dark"] .offer-negotiation{background:#182e41;color:#edf5fd;border-color:#49637a}
+[data-theme="dark"] .car-title,[data-theme="dark"] .car-price,
+[data-theme="dark"] .search-top h2,[data-theme="dark"] .search-field span,
+[data-theme="dark"] .catalogue-dropdown-head,[data-theme="dark"] .price-history-list strong,
+[data-theme="dark"] .price-watch-header h3,[data-theme="dark"] .profile-scores b,
+[data-theme="dark"] .compare-dock,[data-theme="dark"] .compare-table th,
+[data-theme="dark"] .compare-table td{color:#f3f7fe}
+[data-theme="dark"] .car-sub,[data-theme="dark"] .muted-copy,[data-theme="dark"] .car-location,
+[data-theme="dark"] .flag-pill,[data-theme="dark"] .price-history-body,
+[data-theme="dark"] .profile-scores small{color:#c7d5e2}
+[data-theme="dark"] .flag-pill,[data-theme="dark"] .car-specs span,
+[data-theme="dark"] .compare-table tbody th,[data-theme="dark"] .compare-table thead th,
+[data-theme="dark"] .catalogue-dropdown-head,[data-theme="dark"] .profile-scores>div{background:#213a50;color:#eaf3ff;border-color:#49637a}
+[data-theme="dark"] .catalogue-option:hover,[data-theme="dark"] .catalogue-option.is-highlighted{background:#244f72}
+[data-theme="dark"] .fab-add{border-color:#99c8fd}
