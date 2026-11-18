@@ -187,6 +187,10 @@ try {
     senderUid:'bob',type:'text',text:'bypass',createdAt:serverTimestamp()
   }));
   await assertFails(updateDoc(doc(dbB,'conversations',convId,'offers','o1'),{status:'accepted'}));
+  const quotaRef=doc(dbB,'offerQuotas','bob_20261118');
+  await assertFails(setDoc(quotaRef,{uid:'bob',date:'20261118',usedCount:0}));
+  await assertFails(getDoc(quotaRef));
+  await assertFails(setDoc(doc(dbA,'offerQuotas','bob_20261118'),{uid:'bob',usedCount:0}));
   await assertSucceeds(getDoc(doc(dbA,'transactions',transactionId)));
   await assertSucceeds(getDoc(doc(dbB,'transactions',transactionId)));
   await assertFails(getDoc(doc(three,'transactions',transactionId)));

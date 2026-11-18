@@ -33,6 +33,9 @@ try:
    for key in ['brand','language','login','filters']:
     r=metrics[key]
     assert r and r['left']>=-1 and r['right']<=width+1,(width,key,r)
+   if width<=768:
+    assert page.locator('.mobile-nav button').count()==6
+    assert page.locator('.mobile-nav [data-view="swipe"]').is_visible()
    if width<=390:
     assert page.locator('.mobile-nav button').count()==6
     assert page.locator('#mobileSell').is_visible()
@@ -85,6 +88,8 @@ try:
    assert page.locator('#keyword').is_hidden(), 'optional keyword is in more filters only'
    page.locator('.search-swipe-btn').click()
    assert page.locator('#swipeView').is_visible()
+   if width<=768:
+    assert page.locator('.mobile-nav [data-view="swipe"]').is_visible()
    if page.locator('#swipeTutorial').is_visible():
     page.locator('#swipeDone').click()
    page.locator('#swipeHome').click()
