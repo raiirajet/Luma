@@ -49,13 +49,18 @@ import android.text.InputType
  * not been configured. Demo listing information is fictional and identified as such.
  */
 class MainActivity : Activity() {
-    private val ink = Color.rgb(16, 43, 58)
-    private val navy = Color.rgb(12, 40, 56)
+    private val darkEnabled: Boolean get() {
+        val mode=prefs.getString("themeMode","system")
+        val night=resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return mode=="dark" || (mode=="system" && night==android.content.res.Configuration.UI_MODE_NIGHT_YES)
+    }
+    private val ink:Int get()=if(darkEnabled)Color.rgb(237,244,252)else Color.rgb(16,43,58)
+    private val navy:Int get()=Color.rgb(12,40,56)
     private val orange = Color.rgb(20, 121, 237)
-    private val paper = Color.WHITE
-    private val mist = Color.rgb(243, 247, 248)
-    private val muted = Color.rgb(100, 124, 137)
-    private val border = Color.rgb(218, 230, 234)
+    private val paper:Int get()=if(darkEnabled)Color.rgb(18,37,54)else Color.WHITE
+    private val mist:Int get()=if(darkEnabled)Color.rgb(11,21,33)else Color.rgb(243,247,248)
+    private val muted:Int get()=if(darkEnabled)Color.rgb(188,205,222)else Color.rgb(100,124,137)
+    private val border:Int get()=if(darkEnabled)Color.rgb(58,81,102)else Color.rgb(218,230,234)
     private lateinit var root: FrameLayout
     private lateinit var messages: JSONObject
     private lateinit var brands: JSONObject
@@ -215,7 +220,7 @@ class MainActivity : Activity() {
         if (bold) setTypeface(null, Typeface.BOLD)
         includeFontPadding = true
     }
-    private fun btn(s: String, filled: Boolean = true, action: () -> Unit): TextView = text(s, 14f, if (filled) paper else navy, true).apply {
+    private fun btn(s: String, filled: Boolean = true, action: () -> Unit): TextView = text(s, 14f, if (filled) Color.WHITE else ink, true).apply {
         gravity = Gravity.CENTER
         background = c(if (filled) orange else paper, 12, if (filled) null else border)
         setPadding(px(16), px(13), px(16), px(13))
@@ -256,9 +261,9 @@ class MainActivity : Activity() {
         isClickable = true; isFocusable = true; minimumHeight = px(48)
         contentDescription = caption
         setPadding(px(12), px(10), px(12), px(10))
-        addView(drawableIcon(res, if (fill) paper else navy, 20), lp(20, 20))
+        addView(drawableIcon(res, if (fill) Color.WHITE else ink, 20), lp(20, 20))
         addView(spaceHorizontal(8))
-        addView(text(caption, 13f, if (fill) paper else navy, true))
+        addView(text(caption, 13f, if (fill) Color.WHITE else ink, true))
         setOnClickListener { action() }
     }
     private fun label(s: String): TextView = text(s, 12f, muted, true).apply {
@@ -329,12 +334,12 @@ class MainActivity : Activity() {
             cell.setOnClickListener { navigate(route) }
         }
         main.addView(nav, lp(-1, 66))
-        val plus=text("+",36f,paper,true).apply {
+        val plus=text("+",36f,Color.WHITE,true).apply {
             gravity=Gravity.CENTER
             background=GradientDrawable().apply {
                 shape=GradientDrawable.OVAL
                 setColor(0xff1479ed.toInt())
-                setStroke(px(2),paper)
+                setStroke(px(2),Color.WHITE)
             }
             elevation=px(12).toFloat()
             isClickable=true;isFocusable=true
@@ -461,7 +466,7 @@ class MainActivity : Activity() {
         heroBrand.addView(text("LIMBA AUTO", 12f, orange, true))
         hero.addView(heroBrand)
         hero.addView(space(13))
-        hero.addView(text(t("heroTitle1"), 30f, paper, true))
+        hero.addView(text(t("heroTitle1"), 30f, Color.WHITE, true))
         hero.addView(text(t("heroTitle2"), 29f, orange, true))
         hero.addView(space(11))
         hero.addView(text(t("heroDescription"), 13f, 0xffcbdce3.toInt()))
@@ -746,7 +751,25 @@ class MainActivity : Activity() {
                 if(selected!=locale){locale=selected;prefs.edit().putString("language",selected).apply();renderSettings()}
             }
         }
-        content.addView(spinner,lp(-1,52));content.addView(space(25))
+        content.addView(spinner,lp(-1,52));content.addView(space(20))
+        content.addView(text(t("themeTitle"),16f,ink,true))
+        val themeModes=listOf("system","light","dark")
+        val themeSpinner=Spinner(this).apply {background=c(paper,12,border)}
+        themeSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,
+            listOf(t("themeSystem"),t("themeLight"),t("themeDark")))
+        val chosenTheme=prefs.getString("themeMode","system") ?: "system"
+        themeSpinner.setSelection(themeModes.indexOf(chosenTheme).coerceAtLeast(0))
+        themeSpinner.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent:android.widget.AdapterView<*>?){}
+            override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long){
+                val next=themeModes[position]
+                if(next!=prefs.getString("themeMode","system")){
+                    prefs.edit().putString("themeMode",next).apply()
+                    renderSettings()
+                }
+            }
+        }
+        content.addView(themeSpinner,lp(-1,52));content.addView(space(25))
         val countryHeader = row()
         countryHeader.addView(drawableIcon(R.drawable.limba_map, orange, 28), lp(28,28))
         countryHeader.addView(spaceHorizontal(9))
@@ -781,7 +804,7 @@ class MainActivity : Activity() {
         val all=swipeCandidates()
         if (all.isEmpty()) {
             val empty=col().apply {gravity=Gravity.CENTER;setPadding(px(20),px(20),px(20),px(20))}
-            empty.addView(text(t("emptyCars"),20f,paper,true))
+            empty.addView(text(t("emptyCars"),20f,Color.WHITE,true))
             empty.addView(space(20));empty.addView(btn(t("backToMarket"),true){navigate("home")})
             main.addView(empty,LinearLayout.LayoutParams(-1,0,1f))
             navigation(main)
@@ -827,11 +850,11 @@ class MainActivity : Activity() {
         })
         full.addView(View(this).apply {background=gradient();isClickable=false},fp())
         val top=row().apply {setPadding(px(16),px(12),px(16),0)}
-        top.addView(iconButton(R.drawable.limba_info,t("learnSwipeAgain"),paper,0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_info,t("learnSwipeAgain"),Color.WHITE,0x99213449.toInt()) {
             showSwipeTutorial()
         },lp(48,48))
         top.addView(View(this),LinearLayout.LayoutParams(0,1,1f))
-        top.addView(iconButton(R.drawable.limba_home,t("backToMarket"),paper,0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_home,t("backToMarket"),Color.WHITE,0x99213449.toInt()) {
             navigate("home")
         },lp(48,48))
         full.addView(top,fp(-1,-2,Gravity.TOP))
@@ -840,11 +863,11 @@ class MainActivity : Activity() {
         overlay.addView(text((if(live)t("carsNav")else t("previewOnly")).uppercase()+"  ·  "+(swipeIndex+1)+"/"+all.size,11f,orange,true))
         overlay.addView(space(7))
         val title=if(current==null)"Nissan GT-R R35 Black Edition"else current.optString("make")+" "+current.optString("model")
-        overlay.addView(text(title,27f,paper,true));overlay.addView(space(5))
-        overlay.addView(text(euro(current?.optInt("price")?:68900),26f,paper,true));overlay.addView(space(5))
+        overlay.addView(text(title,27f,Color.WHITE,true));overlay.addView(space(5))
+        overlay.addView(text(euro(current?.optInt("price")?:68900),26f,Color.WHITE,true));overlay.addView(space(5))
         val info=if(current==null)"2013 · 49.500 km · 550 PS · 🇭🇷 Zagreb"
            else current.optString("year")+" · "+number(current.optInt("mileage"))+" km · "+current.optString("power")+" PS · "+current.optString("city")
-        overlay.addView(text(info,13f,paper));overlay.addView(space(16))
+        overlay.addView(text(info,13f,Color.WHITE));overlay.addView(space(16))
         val buttons=row()
         buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"),{details()}),LinearLayout.LayoutParams(0,px(50),1f))
         buttons.addView(spaceHorizontal(10))
@@ -1213,6 +1236,15 @@ class MainActivity : Activity() {
         val sellerTypes=listOf("privateSeller","dealer")
         val seller=spinner(t("sellerType"),sellerTypes.map { it to t(it) })
         existing?.let {seller.setSelection(sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0))}
+        val allowOffers=CheckBox(this).apply {
+            text=t("allowOffers")
+            isChecked=existing?.optBoolean("allowOffers",true) ?: true
+            setTextColor(ink);textSize=15f
+            buttonTintList=ColorStateList.valueOf(orange)
+            minHeight=px(50)
+        }
+        col.addView(allowOffers)
+        col.addView(text(t("allowOffersHelp"),12f,muted))
         col.addView(label(t("vehicleDescription")))
         val desc=EditText(this).apply { setTextColor(ink);minLines=3;maxLines=6;setPadding(px(13),px(10),px(13),px(10));background=c(paper,12,border) }
         desc.setText(existing?.optString("description") ?: "")
@@ -1248,6 +1280,7 @@ class MainActivity : Activity() {
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
                         .put("conditionNote",note.text.toString().trim().take(240)).put("description",description.take(3000))
                         .put("sellerType",sellerTypes[seller.selectedItemPosition])
+                        .put("allowOffers",allowOffers.isChecked)
                         .put("contactEmail","")
                     if (isPreview) {
                         existing?.let { previewCars.remove(it) }

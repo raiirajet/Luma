@@ -82,6 +82,7 @@ class LimbaFirebase(private val activity: Activity) {
             "contactEmail","image","status")) {
             item.put(key, snapshot.getString(key) ?: "")
         }
+        item.put("allowOffers",snapshot.getBoolean("allowOffers") ?: true)
         for (key in listOf("year","mileage","power","price")) {
             item.put(key, snapshot.getLong(key) ?: 0)
         }
@@ -168,6 +169,7 @@ class LimbaFirebase(private val activity: Activity) {
         }
         // Public listing documents never contain seller PII.
         fields["contactEmail"] = ""
+        fields["allowOffers"] = car.optBoolean("allowOffers",true)
         fields["title"] = (car.optString("make")+" "+car.optString("model")).take(110)
         fields["category"] = "vehicles"
         for (key in listOf("year","mileage","power","price")) fields[key] = car.optInt(key)
