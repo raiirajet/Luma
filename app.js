@@ -88,7 +88,7 @@ function setupCatalogChooser(ids=['make','model']){const controller=new AbortCon
   for(const other of Object.keys(closers))if(other!==id)close(other);
   paint(id,all);$(id+'Dropdown').classList.remove('hidden');$(id).setAttribute('aria-expanded','true');
  }
- function choose(id,value){const input=$(id),previous=input.value;input.value=value;if(id===ids[0]&&previous!==value&&$(ids[1]).value){$(ids[1]).value='';$(ids[1]).dispatchEvent(new Event('input',{bubbles:true})}input.dispatchEvent(new Event('input',{bubbles:true}));close(id);input.blur()}
+ function choose(id,value){const input=$(id),previous=input.value;input.value=value;if(id===ids[0]&&previous!==value&&$(ids[1]).value){$(ids[1]).value='';$(ids[1]).dispatchEvent(new Event('input',{bubbles:true}))}input.dispatchEvent(new Event('input',{bubbles:true}));close(id);input.blur()}
  for(const id of ids){
   closers[id]={items:[],active:-1};
   const input=$(id),button=document.querySelector(`[data-catalog-toggle="${id}"]`);
