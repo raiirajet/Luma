@@ -82,7 +82,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Darstellung",
     "themeSystem": "System",
     "themeLight": "Hell",
-    "themeDark": "Dunkel"
+    "themeDark": "Dunkel",
+    "offersDisabled": "Keine Preisangebote erwünscht",
+    "offerOpen": "Offen",
+    "offerAccepted": "Angenommen",
+    "offerRejected": "Abgelehnt",
+    "offerClosed": "Geschlossen",
+    "offerExpired": "Abgelaufen"
   },
   "en": {
     "message": "Message",
@@ -166,7 +172,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Appearance",
     "themeSystem": "System",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "offersDisabled": "Seller is not accepting price offers",
+    "offerOpen": "Open",
+    "offerAccepted": "Accepted",
+    "offerRejected": "Declined",
+    "offerClosed": "Closed",
+    "offerExpired": "Expired"
   },
   "sq": {
     "message": "Mesazh",
@@ -250,7 +262,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Pamja",
     "themeSystem": "Sistemi",
     "themeLight": "E çelët",
-    "themeDark": "E errët"
+    "themeDark": "E errët",
+    "offersDisabled": "Shitësi nuk pranon oferta çmimi",
+    "offerOpen": "E hapur",
+    "offerAccepted": "Pranuar",
+    "offerRejected": "Refuzuar",
+    "offerClosed": "Mbyllur",
+    "offerExpired": "Skaduar"
   },
   "tr": {
     "message": "Mesaj",
@@ -334,7 +352,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Görünüm",
     "themeSystem": "Sistem",
     "themeLight": "Açık",
-    "themeDark": "Koyu"
+    "themeDark": "Koyu",
+    "offersDisabled": "Satıcı fiyat teklifi kabul etmiyor",
+    "offerOpen": "Açık",
+    "offerAccepted": "Kabul edildi",
+    "offerRejected": "Reddedildi",
+    "offerClosed": "Kapandı",
+    "offerExpired": "Süresi doldu"
   },
   "el": {
     "message": "Μήνυμα",
@@ -418,7 +442,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Εμφάνιση",
     "themeSystem": "Σύστημα",
     "themeLight": "Φωτεινό",
-    "themeDark": "Σκοτεινό"
+    "themeDark": "Σκοτεινό",
+    "offersDisabled": "Ο πωλητής δεν δέχεται προσφορές",
+    "offerOpen": "Ανοικτή",
+    "offerAccepted": "Αποδεκτή",
+    "offerRejected": "Απορρίφθηκε",
+    "offerClosed": "Κλειστή",
+    "offerExpired": "Έληξε"
   },
   "sr-Latn": {
     "message": "Poruka",
@@ -502,7 +532,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Izgled",
     "themeSystem": "Sistem",
     "themeLight": "Svetlo",
-    "themeDark": "Tamno"
+    "themeDark": "Tamno",
+    "offersDisabled": "Prodavac ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "sr-Cyrl": {
     "message": "Порука",
@@ -586,7 +622,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Изглед",
     "themeSystem": "Систем",
     "themeLight": "Светло",
-    "themeDark": "Тамно"
+    "themeDark": "Тамно",
+    "offersDisabled": "Продавац не прима понуде",
+    "offerOpen": "Отворено",
+    "offerAccepted": "Прихваћено",
+    "offerRejected": "Одбијено",
+    "offerClosed": "Затворено",
+    "offerExpired": "Истекло"
   },
   "sl": {
     "message": "Sporočilo",
@@ -670,7 +712,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Videz",
     "themeSystem": "Sistem",
     "themeLight": "Svetlo",
-    "themeDark": "Temno"
+    "themeDark": "Temno",
+    "offersDisabled": "Prodajalec ne sprejema ponudb",
+    "offerOpen": "Odprto",
+    "offerAccepted": "Sprejeto",
+    "offerRejected": "Zavrnjeno",
+    "offerClosed": "Zaprto",
+    "offerExpired": "Poteklo"
   },
   "hr": {
     "message": "Poruka",
@@ -754,7 +802,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Izgled",
     "themeSystem": "Sustav",
     "themeLight": "Svijetlo",
-    "themeDark": "Tamno"
+    "themeDark": "Tamno",
+    "offersDisabled": "Prodavatelj ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "mk": {
     "message": "Порака",
@@ -838,7 +892,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Изглед",
     "themeSystem": "Систем",
     "themeLight": "Светло",
-    "themeDark": "Темно"
+    "themeDark": "Темно",
+    "offersDisabled": "Продавачот не прифаќа понуди",
+    "offerOpen": "Отворено",
+    "offerAccepted": "Прифатено",
+    "offerRejected": "Одбиено",
+    "offerClosed": "Затворено",
+    "offerExpired": "Истечено"
   },
   "bs": {
     "message": "Poruka",
@@ -922,7 +982,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Izgled",
     "themeSystem": "Sistem",
     "themeLight": "Svijetlo",
-    "themeDark": "Tamno"
+    "themeDark": "Tamno",
+    "offersDisabled": "Prodavač ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "cnr": {
     "message": "Poruka",
@@ -1006,7 +1072,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Izgled",
     "themeSystem": "Sistem",
     "themeLight": "Svijetlo",
-    "themeDark": "Tamno"
+    "themeDark": "Tamno",
+    "offersDisabled": "Prodavac ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "bg": {
     "message": "Съобщение",
@@ -1090,7 +1162,13 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Изглед",
     "themeSystem": "Система",
     "themeLight": "Светъл",
-    "themeDark": "Тъмен"
+    "themeDark": "Тъмен",
+    "offersDisabled": "Продавачът не приема оферти",
+    "offerOpen": "Отворена",
+    "offerAccepted": "Приета",
+    "offerRejected": "Отхвърлена",
+    "offerClosed": "Затворена",
+    "offerExpired": "Изтекла"
   },
   "ro": {
     "message": "Mesaj",
@@ -1174,6 +1252,12 @@ export const SOCIAL_TRANSLATIONS = {
     "themeTitle": "Aspect",
     "themeSystem": "Sistem",
     "themeLight": "Luminos",
-    "themeDark": "Întunecat"
+    "themeDark": "Întunecat",
+    "offersDisabled": "Vânzătorul nu acceptă oferte",
+    "offerOpen": "Deschisă",
+    "offerAccepted": "Acceptată",
+    "offerRejected": "Respinsă",
+    "offerClosed": "Închisă",
+    "offerExpired": "Expirată"
   }
 };

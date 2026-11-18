@@ -394,3 +394,16 @@ body:has(#swipeView:not(.hidden)) .compare-dock{display:none}
  width:40px;height:40px;border-radius:50%;border:1px solid #a9c5d9;background:#fffffff0;color:#14476a}
 .card-compare .ui-icon{width:19px;height:19px}
 .card-compare.is-selected{background:#1479ed;color:#fff;border-color:#fff}
+
+.offer-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.offer-card-head strong{font-size:19px}
+.offer-status{padding:7px 10px;border-radius:999px;white-space:nowrap;font-size:11px;
+font-weight:800;background:#e7eef5;color:#204d66}
+.offer-status-accepted{background:#ddf3e9;color:#115c3c}
+.offer-status-rejected,.offer-status-expired,.offer-status-closed{background:#f6e7e7;color:#864747}
+.offer-status-open{background:#e3efff;color:#1258a3}
+.offers-off-hint{display:inline-flex;align-items:center;font-size:12px;color:#7c4755;
+padding:9px 11px;background:#fff0f0;border:1px solid #eccbd0;border-radius:8px}
+[data-theme="dark"] .offer-status-accepted{background:#1a4a39;color:#d5ffed}
+[data-theme="dark"] .offer-status-rejected,[data-theme="dark"] .offer-status-expired,[data-theme="dark"] .offer-status-closed{background:#543037;color:#ffdae1}
+[data-theme="dark"] .offer-status-open{background:#1e4067;color:#d6eaff}

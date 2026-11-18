@@ -83,11 +83,12 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
     const container=document.createElement('section');container.className='seller-panel';
     container.innerHTML='<div class="seller-panel-head"><h3>'+esc(tr('sellerProfile'))+'</h3><span id="sellerTrust">'+trustFor(car.uid)+'</span></div>'+
       '<div class="detail-cta"><button id="marketMessage" class="primary-btn">'+esc(tr('message'))+'</button>'+
-      '<button id="marketOffer" class="outline-btn">'+esc(tr('proposePrice'))+'</button></div>'+
+      (car.allowOffers===false?'<span class="offers-off-hint">'+esc(tr('offersDisabled'))+'</span>':
+       '<button id="marketOffer" class="outline-btn">'+esc(tr('proposePrice'))+'</button>')+'</div>'+
       '<div id="sellerReviews" class="review-list"></div>';
     $('detailShare').parentElement.insertAdjacentElement('afterend',container);
     $('marketMessage').addEventListener('click',()=>startConversation(car.id));
-    $('marketOffer').addEventListener('click',()=>startConversation(car.id,true));
+    $('marketOffer')?.addEventListener('click',()=>startConversation(car.id,true));
     loadSellerReviews(car.uid,container);
   }
   async function loadSellerReviews(uid,container) {
@@ -153,8 +154,19 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
         offerInfo.classList.add('hidden');
         document.querySelector('.offer-negotiation')?.classList.add('hidden');
       }else{
-        refreshQuota();
-        if(focusOffer)$('offerAmount')?.focus();
+        const listingId=snap.data()?.listingId;
+        if(listingId){
+          f.modules.getDoc(f.modules.doc(f.db,'listings',listingId)).then(listing=>{
+            if(currentChat!==conversationId||!$('offerForm'))return;
+            if(listing.data()?.allowOffers===false){
+              const wrap=document.querySelector('.offer-negotiation');
+              if(wrap)wrap.innerHTML='<p class="offers-off-hint">'+esc(tr('offersDisabled'))+'</p>';
+              return;
+            }
+            refreshQuota();
+            if(focusOffer)$('offerAmount')?.focus();
+          }).catch(error);
+        }
       }
     }).catch(error);
     $('offerForm').addEventListener('submit',async e=>{
@@ -188,9 +200,13 @@ export function createMarketplace({getUser,getFirebase,popup,closePopup,notify,o
       if(!currentChat||!$('chatOffers'))return;
       $('chatOffers').innerHTML=snap.docs.sort((a,b)=>(b.data().createdAt?.seconds||0)-(a.data().createdAt?.seconds||0))
         .map(d=>{
-          const o=d.data(),oid=conversationId+'~'+d.id,canRespond=o.creatorUid!==current()?.uid&&o.status==='open';
-          return '<article class="offer-card"><strong>'+esc(formatPrice(o.amountEur))+'</strong> · '+
-            esc(tr(o.status)||o.status)+'<p>'+esc(tr('expires'))+' '+esc(time(o.validUntil))+'</p>'+
+          const o=d.data(),oid=conversationId+'~'+d.id;
+          const expired=o.status==='open'&&(o.validUntil?.toMillis?.()||0)<=Date.now();
+          const status=expired?'expired':o.status;
+          const canRespond=o.creatorUid!==current()?.uid&&o.status==='open'&&!expired;
+          return '<article class="offer-card"><div class="offer-card-head"><strong>'+esc(formatPrice(o.amountEur))+'</strong>'+
+            '<span class="offer-status offer-status-'+esc(status)+'">'+esc(tr('offer'+status[0].toUpperCase()+status.slice(1)))+'</span></div>'+
+            '<p>'+esc(tr('expires'))+' '+esc(time(o.validUntil))+'</p>'+
             (canRespond?'<div><button class="primary-btn" data-offer-id="'+esc(oid)+'" data-answer="accept">'+esc(tr('accept'))+
             '</button> <button class="outline-btn" data-offer-id="'+esc(oid)+'" data-answer="reject">'+esc(tr('reject'))+'</button></div>':'')+
             '</article>';

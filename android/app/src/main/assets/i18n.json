@@ -272,7 +272,13 @@
     "compareNeedTwo": "Wähle mindestens 2 Fahrzeuge.",
     "clearCompare": "Vergleich leeren",
     "removeFromCompare": "Aus Vergleich entfernen",
-    "compareHint": "Fahrzeugdaten nebeneinander vergleichen."
+    "compareHint": "Fahrzeugdaten nebeneinander vergleichen.",
+    "offersDisabled": "Keine Preisangebote erwünscht",
+    "offerOpen": "Offen",
+    "offerAccepted": "Angenommen",
+    "offerRejected": "Abgelehnt",
+    "offerClosed": "Geschlossen",
+    "offerExpired": "Abgelaufen"
   },
   "en": {
     "displayName": "English",
@@ -547,7 +553,13 @@
     "compareNeedTwo": "Select at least 2 cars.",
     "clearCompare": "Clear comparison",
     "removeFromCompare": "Remove from comparison",
-    "compareHint": "Compare details side by side."
+    "compareHint": "Compare details side by side.",
+    "offersDisabled": "Seller is not accepting price offers",
+    "offerOpen": "Open",
+    "offerAccepted": "Accepted",
+    "offerRejected": "Declined",
+    "offerClosed": "Closed",
+    "offerExpired": "Expired"
   },
   "sq": {
     "displayName": "Shqip",
@@ -822,7 +834,13 @@
     "compareNeedTwo": "Zgjidh të paktën 2 makina.",
     "clearCompare": "Fshi krahasimin",
     "removeFromCompare": "Hiq nga krahasimi",
-    "compareHint": "Krahaso të dhënat pranë njëra-tjetrës."
+    "compareHint": "Krahaso të dhënat pranë njëra-tjetrës.",
+    "offersDisabled": "Shitësi nuk pranon oferta çmimi",
+    "offerOpen": "E hapur",
+    "offerAccepted": "Pranuar",
+    "offerRejected": "Refuzuar",
+    "offerClosed": "Mbyllur",
+    "offerExpired": "Skaduar"
   },
   "tr": {
     "displayName": "Türkçe",
@@ -1097,7 +1115,13 @@
     "compareNeedTwo": "En az 2 araç seçin.",
     "clearCompare": "Karşılaştırmayı temizle",
     "removeFromCompare": "Karşılaştırmadan kaldır",
-    "compareHint": "Özellikleri yan yana karşılaştır."
+    "compareHint": "Özellikleri yan yana karşılaştır.",
+    "offersDisabled": "Satıcı fiyat teklifi kabul etmiyor",
+    "offerOpen": "Açık",
+    "offerAccepted": "Kabul edildi",
+    "offerRejected": "Reddedildi",
+    "offerClosed": "Kapandı",
+    "offerExpired": "Süresi doldu"
   },
   "el": {
     "displayName": "Ελληνικά",
@@ -1372,7 +1396,13 @@
     "compareNeedTwo": "Επίλεξε τουλάχιστον 2.",
     "clearCompare": "Καθαρισμός σύγκρισης",
     "removeFromCompare": "Αφαίρεση από σύγκριση",
-    "compareHint": "Σύγκρινε στοιχεία δίπλα δίπλα."
+    "compareHint": "Σύγκρινε στοιχεία δίπλα δίπλα.",
+    "offersDisabled": "Ο πωλητής δεν δέχεται προσφορές",
+    "offerOpen": "Ανοικτή",
+    "offerAccepted": "Αποδεκτή",
+    "offerRejected": "Απορρίφθηκε",
+    "offerClosed": "Κλειστή",
+    "offerExpired": "Έληξε"
   },
   "sr-Latn": {
     "displayName": "Srpski",
@@ -1647,7 +1677,13 @@
     "compareNeedTwo": "Izaberi najmanje 2 vozila.",
     "clearCompare": "Obriši poređenje",
     "removeFromCompare": "Ukloni iz poređenja",
-    "compareHint": "Uporedi detalje jedne pored drugih."
+    "compareHint": "Uporedi detalje jedne pored drugih.",
+    "offersDisabled": "Prodavac ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "sr-Cyrl": {
     "displayName": "Српски",
@@ -1922,7 +1958,13 @@
     "compareNeedTwo": "Изабери најмање 2 возила.",
     "clearCompare": "Обриши поређење",
     "removeFromCompare": "Уклони из поређења",
-    "compareHint": "Упореди детаље једне поред других."
+    "compareHint": "Упореди детаље једне поред других.",
+    "offersDisabled": "Продавац не прима понуде",
+    "offerOpen": "Отворено",
+    "offerAccepted": "Прихваћено",
+    "offerRejected": "Одбијено",
+    "offerClosed": "Затворено",
+    "offerExpired": "Истекло"
   },
   "sl": {
     "displayName": "Slovenščina",
@@ -2197,7 +2239,13 @@
     "compareNeedTwo": "Izberi vsaj 2 avtomobila.",
     "clearCompare": "Počisti primerjavo",
     "removeFromCompare": "Odstrani iz primerjave",
-    "compareHint": "Primerjaj podatke."
+    "compareHint": "Primerjaj podatke.",
+    "offersDisabled": "Prodajalec ne sprejema ponudb",
+    "offerOpen": "Odprto",
+    "offerAccepted": "Sprejeto",
+    "offerRejected": "Zavrnjeno",
+    "offerClosed": "Zaprto",
+    "offerExpired": "Poteklo"
   },
   "hr": {
     "displayName": "Hrvatski",
@@ -2472,7 +2520,13 @@
     "compareNeedTwo": "Odaberi barem 2 vozila.",
     "clearCompare": "Očisti usporedbu",
     "removeFromCompare": "Ukloni iz usporedbe",
-    "compareHint": "Usporedi podatke vozila."
+    "compareHint": "Usporedi podatke vozila.",
+    "offersDisabled": "Prodavatelj ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "mk": {
     "displayName": "Македонски",
@@ -2747,7 +2801,13 @@
     "compareNeedTwo": "Избери најмалку 2.",
     "clearCompare": "Исчисти споредба",
     "removeFromCompare": "Отстрани од споредба",
-    "compareHint": "Спореди податоци."
+    "compareHint": "Спореди податоци.",
+    "offersDisabled": "Продавачот не прифаќа понуди",
+    "offerOpen": "Отворено",
+    "offerAccepted": "Прифатено",
+    "offerRejected": "Одбиено",
+    "offerClosed": "Затворено",
+    "offerExpired": "Истечено"
   },
   "bs": {
     "displayName": "Bosanski",
@@ -3022,7 +3082,13 @@
     "compareNeedTwo": "Izaberi najmanje 2.",
     "clearCompare": "Očisti poređenje",
     "removeFromCompare": "Ukloni iz poređenja",
-    "compareHint": "Uporedi podatke."
+    "compareHint": "Uporedi podatke.",
+    "offersDisabled": "Prodavač ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "cnr": {
     "displayName": "Crnogorski",
@@ -3297,7 +3363,13 @@
     "compareNeedTwo": "Izaberi najmanje 2.",
     "clearCompare": "Očisti poređenje",
     "removeFromCompare": "Ukloni iz poređenja",
-    "compareHint": "Uporedi podatke."
+    "compareHint": "Uporedi podatke.",
+    "offersDisabled": "Prodavac ne prima ponude",
+    "offerOpen": "Otvoreno",
+    "offerAccepted": "Prihvaćeno",
+    "offerRejected": "Odbijeno",
+    "offerClosed": "Zatvoreno",
+    "offerExpired": "Isteklo"
   },
   "bg": {
     "displayName": "Български",
@@ -3572,7 +3644,13 @@
     "compareNeedTwo": "Избери поне 2 автомобила.",
     "clearCompare": "Изчисти сравнението",
     "removeFromCompare": "Премахни от сравнението",
-    "compareHint": "Сравни характеристиките."
+    "compareHint": "Сравни характеристиките.",
+    "offersDisabled": "Продавачът не приема оферти",
+    "offerOpen": "Отворена",
+    "offerAccepted": "Приета",
+    "offerRejected": "Отхвърлена",
+    "offerClosed": "Затворена",
+    "offerExpired": "Изтекла"
   },
   "ro": {
     "displayName": "Română",
@@ -3847,6 +3925,12 @@
     "compareNeedTwo": "Selectează cel puțin 2 mașini.",
     "clearCompare": "Șterge comparația",
     "removeFromCompare": "Elimină din comparație",
-    "compareHint": "Compară detaliile."
+    "compareHint": "Compară detaliile.",
+    "offersDisabled": "Vânzătorul nu acceptă oferte",
+    "offerOpen": "Deschisă",
+    "offerAccepted": "Acceptată",
+    "offerRejected": "Respinsă",
+    "offerClosed": "Închisă",
+    "offerExpired": "Expirată"
   }
 }
