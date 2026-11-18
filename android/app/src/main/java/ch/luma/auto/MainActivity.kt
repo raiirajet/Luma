@@ -69,6 +69,7 @@ class MainActivity : Activity() {
     private var screen = "home"
     private var backFromDetail = "home"
     private var starred = false
+    private var compareIds=mutableSetOf<String>()
     private var swipeSeen = false
     private var activeCountry = mutableSetOf<String>()
     private var keyword = ""
@@ -151,6 +152,7 @@ class MainActivity : Activity() {
         locale = prefs.getString("language", "de") ?: "de"
         if (locale !in codes) locale = "de"
         starred = prefs.getBoolean("favorite", false)
+        compareIds=(prefs.getStringSet("compareIds",emptySet()) ?: emptySet()).toMutableSet()
         swipeSeen = prefs.getBoolean("swipeSeen", false)
         activeCountry = (prefs.getStringSet("countries", emptySet()) ?: emptySet()).toMutableSet()
         previewUser = prefs.getString("previewUser", "") ?: ""
@@ -350,6 +352,91 @@ class MainActivity : Activity() {
             marginEnd=px(16);bottomMargin=px(82)
         }
         root.addView(plus,bubble)
+        if(compareIds.isNotEmpty() && screen!="swipe" && screen!="compare"){
+            val compare=btn(t("compare")+" "+compareIds.size+"/3",false){
+                if(compareIds.size<2)toast(t("compareNeedTwo"))else navigate("compare")
+            }
+            compare.elevation=px(8).toFloat()
+            val params=fp(-2,48,Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM).apply{
+                bottomMargin=px(151)
+            }
+            root.addView(compare,params)
+        }
+    }
+    private fun toggleCompare(id:String) {
+        if(id in compareIds)compareIds.remove(id)
+        else if(compareIds.size>=3){toast(t("compareLimit"));return}
+        else compareIds.add(id)
+        prefs.edit().putStringSet("compareIds",compareIds.toSet()).apply()
+        render()
+    }
+    private fun comparisonCars():List<JSONObject> {
+        val cars=cloudCars+previewCars
+        return compareIds.mapNotNull { id ->
+            when(id){
+                "demo-nissan-gtr"->JSONObject()
+                    .put("id",id).put("make","Nissan").put("model","GT-R")
+                    .put("price",68900).put("year",2013).put("mileage",49500)
+                    .put("power",550).put("fuel","petrol").put("transmission","automatic")
+                    .put("accidentStatus","unknown").put("city","Zagreb").put("country","HR")
+                else ->cars.firstOrNull{it.optString("id")==id}
+            }
+        }
+    }
+    private fun renderComparison() {
+        val main=container()
+        toolbar(main,t("compareTitle"),{navigate("home")})
+        val content=col().apply{setPadding(px(15),px(19),px(15),px(22))}
+        content.addView(text(t("compareTitle"),23f,ink,true))
+        content.addView(space(8));content.addView(text(t("compareHint"),12f,muted))
+        content.addView(space(15))
+        val cars=comparisonCars()
+        if(cars.size<2){
+            emptyState(content,t("compareNeedTwo"))
+        }else{
+            val scroller=android.widget.HorizontalScrollView(this).apply{
+                isHorizontalScrollBarEnabled=true
+            }
+            val columns=row().apply{gravity=Gravity.TOP}
+            val fields=listOf("price","firstReg","mileage","power","fuel",
+                "transmission","accidentCar","location")
+            cars.forEach { car ->
+                val box=col(paper).apply{
+                    background=c(paper,14,border)
+                    setPadding(px(12),px(12),px(12),px(12))
+                }
+                box.addView(text(car.optString("make")+" "+car.optString("model"),15f,ink,true))
+                box.addView(space(8))
+                box.addView(btn(t("removeFromCompare"),false){toggleCompare(car.optString("id"))})
+                box.addView(space(12))
+                fields.forEach { field ->
+                    val value=when(field){
+                        "price"->euro(car.optInt("price"))
+                        "firstReg"->car.optString("year")
+                        "mileage"->number(car.optInt("mileage"))+" km"
+                        "power"->car.optString("power")+" PS"
+                        "location"->car.optString("city")+" · "+car.optString("country")
+                        "accidentCar"->t(when(car.optString("accidentStatus")){
+                            "yes"->"accidentYes";"no"->"accidentNo";else->"accidentUnknown"})
+                        else->t(car.optString(field))
+                    }
+                    box.addView(text(t(field),11f,muted))
+                    box.addView(text(value,13f,ink,true))
+                    box.addView(space(12))
+                }
+                columns.addView(box,lp(185,-2))
+                columns.addView(spaceHorizontal(8))
+            }
+            scroller.addView(columns)
+            content.addView(scroller)
+        }
+        content.addView(space(16))
+        content.addView(btn(t("clearCompare"),false){
+            compareIds.clear()
+            prefs.edit().putStringSet("compareIds",emptySet()).apply()
+            navigate("home")
+        })
+        body(main,content);navigation(main)
     }
     private fun body(main: LinearLayout, content: LinearLayout) {
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }
@@ -365,6 +452,7 @@ class MainActivity : Activity() {
             "swipe" -> renderSwipe()
             "details" -> renderDetails()
             "favorites" -> renderFavorites()
+            "compare" -> renderComparison()
             "settings" -> renderSettings()
             "searches" -> renderSavedSearches()
             "mine" -> renderMine()
@@ -517,6 +605,33 @@ class MainActivity : Activity() {
         actions.addView(btn(t("saveSearch"), false) { saveSearch() }, LinearLayout.LayoutParams(0, px(46), 1f))
         form.addView(space(8));form.addView(actions)
         content.addView(form)
+        val chips=row()
+        fun chip(label:String,value:String,clear:()->Unit) {
+            if(value.isNotBlank()){
+                chips.addView(btn(label+" "+value+" ×",false){clear();renderHome()})
+                chips.addView(spaceHorizontal(7))
+            }
+        }
+        chip(t("make"),make){make="";model=""}
+        chip(t("model"),model){model=""}
+        chip(t("priceTo"),maxPrice){maxPrice=""}
+        chip(t("priceFrom"),minPrice){minPrice=""}
+        chip(t("yearFrom"),yearFrom){yearFrom=""}
+        chip(t("yearTo"),yearTo){yearTo=""}
+        chip(t("mileageTo"),maxMileage){maxMileage=""}
+        chip(t("fuel"),fuel){fuel=""}
+        chip(t("transmission"),transmission){transmission=""}
+        chip(t("body"),body){body=""}
+        chip(t("sellerType"),sellerType){sellerType=""}
+        chip(t("searchTerms"),keyword){keyword=""}
+        if(chips.childCount>0){
+            val strip=android.widget.HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled=false
+                setPadding(px(12),px(9),px(12),px(9))
+                addView(chips)
+            }
+            content.addView(strip)
+        }
         val results = col().apply { setPadding(px(17), px(22), px(17), px(20)) }
         results.addView(text(t("latestCars"), 21f, ink, true))
         results.addView(space(7))
@@ -561,6 +676,10 @@ class MainActivity : Activity() {
         block.addView(iconText(R.drawable.limba_info,t("vehicleDetails"),{
             activePreviewCar=null;openDetails(if(screen == "favorites") "favorites" else "home")
         }, true))
+        block.addView(space(6))
+        block.addView(btn(t("compare") + if("demo-nissan-gtr" in compareIds)" ✓" else "",false) {
+            toggleCompare("demo-nissan-gtr")
+        })
         block.addView(space(6))
         block.addView(text(t("demoOnly"), 11f, muted))
         card.addView(block)
@@ -609,6 +728,10 @@ class MainActivity : Activity() {
         view.addView(text(car.optString("city")+" · "+car.optString("country"),12f,muted))
         view.addView(space(8))
         view.addView(text(euro(car.optInt("price")),23f,orange,true))
+        view.addView(space(4))
+        view.addView(btn(t("compare")+if(car.optString("id") in compareIds)" ✓" else "",false) {
+            toggleCompare(car.optString("id"))
+        })
         val trust=text("★ — · "+t("socialProfile"),11f,muted)
         view.addView(trust)
         if(live && ::social.isInitialized) social.getProfile(car.optString("uid")) { profile ->
