@@ -35,7 +35,6 @@ try:
    form.locator('[name="city"]').fill('Sarajevo')
    form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
    form.locator('[name="serviceHistory"]').fill('Service recorded at 50000 km.')
-   form.locator('[name="modificationNotes"]').fill('No modifications.')
    form.locator('[name="documentNotes"]').fill('Invoices available on request.')
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')

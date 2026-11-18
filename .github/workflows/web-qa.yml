@@ -21,6 +21,8 @@ on:
       - 'styles.css'
       - '.github/workflows/web-qa.yml'
       - 'tests/model_catalog.test.mjs'
+      - 'tests/web_mvp.py'
+      - 'tests/lux_experiences.test.mjs'
       - 'android/app/src/main/assets/brands.json'
   workflow_dispatch:
 
