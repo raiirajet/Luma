@@ -122,6 +122,18 @@ class LimbaSocial(private val activity: Activity) {
     fun sendMessage(id:String,text:String,done:(String?)->Unit) {
         callable("sendMessage",mapOf("conversationId" to id,"text" to text)) { _,e -> done(e) }
     }
+    fun getOfferQuota(done:(Int?,String?)->Unit) {
+        callable("getOfferQuota",emptyMap()){data,error->
+            done((data?.get("remaining") as? Number)?.toInt(),error)
+        }
+    }
+    fun isConversationBuyer(id:String,done:(Boolean?)->Unit){
+        val currentId=uid ?: return done(null)
+        val ref=db?.collection("conversations")?.document(id) ?: return done(null)
+        ref.get().addOnSuccessListener { snap ->
+            done(if(snap.exists()) snap.getString("buyerUid")==currentId else null)
+        }.addOnFailureListener {done(null)}
+    }
     fun createOffer(id:String,amount:Int,done:(String?)->Unit) {
         val until=java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",java.util.Locale.US).apply {
             timeZone=java.util.TimeZone.getTimeZone("UTC")

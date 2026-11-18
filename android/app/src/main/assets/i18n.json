@@ -240,7 +240,13 @@
     "socialTag_goodHandover": "Gute Übergabe",
     "socialTag_punctual": "Pünktlich",
     "socialTag_smoothClosing": "Reibungsloser Abschluss",
-    "advancedKeyword": "Stichwort (optional)"
+    "advancedKeyword": "Stichwort (optional)",
+    "socialProposePrice": "Preis vorschlagen",
+    "socialOfferGuidance": "Unverbindlichen Preis senden. Der Verkäufer kann annehmen oder ablehnen.",
+    "socialOfferQuotaLoading": "Preisangebote werden geprüft …",
+    "socialOfferQuotaRemaining": "Heute noch {remaining} von {limit} Preisangeboten frei.",
+    "socialOfferQuotaUnavailable": "Verfügbare Preisangebote derzeit nicht abrufbar.",
+    "socialOfferSent": "Preisangebot gesendet."
   },
   "en": {
     "displayName": "English",
@@ -483,7 +489,13 @@
     "socialTag_goodHandover": "Good handover",
     "socialTag_punctual": "Punctual",
     "socialTag_smoothClosing": "Smooth closing",
-    "advancedKeyword": "Keyword (optional)"
+    "advancedKeyword": "Keyword (optional)",
+    "socialProposePrice": "Propose price",
+    "socialOfferGuidance": "Send a non-binding offer. The seller may accept or decline.",
+    "socialOfferQuotaLoading": "Checking price offers …",
+    "socialOfferQuotaRemaining": "{remaining} of {limit} offers left today.",
+    "socialOfferQuotaUnavailable": "Remaining offers unavailable.",
+    "socialOfferSent": "Price offer sent."
   },
   "sq": {
     "displayName": "Shqip",
@@ -726,7 +738,13 @@
     "socialTag_goodHandover": "Dorëzim i mirë",
     "socialTag_punctual": "Në kohë",
     "socialTag_smoothClosing": "Përfundim i lehtë",
-    "advancedKeyword": "Fjalë kyçe (opsionale)"
+    "advancedKeyword": "Fjalë kyçe (opsionale)",
+    "socialProposePrice": "Propozo çmimin",
+    "socialOfferGuidance": "Dërgo ofertë pa detyrim. Shitësi mund ta pranojë ose refuzojë.",
+    "socialOfferQuotaLoading": "Po kontrollohen ofertat …",
+    "socialOfferQuotaRemaining": "{remaining} nga {limit} oferta sot.",
+    "socialOfferQuotaUnavailable": "Ofertat e mbetura nuk janë të disponueshme.",
+    "socialOfferSent": "Oferta u dërgua."
   },
   "tr": {
     "displayName": "Türkçe",
@@ -969,7 +987,13 @@
     "socialTag_goodHandover": "İyi teslim",
     "socialTag_punctual": "Dakik",
     "socialTag_smoothClosing": "Sorunsuz işlem",
-    "advancedKeyword": "Anahtar kelime (isteğe bağlı)"
+    "advancedKeyword": "Anahtar kelime (isteğe bağlı)",
+    "socialProposePrice": "Fiyat teklif et",
+    "socialOfferGuidance": "Bağlayıcı olmayan fiyat gönder. Satıcı kabul veya reddedebilir.",
+    "socialOfferQuotaLoading": "Teklifler kontrol ediliyor …",
+    "socialOfferQuotaRemaining": "Bugün {remaining}/{limit} teklif kaldı.",
+    "socialOfferQuotaUnavailable": "Kalan teklifler görüntülenemiyor.",
+    "socialOfferSent": "Teklif gönderildi."
   },
   "el": {
     "displayName": "Ελληνικά",
@@ -1212,7 +1236,13 @@
     "socialTag_goodHandover": "Καλή παράδοση",
     "socialTag_punctual": "Συνεπής",
     "socialTag_smoothClosing": "Ομαλή ολοκλήρωση",
-    "advancedKeyword": "Λέξη-κλειδί (προαιρετικά)"
+    "advancedKeyword": "Λέξη-κλειδί (προαιρετικά)",
+    "socialProposePrice": "Πρότεινε τιμή",
+    "socialOfferGuidance": "Στείλε μη δεσμευτική προσφορά. Ο πωλητής μπορεί να τη δεχτεί ή να την απορρίψει.",
+    "socialOfferQuotaLoading": "Έλεγχος προσφορών …",
+    "socialOfferQuotaRemaining": "Απομένουν {remaining} από {limit} σήμερα.",
+    "socialOfferQuotaUnavailable": "Οι προσφορές δεν είναι διαθέσιμες.",
+    "socialOfferSent": "Η προσφορά στάλθηκε."
   },
   "sr-Latn": {
     "displayName": "Srpski",
@@ -1455,7 +1485,13 @@
     "socialTag_goodHandover": "Dobra primopredaja",
     "socialTag_punctual": "Tačan",
     "socialTag_smoothClosing": "Uspešno završeno",
-    "advancedKeyword": "Ključna reč (opciono)"
+    "advancedKeyword": "Ključna reč (opciono)",
+    "socialProposePrice": "Predloži cijenu",
+    "socialOfferGuidance": "Pošalji neobavezujuću ponudu. Prodavac odlučuje.",
+    "socialOfferQuotaLoading": "Provjera ponuda …",
+    "socialOfferQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "socialOfferQuotaUnavailable": "Ponude trenutno nisu dostupne.",
+    "socialOfferSent": "Ponuda je poslata."
   },
   "sr-Cyrl": {
     "displayName": "Српски",
@@ -1698,7 +1734,13 @@
     "socialTag_goodHandover": "Добра примопредаја",
     "socialTag_punctual": "Тачан",
     "socialTag_smoothClosing": "Успешно завршено",
-    "advancedKeyword": "Кључна реч (опционо)"
+    "advancedKeyword": "Кључна реч (опционо)",
+    "socialProposePrice": "Предложи цену",
+    "socialOfferGuidance": "Пошаљи необавезујућу понуду. Продавац одлучује.",
+    "socialOfferQuotaLoading": "Провера понуда …",
+    "socialOfferQuotaRemaining": "Данас је остало {remaining} од {limit} понуда.",
+    "socialOfferQuotaUnavailable": "Понуде нису доступне.",
+    "socialOfferSent": "Понуда је послата."
   },
   "sl": {
     "displayName": "Slovenščina",
@@ -1941,7 +1983,13 @@
     "socialTag_goodHandover": "Dobra predaja",
     "socialTag_punctual": "Točen",
     "socialTag_smoothClosing": "Gladek zaključek",
-    "advancedKeyword": "Ključna beseda (neobvezno)"
+    "advancedKeyword": "Ključna beseda (neobvezno)",
+    "socialProposePrice": "Predlagaj ceno",
+    "socialOfferGuidance": "Pošlji nezavezujočo ponudbo. Prodajalec se odloči.",
+    "socialOfferQuotaLoading": "Preverjanje ponudb …",
+    "socialOfferQuotaRemaining": "Danes je ostalo {remaining} od {limit} ponudb.",
+    "socialOfferQuotaUnavailable": "Ponudbe niso na voljo.",
+    "socialOfferSent": "Ponudba poslana."
   },
   "hr": {
     "displayName": "Hrvatski",
@@ -2184,7 +2232,13 @@
     "socialTag_goodHandover": "Dobra primopredaja",
     "socialTag_punctual": "Točan",
     "socialTag_smoothClosing": "Jednostavan završetak",
-    "advancedKeyword": "Ključna riječ (neobavezno)"
+    "advancedKeyword": "Ključna riječ (neobavezno)",
+    "socialProposePrice": "Predloži cijenu",
+    "socialOfferGuidance": "Pošalji neobvezujuću ponudu. Prodavatelj odlučuje.",
+    "socialOfferQuotaLoading": "Provjera ponuda …",
+    "socialOfferQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "socialOfferQuotaUnavailable": "Ponude nisu dostupne.",
+    "socialOfferSent": "Ponuda je poslana."
   },
   "mk": {
     "displayName": "Македонски",
@@ -2427,7 +2481,13 @@
     "socialTag_goodHandover": "Добро предавање",
     "socialTag_punctual": "Точен",
     "socialTag_smoothClosing": "Успешно завршување",
-    "advancedKeyword": "Клучен збор (опционално)"
+    "advancedKeyword": "Клучен збор (опционално)",
+    "socialProposePrice": "Предложи цена",
+    "socialOfferGuidance": "Испрати необврзувачка понуда. Продавачот одлучува.",
+    "socialOfferQuotaLoading": "Проверка на понудите …",
+    "socialOfferQuotaRemaining": "Денес остануваат {remaining} од {limit} понуди.",
+    "socialOfferQuotaUnavailable": "Понудите не се достапни.",
+    "socialOfferSent": "Понудата е испратена."
   },
   "bs": {
     "displayName": "Bosanski",
@@ -2670,7 +2730,13 @@
     "socialTag_goodHandover": "Dobra predaja",
     "socialTag_punctual": "Tačan",
     "socialTag_smoothClosing": "Jednostavan završetak",
-    "advancedKeyword": "Ključna riječ (opcionalno)"
+    "advancedKeyword": "Ključna riječ (opcionalno)",
+    "socialProposePrice": "Predloži cijenu",
+    "socialOfferGuidance": "Pošalji neobavezujuću ponudu. Prodavač odlučuje.",
+    "socialOfferQuotaLoading": "Provjera ponuda …",
+    "socialOfferQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "socialOfferQuotaUnavailable": "Ponude nisu dostupne.",
+    "socialOfferSent": "Ponuda je poslana."
   },
   "cnr": {
     "displayName": "Crnogorski",
@@ -2913,7 +2979,13 @@
     "socialTag_goodHandover": "Dobra predaja",
     "socialTag_punctual": "Tačan",
     "socialTag_smoothClosing": "Jednostavan završetak",
-    "advancedKeyword": "Ključna riječ (opciono)"
+    "advancedKeyword": "Ključna riječ (opciono)",
+    "socialProposePrice": "Predloži cijenu",
+    "socialOfferGuidance": "Pošalji neobavezujuću ponudu. Prodavac odlučuje.",
+    "socialOfferQuotaLoading": "Provjera ponuda …",
+    "socialOfferQuotaRemaining": "Danas je ostalo {remaining} od {limit} ponuda.",
+    "socialOfferQuotaUnavailable": "Ponude nisu dostupne.",
+    "socialOfferSent": "Ponuda je poslata."
   },
   "bg": {
     "displayName": "Български",
@@ -3156,7 +3228,13 @@
     "socialTag_goodHandover": "Добро предаване",
     "socialTag_punctual": "Точен",
     "socialTag_smoothClosing": "Лесно приключване",
-    "advancedKeyword": "Ключова дума (по избор)"
+    "advancedKeyword": "Ключова дума (по избор)",
+    "socialProposePrice": "Предложи цена",
+    "socialOfferGuidance": "Изпрати необвързваща оферта. Продавачът решава.",
+    "socialOfferQuotaLoading": "Проверка на офертите …",
+    "socialOfferQuotaRemaining": "Днес остават {remaining} от {limit} оферти.",
+    "socialOfferQuotaUnavailable": "Офертите не са достъпни.",
+    "socialOfferSent": "Офертата е изпратена."
   },
   "ro": {
     "displayName": "Română",
@@ -3399,6 +3477,12 @@
     "socialTag_goodHandover": "Predare bună",
     "socialTag_punctual": "Punctual",
     "socialTag_smoothClosing": "Finalizare fără probleme",
-    "advancedKeyword": "Cuvânt-cheie (opțional)"
+    "advancedKeyword": "Cuvânt-cheie (opțional)",
+    "socialProposePrice": "Propune un preț",
+    "socialOfferGuidance": "Trimite o ofertă neobligatorie. Vânzătorul decide.",
+    "socialOfferQuotaLoading": "Se verifică ofertele …",
+    "socialOfferQuotaRemaining": "Astăzi au rămas {remaining} din {limit} oferte.",
+    "socialOfferQuotaUnavailable": "Ofertele nu sunt disponibile.",
+    "socialOfferSent": "Oferta a fost trimisă."
   }
 }

@@ -1337,16 +1337,58 @@ class MainActivity : Activity() {
             social.sendMessage(id,body) { e ->if(e==null)write.text.clear() else toast(e) }
         })
         content.addView(space(16))
-        val amount=EditText(this).apply {hint=t("socialOffer")+" €";inputType=InputType.TYPE_CLASS_NUMBER;
-            background=c(paper,10,border);minHeight=px(50)}
-        content.addView(amount);content.addView(space(8))
-        content.addView(btn(t("socialOffer"),false) {
+        val negotiation=col(paper).apply {
+            background=c(paper,14,border)
+            setPadding(px(13),px(14),px(13),px(14))
+            visibility=View.GONE // Only the authenticated buyer can propose a price.
+        }
+        negotiation.addView(text(t("socialProposePrice"),17f,ink,true))
+        negotiation.addView(space(7))
+        negotiation.addView(text(t("socialOfferGuidance"),12f,muted))
+        negotiation.addView(space(9))
+        val quotaLabel=text(t("socialOfferQuotaLoading"),12f,orange,true)
+        quotaLabel.contentDescription=t("socialOfferQuotaLoading")
+        negotiation.addView(quotaLabel)
+        negotiation.addView(space(9))
+        val amount=EditText(this).apply {
+            hint=t("socialOffer")+" €"
+            inputType=InputType.TYPE_CLASS_NUMBER
+            background=c(paper,10,border);minHeight=px(50)
+            setPadding(px(12),px(10),px(12),px(10))
+        }
+        negotiation.addView(amount);negotiation.addView(space(8))
+        var inFlight=false
+        fun refreshQuota(){
+            social.getOfferQuota{remaining,error->
+                if(screen!="chat"||id!=activeConversation)return@getOfferQuota
+                if(remaining!=null){
+                    quotaLabel.text=t("socialOfferQuotaRemaining")
+                        .replace("{remaining}",remaining.toString()).replace("{limit}","3")
+                    quotaLabel.contentDescription=quotaLabel.text
+                    amount.isEnabled=remaining>0
+                } else quotaLabel.text=error ?: t("socialOfferQuotaUnavailable")
+            }
+        }
+        val submit=btn(t("socialProposePrice"),false) {
+            if(inFlight)return@btn
             val price=amount.text.toString().toIntOrNull()
             if(price==null || price !in 1..999999999){toast("1–999999999 €");return@btn}
-            social.createOffer(id,price) { e ->if(e!=null)toast(e)else amount.text.clear() }
-        })
+            inFlight=true
+            social.createOffer(id,price) { err ->
+                inFlight=false
+                if(err!=null)toast(err)
+                else {amount.text.clear();toast(t("socialOfferSent"))}
+                refreshQuota()
+            }
+        }
+        negotiation.addView(submit)
+        content.addView(negotiation)
         content.addView(space(14))
         content.addView(text(t("socialNoPayment"),12f,muted))
+        social.isConversationBuyer(id){isBuyer->
+            if(screen!="chat"||id!=activeConversation)return@isConversationBuyer
+            if(isBuyer==true){negotiation.visibility=View.VISIBLE;refreshQuota()}
+        }
         body(main,content);navigation(main)
         social.watchMessages(id) { rows ->
             if(screen!="chat"||id!=activeConversation)return@watchMessages
