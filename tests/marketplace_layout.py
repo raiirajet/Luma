@@ -46,7 +46,7 @@ try:
    # A single tap opens the complete offline catalogue. Typing narrows it.
    make=page.locator('#make')
    make.click()
-   dropdown=page.locator('#make + .catalogue-dropdown')
+   dropdown=page.locator('.search-field:has(#make) .catalogue-dropdown')
    assert dropdown.is_visible(),(width,'brand picker did not open on tap')
    assert dropdown.locator('[role="option"]').count() >= 400,(width,'car marques are missing')
    dropdown.evaluate('(el) => el.scrollTop = 180')
@@ -64,7 +64,7 @@ try:
    assert make.input_value()=='Nissan'
    model=page.locator('#model')
    model.click()
-   modelmenu=page.locator('#model + .catalogue-dropdown')
+   modelmenu=page.locator('.search-field:has(#model) .catalogue-dropdown')
    assert modelmenu.get_by_role('option',name='GT-R',exact=True).count()==1,(width,'model catalogue missing')
    model.fill('gt')
    assert modelmenu.get_by_role('option',name='GT-R',exact=True).count()==1
