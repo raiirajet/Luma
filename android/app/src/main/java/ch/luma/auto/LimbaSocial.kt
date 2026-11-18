@@ -183,6 +183,25 @@ class LimbaSocial(private val activity: Activity) {
     fun watchTransaction(conversationId:String,onData:(DocumentSnapshot?)->Unit):ListenerRegistration? =
         db?.collection("transactions")?.document(conversationId)
             ?.addSnapshotListener { snap,_ -> onData(snap) }
+    fun getPriceHistory(listingId:String,onData:(List<DocumentSnapshot>,String?)->Unit) {
+        val service=db ?: return onData(emptyList(),"Firebase unavailable")
+        service.collection("listingPriceHistory").document(listingId).collection("entries")
+            .orderBy("createdAt",Query.Direction.DESCENDING).limit(12).get()
+            .addOnSuccessListener { onData(it.documents,null) }
+            .addOnFailureListener { onData(emptyList(),it.localizedMessage) }
+    }
+    fun getPriceAlert(listingId:String,done:(Boolean?,String?)->Unit) {
+        callable("getPriceAlert",mapOf("listingId" to listingId)){ result,error ->
+            done(result?.get("enabled") as? Boolean,error)
+        }
+    }
+    fun setPriceAlert(listingId:String,enabled:Boolean,done:(Boolean?,String?)->Unit) {
+        requireVerified({
+            callable("setPriceAlert",mapOf("listingId" to listingId,"enabled" to enabled)){ result,error ->
+                done(result?.get("enabled") as? Boolean,error)
+            }
+        },{error->done(null,error)})
+    }
     fun getProfile(userId:String,onData:(DocumentSnapshot?)->Unit) {
         db?.collection("profiles")?.document(userId)?.get()
             ?.addOnSuccessListener { onData(it) }
