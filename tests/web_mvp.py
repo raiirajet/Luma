@@ -23,7 +23,9 @@ try:
    page.locator('#loginBtn').click()
    page.locator('#demoQuick').click()
    assert page.locator('#modal').is_hidden()
-   page.locator('#mobileSell' if width<500 else '#sellBtn').click()
+   assert page.locator('#mobileSell').count()==0
+   assert page.locator('#fabSell').is_visible()
+   page.locator('#fabSell').click()
    form=page.locator('#sellForm')
    assert form.is_visible()
    form.locator('[name="make"]').fill('Toyota')
@@ -34,6 +36,7 @@ try:
    form.locator('[name="price"]').fill('14800')
    form.locator('[name="city"]').fill('Sarajevo')
    form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
+   form.locator('[name="allowOffers"]').uncheck()
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
@@ -41,6 +44,7 @@ try:
    form=page.locator('#sellForm')
    assert form.is_visible()
    assert form.locator('[name="city"]').input_value()=='Sarajevo'
+   assert not form.locator('[name="allowOffers"]').is_checked()
    form.locator('[name="city"]').fill('Tirana')
    form.locator('[name="price"]').fill('14500')
    form.locator('#sellSubmit').click()
