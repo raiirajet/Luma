@@ -9,7 +9,7 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
   const hasCompare=id=>compares.includes(id);
   let galleryImages=[],galleryIndex=0,galleryFocus=null;
   let activeAlertId=null,activeAlert=false;
-  let themeChoice=localStorage.getItem('luma_auto_theme')||'system';
+  let themeChoice='system';try{themeChoice=localStorage.getItem('luma_auto_theme')||'system'}catch{}
   const mobile=()=>window.matchMedia('(max-width:760px)').matches;
   const advanced=$('advancedFilters');
   const filterParent=advanced.parentElement;
@@ -215,7 +215,7 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
   }
   function bind() {
     const picker=$('themeSelect');
-    if(picker)picker.addEventListener('change',()=>{themeChoice=picker.value;localStorage.setItem('luma_auto_theme',themeChoice);switchTheme()});
+    if(picker)picker.addEventListener('change',()=>{themeChoice=picker.value;try{localStorage.setItem('luma_auto_theme',themeChoice)}catch{}switchTheme()});
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(themeChoice==='system')switchTheme()});
     $('advancedToggle')?.addEventListener('click',updateDrawer);
     $('filterShade')?.addEventListener('click',closeDrawer);

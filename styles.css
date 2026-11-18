@@ -346,7 +346,7 @@ body:has(#swipeView:not(.hidden)) .fab-add{display:none!important}
  align-content:start;gap:11px;margin:0;padding:26px 18px calc(22px + env(safe-area-inset-bottom));
  background:#fff;border:1px solid #d5e5ee;border-radius:23px 23px 0 0;
  box-shadow:0 -20px 50px #001b373d;overscroll-behavior:contain}
- .advanced[data-filter-drawer="true"]:before{content:"Filter";grid-column:1/-1;font-size:19px;
+ .advanced[data-filter-drawer="true"]:before{content:attr(data-drawer-title);grid-column:1/-1;font-size:19px;
  font-weight:850;color:#143d5b;border-bottom:1px solid #dbe7ee;padding-bottom:10px}
  .advanced[data-filter-drawer="true"] .filter-apply{display:flex;grid-column:1/-1;position:sticky;
  bottom:0;z-index:2;box-shadow:0 6px 16px #12416d34}
