@@ -325,6 +325,10 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
     }
+    // Server-owned daily offer counters; clients cannot fake remaining allowances.
+    match /offerQuotas/{quotaId} {
+      allow read, write: if false;
+    }
     match /transactions/{transactionId} {
       allow get, list: if isAuthenticated() &&
         request.auth.uid in [resource.data.sellerUid, resource.data.buyerUid];

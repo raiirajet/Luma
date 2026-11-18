@@ -57,7 +57,13 @@ test('verified 2-party sale, third-party isolation, no phone, role checks and re
   await denied('sendMessage',third,{conversationId,text:'not participant'});
   await denied('sendMessage',noPhone,{conversationId,text:'not verified'});
   await success('createOffer',third,{conversationId:other.conversationId,amountEur:11000,validUntil:hours(2)});
+  const quotaStart=await success('getOfferQuota',buyer,{});
+  assert.equal(quotaStart.limit,3);
+  assert.equal(quotaStart.remaining,3);
   const {offerId}=await success('createOffer',buyer,{conversationId,amountEur:12000,validUntil:hours(2)});
+  assert.equal((await success('getOfferQuota',buyer,{})).remaining,2);
+  assert.equal((await success('getOfferQuota',third,{})).remaining,2);
+  await denied('createOffer',seller,{conversationId,amountEur:10000,validUntil:hours(2)});
   await denied('createOffer',buyer,{conversationId,amountEur:13000,validUntil:hours(2)});
   await denied('respondToOffer',buyer,{offerId,action:'accept'});
   await denied('respondToOffer',third,{offerId,action:'accept'});
@@ -106,4 +112,34 @@ test('verified 2-party sale, third-party isolation, no phone, role checks and re
   assert.equal((await db.doc('profiles/'+buyer.uid).get()).get('buyerRatingCount'),0);
   await success('moderateReview',third,{reviewId:rating.reviewId,action:'restore'});
   assert.equal((await db.doc('profiles/'+buyer.uid).get()).get('buyerRatingAverage'),4);
+});
+
+test('price offers: global three per buyer per Zurich day, never client-bypassable',async()=>{
+  const seller=await create('quotaseller','+15551117777');
+  const buyer=await create('quotabuyer','+15551118888');
+  const other=await create('quotaother','+15551119999');
+  const ids=[];
+  for(let i=0;i<4;i++) {
+    const lid='limba_quota_'+i;
+    await db.doc('listings/'+lid).set({status:'active',uid:seller.uid,category:'vehicles'});
+    const {conversationId}=await success('createConversation',buyer,{listingId:lid});
+    ids.push(conversationId);
+  }
+  for(let i=0;i<3;i++) {
+    const created=await success('createOffer',buyer,{conversationId:ids[i],amountEur:5000+i*250,validUntil:hours(4)});
+    assert.equal(created.quotaRemaining,2-i);
+  }
+  assert.equal((await success('getOfferQuota',buyer,{})).remaining,0);
+  const denial=await denied('createOffer',buyer,{conversationId:ids[3],amountEur:6000,validUntil:hours(4)});
+  assert.equal(denial.status,'RESOURCE_EXHAUSTED','server rejects the fourth offer');
+  const quotaDocs=await db.collection('offerQuotas').where('uid','==',buyer.uid).get();
+  assert.equal(quotaDocs.size,1);
+  assert.equal(quotaDocs.docs[0].get('usedCount'),3);
+  assert.equal(quotaDocs.docs[0].get('date').length,8);
+  // Different verified buyer has an independent limit, and the seller cannot create fake bids.
+  const {conversationId}=await success('createConversation',other,{listingId:'limba_quota_3'});
+  assert.equal((await success('getOfferQuota',other,{})).remaining,3);
+  const created=await success('createOffer',other,{conversationId,amountEur:6000,validUntil:hours(4)});
+  assert.equal(created.quotaRemaining,2);
+  await denied('createOffer',seller,{conversationId,amountEur:1000,validUntil:hours(4)});
 });

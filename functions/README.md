@@ -11,3 +11,6 @@ Aufruf-Beispiele: `createConversation({listingId})`, `sendMessage({conversationI
 Lokal: `cd functions && npm install && npm run check`; Emulatoren über Firebase CLI im Repo-Stamm. Deployment nur auf das bestätigte `limba-auto`-Projekt, ausdrücklich mit Auswahl der Functions und nach Sicherheitsprüfungen.
 
 Noch nicht live: Telefonnummern-Länderkonfiguration, SMS-Billing/Quoten, App Check Enforcement, VAPID und Android Release-Zertifikat sowie Datenschutztexte.
+
+### Price-offer anti-spam quota (Limba 1.5)
+`createOffer` is callable only by the buyer (verified email + linked phone); maximum **3 successful offers per buyer per Europe/Zurich calendar day** across all listings. A Firestore transaction atomically increments `offerQuotas/{uid}_{YYYYMMDD}`; rejected, failed and duplicate open offers do not consume quota. `getOfferQuota` returns the remaining allowance to authenticated clients, while Firestore rules deny direct counter reads/writes. Only the seller may accept/reject offers. Automatic rollover uses a new daily document, never client-side timestamps. Each quota document has an optional `expiresAt` field (configure Firestore TTL policy separately on `offerQuotas.expiresAt` after rollout).

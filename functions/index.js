@@ -29,6 +29,16 @@ const convRef = id => db.collection('conversations').doc(id);
 const txnRef = id => db.collection('transactions').doc(id);
 const profileRef = uid => db.collection('profiles').doc(uid);
 const reviewRef = (transactionId, uid) => db.collection('reviews').doc(transactionId + '_' + uid);
+// Every buyer has a maximum of 3 submitted price offers per Zurich calendar day.
+// All listings/sellers share one quota. The counter is modified only transactionally.
+const OFFER_DAILY_LIMIT = 3;
+const zurichDate = (time = new Date()) => {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+    timeZone:'Europe/Zurich',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(time).filter(p => p.type !== 'literal').map(p => [p.type,p.value]));
+  return parts.year + parts.month + parts.day;
+};
+const offerQuotaRef = (uid,dateKey=zurichDate()) => db.collection('offerQuotas').doc(uid + '_' + dateKey);
 const isParticipant = (conv, uid) => Array.isArray(conv.participantUids) && conv.participantUids.includes(uid);
 const auth = request => {
   assert(request.auth?.uid, 'unauthenticated', 'Bitte anmelden');
@@ -162,12 +172,20 @@ exports.sendMessage = secureCall('chat', async ({conversationId,text}, uid) => {
   });
 });
 
+exports.getOfferQuota = secureCall('offers', async (_args,uid) => {
+  const quota = await offerQuotaRef(uid).get();
+  const used = Math.max(0, Number(quota.data()?.usedCount || 0));
+  return {limit:OFFER_DAILY_LIMIT,remaining:Math.max(0,OFFER_DAILY_LIMIT-used),used,date:zurichDate(),timeZone:'Europe/Zurich'};
+});
+
 exports.createOffer = secureCall('offers', async ({conversationId,amountEur,validUntil}, uid) => {
   const amount = money(amountEur);
   const expiry = dateFromInput(validUntil);
+  const dailyRef = offerQuotaRef(uid);
   return db.runTransaction(async tx => {
     const [ref,conv] = await getConv(tx,conversationId,uid);
-    const listing = await tx.get(listingRef(conv.listingId));
+    assert(uid === conv.buyerUid, 'permission-denied', 'Nur Käufer können Preisangebote senden');
+    const [listing, dailySnap] = await Promise.all([tx.get(listingRef(conv.listingId)),tx.get(dailyRef)]);
     assert(conv.status === 'open' && listing.exists && listing.data().status === 'active', 'failed-precondition', 'Inserat nicht verfügbar');
     await activePair(tx,conv,uid);
     const previousId = conv.offerPointers?.[uid];
@@ -176,13 +194,19 @@ exports.createOffer = secureCall('offers', async ({conversationId,amountEur,vali
       assert(!previous.exists || previous.data().status !== 'open' || previous.data().validUntil.toMillis() <= Date.now(),
         'already-exists', 'Du hast bereits ein offenes Angebot');
     }
+    const used = Math.max(0, Number(dailySnap.data()?.usedCount || 0));
+    assert(Number.isSafeInteger(used) && used < OFFER_DAILY_LIMIT,'resource-exhausted',
+      'Maximal drei Preisangebote pro Tag. Ab morgen (Europe/Zurich) wieder möglich.');
     const offer = ref.collection('offers').doc();
     const now = NOW();
     tx.create(offer,{listingId:conv.listingId,conversationId:ref.id,creatorUid:uid,
       amountEur:amount,status:'open',validUntil:expiry,createdAt:now,respondedAt:null});
     tx.update(ref,{offerPointers:{...conv.offerPointers,[uid]:offer.id},lastMessageAt:now,
       lastMessagePreview:'Neues Preisangebot'});
-    return {offerId:ref.id+'~'+offer.id};
+    tx.set(dailyRef,{uid,date:zurichDate(),usedCount:used+1,updatedAt:now,
+      expiresAt:Timestamp.fromMillis(Date.now()+10*86400000)},{merge:true});
+    return {offerId:ref.id+'~'+offer.id,quotaRemaining:OFFER_DAILY_LIMIT-(used+1)};
+
   });
 });
 
@@ -191,6 +215,7 @@ exports.respondToOffer = secureCall('offers', async ({offerId,action}, uid) => {
   const [conversationId,oid] = parseOffer(offerId);
   return db.runTransaction(async tx => {
     const [ref,conv] = await getConv(tx,conversationId,uid);
+    assert(uid === conv.sellerUid,'permission-denied','Nur der Verkäufer kann ein Preisangebot beantworten');
     const offerRef = ref.collection('offers').doc(oid);
     const listingRefDoc = listingRef(conv.listingId);
     const tRef = txnRef(ref.id);
