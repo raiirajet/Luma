@@ -10,6 +10,8 @@ on:
       - 'styles.css'
       - '.github/workflows/web-qa.yml'
       - 'tests/web_mvp.py'
+      - 'tests/model_catalog.test.mjs'
+      - 'android/app/src/main/assets/brands.json'
   push:
     branches: [main]
     paths:
@@ -18,6 +20,8 @@ on:
       - '*.html'
       - 'styles.css'
       - '.github/workflows/web-qa.yml'
+      - 'tests/model_catalog.test.mjs'
+      - 'android/app/src/main/assets/brands.json'
   workflow_dispatch:
 
 permissions:
@@ -34,6 +38,8 @@ jobs:
             node --input-type=module --check < "$path"
           done
           node --check config.js
+      - name: Check bundled vehicle model catalogue
+        run: node --experimental-default-type=module tests/model_catalog.test.mjs
       - name: Validate Python source and create preview
         run: |
           python3 -m py_compile build_preview.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py
