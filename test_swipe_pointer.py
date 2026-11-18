@@ -11,7 +11,10 @@ with sync_playwright() as p:
   page.evaluate("""() => {const p=history.pushState.bind(history);history.pushState=(s,t,u)=>p(s,t);const r=history.replaceState.bind(history);history.replaceState=(s,t,u)=>r(s,t)}""")
   page.set_content(html,wait_until='domcontentloaded')
   selector='.swipe-inline'
-  page.locator(selector).click();page.locator('#swipeDone').click()
+  page.locator(selector).click()
+  assert page.locator('#swipeView').is_visible()
+  if page.locator('#swipeTutorial').is_visible():
+   page.locator('#swipeDone').click()
   bb=page.locator('#swipeCard').bounding_box()
   assert bb, 'swipe card not located'
   cx=bb['x']+bb['width']*.5;cy=bb['y']+bb['height']*.5
