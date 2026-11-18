@@ -73,6 +73,10 @@ try {
 
   // Positive marketplace path.
   await assertSucceeds(setDoc(listed, car('car1')));
+  await assertSucceeds(updateDoc(listed,{allowOffers:false}));
+  await assertSucceeds(updateDoc(listed,{allowOffers:true}));
+  await assertFails(updateDoc(listed,{allowOffers:'yes'}));
+  await assertFails(setDoc(doc(dbA,'listings','badopt'),{...car('badopt'),allowOffers:1}));
   await assertSucceeds(getDoc(doc(dbGuest, 'listings', 'car1')));
   await assertSucceeds(getDocs(query(collection(dbGuest, 'listings'), where('status', '==', 'active'))));
 
@@ -191,6 +195,10 @@ try {
   await assertFails(setDoc(quotaRef,{uid:'bob',date:'20261118',usedCount:0}));
   await assertFails(getDoc(quotaRef));
   await assertFails(setDoc(doc(dbA,'offerQuotas','bob_20261118'),{uid:'bob',usedCount:0}));
+  await assertFails(setDoc(doc(dbA,'priceAlerts','fake'),{uid:'alice',listingId:'car1',enabled:true}));
+  await assertFails(getDoc(doc(dbA,'priceAlerts','fake')));
+  await assertFails(setDoc(doc(dbA,'listingPriceHistory','car1','entries','fake'),{newPriceEur:10}));
+  await assertFails(getDoc(doc(dbA,'listingPriceHistory','car1','entries','fake')));
   await assertSucceeds(getDoc(doc(dbA,'transactions',transactionId)));
   await assertSucceeds(getDoc(doc(dbB,'transactions',transactionId)));
   await assertFails(getDoc(doc(three,'transactions',transactionId)));

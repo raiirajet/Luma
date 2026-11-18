@@ -39,6 +39,10 @@ const zurichDate = (time = new Date()) => {
   return parts.year + parts.month + parts.day;
 };
 const offerQuotaRef = (uid,dateKey=zurichDate()) => db.collection('offerQuotas').doc(uid + '_' + dateKey);
+const priceAlertRef = (uid,lid) => db.collection('priceAlerts').doc(
+  crypto.createHash('sha256').update(uid+'\x00'+lid).digest('hex').slice(0,48));
+const priceHistoryRef = (lid,eventId) => db.collection('listingPriceHistory')
+  .doc(lid).collection('entries').doc(crypto.createHash('sha256').update(eventId).digest('hex').slice(0,48));
 const isParticipant = (conv, uid) => Array.isArray(conv.participantUids) && conv.participantUids.includes(uid);
 const auth = request => {
   assert(request.auth?.uid, 'unauthenticated', 'Bitte anmelden');
@@ -187,6 +191,7 @@ exports.createOffer = secureCall('offers', async ({conversationId,amountEur,vali
     assert(uid === conv.buyerUid, 'permission-denied', 'Nur Käufer können Preisangebote senden');
     const [listing, dailySnap] = await Promise.all([tx.get(listingRef(conv.listingId)),tx.get(dailyRef)]);
     assert(conv.status === 'open' && listing.exists && listing.data().status === 'active', 'failed-precondition', 'Inserat nicht verfügbar');
+    assert(listing.data().allowOffers !== false,'failed-precondition','Verkäufer akzeptiert keine Preisangebote');
     await activePair(tx,conv,uid);
     const previousId = conv.offerPointers?.[uid];
     if (previousId) {
@@ -373,6 +378,22 @@ exports.moderateReview = secureCall('reviews', async ({reviewId,action}, uid, re
     return {status:next};
   });
 });
+exports.getPriceAlert = secureCall('chat',async ({listingId},uid) => {
+  const lid=id(listingId,'Inserat');
+  const doc=await priceAlertRef(uid,lid).get();
+  return {enabled:doc.exists && doc.data().enabled === true};
+});
+exports.setPriceAlert = secureCall('chat',async ({listingId,enabled},uid) => {
+  const lid=id(listingId,'Inserat');
+  assert(typeof enabled==='boolean','invalid-argument','Aktivierung ungültig');
+  const listing=await listingRef(lid).get();
+  assert(listing.exists && listing.data().status==='active','failed-precondition','Inserat ist nicht mehr aktiv');
+  assert(listing.data().uid!==uid,'failed-precondition','Eigene Inserate können nicht abonniert werden');
+  const ref=priceAlertRef(uid,lid);
+  if(enabled)await ref.set({uid,listingId:lid,enabled:true,updatedAt:NOW()});
+  else await ref.delete();
+  return {enabled};
+});
 const pushTo = async (uid, title, kind) => {
   const docs=await userRef(uid).collection('deviceTokens').limit(500).get();
   const tokens=docs.docs.map(s=>s.data().token).filter(Boolean);
@@ -388,6 +409,41 @@ const pushTo = async (uid, title, kind) => {
       await docs.docs[i].ref.delete();
   }));
 };
+// Historical prices represent verified listing updates, not market estimates.
+exports.recordInitialListingPrice = onDocumentCreated({region,
+  document:'listings/{listingId}'},async event=>{
+  const listing=event.data?.data();if(!listing||!Number.isSafeInteger(listing.price))return;
+  await priceHistoryRef(event.params.listingId,'created:'+event.id).set({
+    oldPriceEur:null,newPriceEur:listing.price,createdAt:NOW(),kind:'initial',listingId:event.params.listingId
+  },{merge:false});
+});
+exports.recordListingPriceChange = onDocumentUpdated({region,
+  document:'listings/{listingId}'},async event=>{
+  const before=event.data?.before?.data(),after=event.data?.after?.data();
+  if(!before||!after||before.price===after.price)return;
+  if(!Number.isSafeInteger(before.price)||!Number.isSafeInteger(after.price))return;
+  const id=event.params.listingId;
+  await priceHistoryRef(id,'changed:'+event.id).set({
+    oldPriceEur:before.price,newPriceEur:after.price,createdAt:NOW(),kind:'changed',listingId:id
+  },{merge:false});
+  if(after.price>=before.price||after.status!=='active')return;
+  const cfg=(await db.doc('appConfig/marketplace').get()).data()||{};
+  if(cfg.push!==true)return;
+  // No price, account or message content is included in push notifications.
+  let cursor=null;
+  for(;;){
+    let query=db.collection('priceAlerts').where('listingId','==',id)
+      .where('enabled','==',true).orderBy('__name__').limit(200);
+    if(cursor)query=query.startAfter(cursor);
+    const chunk=await query.get();
+    if(chunk.empty)break;
+    await Promise.all(chunk.docs.map(async snap=>{
+      if(snap.data().uid!==after.uid)await pushTo(snap.data().uid,'Ein gemerktes Auto ist günstiger geworden','price_drop');
+    }));
+    if(chunk.size<200)break;
+    cursor=chunk.docs[chunk.docs.length-1];
+  }
+});
 exports.notifyNewMessage = onDocumentCreated({region,
   document:'conversations/{conversationId}/messages/{messageId}'},async event=>{
   const data=event.data?.data();if(!data)return;

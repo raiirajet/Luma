@@ -48,6 +48,15 @@ test('verified 2-party sale, third-party isolation, no phone, role checks and re
   await denied('createConversation',unverified,{listingId});
   await denied('createConversation',seller,{listingId});
   const {conversationId}=await success('createConversation',buyer,{listingId});
+  const alertOn=await success('setPriceAlert',buyer,{listingId,enabled:true});
+  assert.equal(alertOn.enabled,true);
+  assert.equal((await success('getPriceAlert',buyer,{listingId})).enabled,true);
+  await denied('setPriceAlert',seller,{listingId,enabled:true});
+  assert.equal((await success('setPriceAlert',buyer,{listingId,enabled:false})).enabled,false);
+  assert.equal((await success('getPriceAlert',buyer,{listingId})).enabled,false);
+  await db.doc('listings/'+listingId).update({allowOffers:false});
+  await denied('createOffer',buyer,{conversationId,amountEur:9999,validUntil:hours(2)});
+  await db.doc('listings/'+listingId).update({allowOffers:true});
   const repeated=await success('createConversation',buyer,{listingId});
   assert.equal(conversationId,repeated.conversationId,'idempotent pair');
   const other=await success('createConversation',third,{listingId});

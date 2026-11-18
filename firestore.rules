@@ -67,7 +67,7 @@ service cloud.firestore {
           'title', 'description', 'price', 'country', 'category', 'city',
           'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
           'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
-          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote'
+          'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote', 'allowOffers'
         ])
         && data.keys().hasOnly([
           'title', 'description', 'price', 'country', 'category', 'city',
@@ -118,6 +118,7 @@ service cloud.firestore {
         && data.transmission in ['manual', 'automatic']
         && data.body in ['suv', 'sedan', 'wagon', 'hatchback', 'coupe']
         && data.sellerType in ['privateSeller', 'dealer']
+        && (!data.keys().hasAny(['allowOffers']) || data.allowOffers is bool)
         && data.createdAt is timestamp
         && isValidImages(data, listingId);
     }
@@ -327,6 +328,16 @@ service cloud.firestore {
     }
     // Server-owned daily offer counters; clients cannot fake remaining allowances.
     match /offerQuotas/{quotaId} {
+      allow read, write: if false;
+    }
+    // Price trends are authored by trusted Functions, never by listings' owners.
+    match /listingPriceHistory/{listingId}/entries/{entryId} {
+      allow get, list: if exists(/databases/$(database)/documents/listings/$(listingId))
+        && (get(/databases/$(database)/documents/listings/$(listingId)).data.status == 'active'
+          || (isAuthenticated() && get(/databases/$(database)/documents/listings/$(listingId)).data.uid == request.auth.uid));
+      allow create, update, delete: if false;
+    }
+    match /priceAlerts/{alertId} {
       allow read, write: if false;
     }
     match /transactions/{transactionId} {
