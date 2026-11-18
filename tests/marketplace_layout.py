@@ -88,6 +88,29 @@ try:
    assert page.locator('#keyword').is_hidden()
    page.locator('#clearAll').click()
    assert page.locator('#keyword').is_hidden(), 'optional keyword is in more filters only'
+   # Floating plus is the only bottom publish action; comparison and photo gallery work.
+   assert page.locator('#mobileSell').count()==0
+   assert page.locator('#fabSell').is_visible()
+   page.locator('#carGrid .card-compare').first.click()
+   assert page.locator('#compareDock').is_visible(),(width,'comparison dock not available')
+   assert page.locator('#compareDock').inner_text().find('1/3')>=0
+   page.locator('#compareClear').click()
+   assert page.locator('#compareDock').is_hidden()
+   # Appearance settings, with persisted theme and accessible contrast-aware surfaces.
+   page.locator('#settingsBtn').click()
+   page.locator('#themeSelect').select_option('dark')
+   assert page.locator('html').get_attribute('data-theme')=='dark'
+   page.locator('#themeSelect').select_option('light')
+   assert page.locator('html').get_attribute('data-theme')=='light'
+   page.locator(('.mobile-nav ' if width<=768 else '.main-nav ')+'[data-view="home"]').click()
+   page.locator('#carGrid .car-card').first.click()
+   assert page.locator('#detailImage').is_visible()
+   page.locator('.photo-fullscreen').click()
+   assert page.locator('#galleryOverlay').is_visible()
+   assert '1 /' in page.locator('#galleryCounter').inner_text()
+   page.locator('#galleryClose').click()
+   assert page.locator('#galleryOverlay').is_hidden()
+   page.locator('#modalClose').click()
    page.locator('.search-swipe-btn').click()
    assert page.locator('#swipeView').is_visible()
    if width<=768:
