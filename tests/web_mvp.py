@@ -34,6 +34,9 @@ try:
    form.locator('[name="price"]').fill('14800')
    form.locator('[name="city"]').fill('Sarajevo')
    form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
+   form.locator('[name="serviceHistory"]').fill('Service recorded at 50000 km.')
+   form.locator('[name="modificationNotes"]').fill('No modifications.')
+   form.locator('[name="documentNotes"]').fill('Invoices available on request.')
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
@@ -41,18 +44,59 @@ try:
    form=page.locator('#sellForm')
    assert form.is_visible()
    assert form.locator('[name="city"]').input_value()=='Sarajevo'
+   assert '50000' in form.locator('[name="serviceHistory"]').input_value()
    form.locator('[name="city"]').fill('Tirana')
    form.locator('[name="price"]').fill('14500')
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
-   page.locator('#mineGrid [data-status="sold"]').click()
-   assert page.locator('#mineGrid [data-status="active"]').count()==1
-   page.locator('#mineGrid [data-status="active"]').click()
-   assert page.locator('#mineGrid [data-status="sold"]').count()==1
+   page.locator('#mineGrid .car-card').first.click()
+   assert '50000' in page.locator('.limba-passport').inner_text()
+   page.locator('#detailLike').click()
+   page.locator('#detailBack').click()
+   page.locator('#fabAdd').click()
+   form=page.locator('#sellForm')
+   form.locator('[name="make"]').fill('Audi')
+   form.locator('[name="model"]').fill('RS6')
+   form.locator('[name="modelExtension"]').fill('MTM')
+   form.locator('[name="year"]').select_option('2021')
+   form.locator('[name="mileage"]').fill('33000')
+   form.locator('[name="power"]').fill('700')
+   form.locator('[name="price"]').fill('97000')
+   form.locator('[name="city"]').fill('Zagreb')
+   form.locator('[name="description"]').fill('Performance estate with a declared MTM upgrade and servicing notes.')
+   form.locator('[name="modificationNotes"]').fill('MTM tuning reported by seller.')
+   form.locator('#sellSubmit').click()
+   page.locator('#modal').wait_for(state='hidden')
+   assert page.locator('#mineGrid .car-card').count()==2
+   page.locator('#mineGrid .car-card').first.click()
+   assert 'MTM tuning' in page.locator('.limba-passport').inner_text()
+   page.locator('#detailLike').click()
+   page.locator('#detailBack').click()
+   route=('.mobile-nav ' if width<500 else '.main-nav ')+'[data-view="performance"]'
+   page.locator(route).click()
+   assert page.locator('#performanceGrid .car-card').count()==1
+   route=('.mobile-nav ' if width<500 else '.main-nav ')+'[data-view="favorites"]'
+   page.locator(route).click()
+   assert page.locator('#favoritesGrid .garage-pick').count()==2
+   page.locator('#favoritesGrid [data-garage-pick]').nth(0).check()
+   page.locator('#favoritesGrid [data-garage-pick]').nth(1).check()
+   assert page.locator('[data-compare-open]').is_enabled()
+   page.locator('[data-compare-open]').click()
+   assert 'Toyota' in page.locator('#modalContent').inner_text()
+   assert 'Audi' in page.locator('#modalContent').inner_text()
+   page.locator('#modalClose').click()
+   page.evaluate('showView("mine")')
+   page.locator('#mineGrid .my-car-item').first.locator('[data-status="sold"]').click()
+   assert page.locator('#mineGrid .my-car-item').first.locator('[data-status="active"]').count()==1
+   page.locator('#mineGrid .my-car-item').first.locator('[data-status="active"]').click()
+   assert page.locator('#mineGrid .my-car-item').first.locator('[data-status="sold"]').count()==1
    page.once('dialog',lambda dialog:dialog.accept())
-   page.locator('#mineGrid [data-delete]').click()
+   page.locator('#mineGrid [data-delete]').first.click()
+   assert page.locator('#mineGrid [data-edit]').count()==1
+   page.once('dialog',lambda dialog:dialog.accept())
+   page.locator('#mineGrid [data-delete]').first.click()
    assert page.locator('#mineGrid [data-edit]').count()==0
    assert errors==[],errors
    print(f'PASS MVP {width}px: demo login, create, edit, sold, reactivate, delete')

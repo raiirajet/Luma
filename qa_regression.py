@@ -49,6 +49,29 @@ with sync_playwright() as p:
   assert page.evaluate('resolveCarMake("Skoda")')=='Škoda'
   assert page.evaluate('resolveCarMake("vw")')=='Volkswagen'
   print('START',width,'cars',page.locator('.car-card').count(),'errors',errors)
+  # Limba 1.5 Showroom / Passport / Borderless smoke coverage.
+  assert page.locator('#showroomSpotlight').is_visible()
+  assert 'Nissan' in page.locator('#showroomSpotlight').inner_text()
+  assert page.locator('#showroomSpotlight [data-open]').count()==1
+  page.locator('#showroomSpotlight [data-open]').click()
+  assert page.locator('.limba-passport').is_visible()
+  assert 'nicht geprüft' in page.locator('.limba-passport').inner_text()
+  assert page.locator('#importForm').is_visible()
+  page.locator('#importForm [name="destination"]').select_option('CH')
+  page.locator('#importForm [name="transport"]').fill('1000')
+  page.locator('#importForm [name="customs"]').fill('10')
+  page.locator('#importForm [name="vat"]').fill('19')
+  page.locator('#importForm [name="registration"]').fill('500')
+  page.locator('#importForm button[type="submit"]').click()
+  assert 'Gesamtkosten' in page.locator('#importResult').inner_text()
+  assert '91.999' in page.locator('#importResult').inner_text()
+  page.locator('#detailBack').click()
+  assert page.locator('#modal').is_hidden()
+  perf_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="performance"]'
+  page.locator(perf_nav).click()
+  assert page.locator('#performanceView').is_visible()
+  assert page.locator('#performanceGrid .car-card').count()==0
+  page.locator(('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]').click()
   # Form and dynamic filters
   page.locator('#make').fill('Nissan')
   assert page.locator('#carGrid .car-card').count()==1

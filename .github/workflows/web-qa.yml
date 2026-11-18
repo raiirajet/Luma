@@ -37,12 +37,14 @@ jobs:
           node-version: '22'
       - name: Validate JavaScript syntax
         run: |
-          for path in app.js cars-i18n.js car-brands.js feature-i18n.js mvp-i18n.js i18n.js translations-extra.js icons.js; do
+          for path in app.js cars-i18n.js car-brands.js feature-i18n.js mvp-i18n.js i18n.js translations-extra.js icons.js limba-lux.js limba-lux-ui.js; do
             node --input-type=module --check < "$path"
           done
           node --check config.js
       - name: Check bundled vehicle model catalogue
-        run: node --experimental-default-type=module tests/model_catalog.test.mjs
+        run: |
+          node --experimental-default-type=module tests/model_catalog.test.mjs
+          node --experimental-default-type=module tests/lux_experiences.test.mjs
       - name: Validate Python source and create preview
         run: |
           python3 -m py_compile build_preview.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py

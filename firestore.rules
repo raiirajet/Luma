@@ -74,7 +74,7 @@ service cloud.firestore {
           'contactEmail', 'condition', 'image', 'images', 'uid', 'status',
           'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
           'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
-          'modelExtension'
+          'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes'
         ])
         && data.uid is string
         && data.uid.size() >= 1
@@ -106,6 +106,12 @@ service cloud.firestore {
         && data.model.size() <= 65
         && data.get('modelExtension', '') is string
         && data.get('modelExtension', '').size() <= 40
+        && data.get('serviceHistory', '') is string
+        && data.get('serviceHistory', '').size() <= 500
+        && data.get('modificationNotes', '') is string
+        && data.get('modificationNotes', '').size() <= 500
+        && data.get('documentNotes', '') is string
+        && data.get('documentNotes', '').size() <= 240
         && data.accidentStatus in ['yes', 'no', 'unknown']
         && data.conditionNote is string
         && data.conditionNote.size() <= 240

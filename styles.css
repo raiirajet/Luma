@@ -155,3 +155,75 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
   .body-quick { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
   .quick-card { min-height:54px; }
 }
+
+/* Limba exclusive experiences: Showroom, Passport, Borderless, Performance & Garage. */
+.showroom-spotlight{position:relative;overflow:hidden;display:grid;grid-template-columns:1.16fr 1fr;min-height:315px;margin-top:28px;margin-bottom:24px;border-radius:22px;background:#071e2b;color:#fff;box-shadow:0 16px 45px #0525372c}
+.showroom-picture{min-height:315px;position:relative;background:#0e3447}
+.showroom-picture img{width:100%;height:100%;position:absolute;inset:0;object-fit:cover;object-position:center}
+.showroom-picture:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 65%,#071e2bce)}
+.showroom-label{position:absolute;left:20px;top:19px;background:#fffffff0;color:#07324a;border-radius:20px;padding:8px 13px;z-index:1;font-size:11px;font-weight:900;letter-spacing:.9px}
+.showroom-copy{padding:32px 38px;display:flex;align-items:flex-start;flex-direction:column;gap:10px;justify-content:center}
+.showroom-eyebrow{font-size:10px;letter-spacing:2px!important;color:#6cb8ff!important;font-weight:800}
+.showroom-copy h2{font-size:clamp(23px,2.6vw,36px);line-height:1.15;letter-spacing:-1px;margin:0}
+.showroom-copy>strong{font-size:28px;color:#7bbfff;letter-spacing:-1px}
+.showroom-copy>p:not(.showroom-eyebrow){margin:0;line-height:1.6;font-size:12px;color:#d6e7f2}
+.showroom-copy small{font-size:11px;color:#c9dce4}
+.showroom-copy .white-btn{margin-top:6px}
+.lux-heading{display:flex;align-items:center;gap:12px;margin-bottom:15px}
+.lux-heading h3{margin:0 0 5px;font-size:19px}
+.lux-heading small{font-size:12px;line-height:1.4;color:#5e7889}
+.lux-symbol{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:13px;background:#e2f1ff;color:#146fd6;font-size:24px}
+.limba-passport,.borderless-box{border:1px solid #dce8f0;border-radius:16px;padding:20px;margin:22px 0;background:#fff}
+.passport-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.passport-facts>div{background:#f4f8fc;border-radius:11px;padding:14px;min-width:0;overflow-wrap:anywhere}
+.passport-facts strong{font-size:12px;color:#224255}
+.passport-facts p{margin:7px 0 0;font-size:12px;color:#405d6c;white-space:pre-wrap;line-height:1.65}
+.lux-disclaimer{margin:13px 0 0!important;color:#577587!important;font-size:11px!important;line-height:1.5!important}
+.borderless-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.borderless-grid label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:850;color:#395667}
+.borderless-grid input,.borderless-grid select{min-width:0;width:100%;min-height:47px;border-radius:9px;border:1px solid #cadbe6;padding:9px 11px;background:#f7fafc;color:#153546;font-size:13px}
+.borderless-grid button{align-self:end;min-height:47px}
+.import-result{display:grid;gap:0;margin-top:16px;background:#f6f9fd;padding:8px 14px;border-radius:12px}
+.import-result>div{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #deebf4;font-size:12px}
+.import-result>div:last-child{border-bottom:0}
+.import-result strong{font-size:13px;white-space:nowrap;color:#194c70}
+.import-result .import-total{font-size:14px;font-weight:900}
+.import-result .import-total strong{font-size:20px;color:#076bd6}
+.garage-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e0e9ee;border-radius:15px;padding:15px 20px;margin-bottom:24px}
+.garage-toolbar p{font-size:12px;color:#657c8b;line-height:1.5;margin:0;max-width:450px}
+.garage-toolbar>div{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.garage-item{min-width:0}
+.garage-pick{display:flex;gap:9px;align-items:center;background:#fff;border:1px solid #e4eaf0;border-radius:0 0 13px 13px;padding:11px 14px;margin-top:-2px;font-size:12px;font-weight:800;min-height:44px;color:#224b61;cursor:pointer}
+.garage-pick input{accent-color:#1479ed;width:18px;height:18px}
+.compare-table{border:1px solid #e1ebf1;border-radius:12px;overflow:auto}
+.compare-row{display:grid;grid-template-columns:26% 37% 37%;align-items:stretch;border-bottom:1px solid #e0eaf1;font-size:12px}
+.compare-row:last-child{border-bottom:0}
+.compare-row>*{padding:12px 10px;min-width:0;overflow-wrap:anywhere}
+.compare-row>*:first-child{color:#587181;font-weight:750}
+.compare-row strong{border-left:1px solid #e0eaf1}
+.compare-names{background:#0d3044;color:#fff}
+.compare-names>*:first-child{color:#fff}
+.compare-names strong{color:#fff;line-height:1.8}
+@media(max-width:760px){
+ .showroom-spotlight{grid-template-columns:1fr;margin-top:20px;margin-bottom:18px;border-radius:16px}
+ .showroom-picture{min-height:235px}
+ .showroom-picture:after{background:linear-gradient(0deg,#071e2b44,transparent 60%)}
+ .showroom-copy{padding:20px 23px;gap:8px}
+ .showroom-copy h2{font-size:24px}
+ .showroom-copy>strong{font-size:24px}
+ .passport-facts{grid-template-columns:1fr}
+ .limba-passport,.borderless-box{padding:14px;margin:18px 0}
+ .garage-toolbar{flex-direction:column;align-items:stretch;padding:14px}
+ .garage-toolbar>div{justify-content:stretch}
+ .garage-toolbar button{flex:1;min-height:46px}
+ .mobile-nav button{min-width:0;flex:1}
+ .mobile-nav small{font-size:8px}
+}
+@media(max-width:430px){
+ .showroom-picture{min-height:200px}
+ .borderless-grid{gap:8px}
+ .borderless-grid label{font-size:10px}
+ .borderless-grid button{font-size:11px;padding:8px}
+ .compare-row{font-size:11px;grid-template-columns:24% 38% 38%}
+ .compare-row>*{padding:9px 6px}
+}

@@ -70,7 +70,7 @@ class LimbaFirebase(private val activity: Activity) {
         val item = JSONObject()
         item.put("id", snapshot.id)
         for (key in listOf("uid","make","model","modelExtension","title","description","city","country","fuel",
-            "transmission","body","condition","accidentStatus","conditionNote","sellerType",
+            "transmission","body","condition","accidentStatus","conditionNote","serviceHistory","modificationNotes","documentNotes","sellerType",
             "contactEmail","image","status")) {
             item.put(key, snapshot.getString(key) ?: "")
         }
@@ -157,6 +157,13 @@ class LimbaFirebase(private val activity: Activity) {
         for (key in listOf("make","model","description","city","country","fuel","transmission",
             "body","condition","accidentStatus","conditionNote","sellerType")) {
             fields[key] = car.optString(key)
+        }
+        // Optional vehicle-passport seller statements, limited by Firestore validation.
+        for ((field,limit) in listOf("serviceHistory" to 500, "modificationNotes" to 500, "documentNotes" to 240)) {
+            val value = car.optString(field).trim().take(limit)
+            if (value.isNotBlank()) fields[field] = value
+            else if (car.optBoolean("clear" + field.replaceFirstChar { it.uppercase() }))
+                fields[field] = FieldValue.delete()
         }
         // Preserve compatibility with current production rules until the optional field is deployed.
         val modelExtension = car.optString("modelExtension")

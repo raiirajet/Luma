@@ -62,6 +62,7 @@ class MainActivity : Activity() {
     private var screen = "home"
     private var backFromDetail = "home"
     private var starred = false
+    private val compareVehicleIds = linkedSetOf<String>()
     private var swipeSeen = false
     private var activeCountry = mutableSetOf<String>()
     private var keyword = ""
@@ -310,7 +311,8 @@ class MainActivity : Activity() {
         val routes = listOf(
             Triple("home", R.drawable.limba_search, t("carsNav")),
             Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
-            Triple("favorites", R.drawable.limba_favorites, t("saved")),
+            Triple("favorites", R.drawable.limba_favorites, t("garage")),
+            Triple("performance", R.drawable.limba_car, t("performance")),
             Triple("settings", R.drawable.limba_settings, t("settings"))
         )
         routes.forEach { (route, icon, name) ->
@@ -344,6 +346,7 @@ class MainActivity : Activity() {
             "swipe" -> renderSwipe()
             "details" -> renderDetails()
             "favorites" -> renderFavorites()
+            "performance" -> renderPerformance()
             "settings" -> renderSettings()
             "searches" -> renderSavedSearches()
             "mine" -> renderMine()
@@ -447,6 +450,89 @@ class MainActivity : Activity() {
         parent.addView(space(4))
     }
 
+    private fun showVehiclePassport(parent: LinearLayout, car: JSONObject?) {
+        val panel=col(paper).apply {setPadding(px(16),px(14),px(16),px(14));background=c(paper,15,border)}
+        panel.addView(text("✦ "+t("vehiclePass"),20f,ink,true))
+        panel.addView(space(5));panel.addView(text(t("sellerClaims"),12f,muted))
+        for((key,value) in listOf(
+            t("serviceHistory") to car?.optString("serviceHistory").orEmpty(),
+            t("tuningDetails") to car?.optString("modificationNotes").orEmpty(),
+            t("documentNotes") to car?.optString("documentNotes").orEmpty()
+        )){
+            panel.addView(space(11));panel.addView(text(key,12f,muted,true))
+            panel.addView(text(value.ifBlank {t("noInfo")},14f,ink))
+        }
+        panel.addView(space(12))
+        panel.addView(text(t("notVerified"),11f,muted))
+        parent.addView(panel,lp(-1,-2))
+    }
+    private fun showBorderlessCalculator(car: JSONObject?) {
+        val p=(car?.optDouble("price",68900.0)?:68900.0).coerceAtLeast(0.0)
+        val layout=col().apply {setPadding(px(16),px(6),px(16),px(8))}
+        layout.addView(text(t("importDesc"),13f,muted))
+        layout.addView(label(t("targetCountry")))
+        val dest=Spinner(this).apply {
+            background=c(paper,11,border)
+            adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,
+                listOf("—") + countries.map {it.second+" "+it.third} + listOf("🇨🇭 Schweiz"))
+        }
+        layout.addView(dest,lp(-1,48))
+        val transport=editField(layout,t("transport"),"","€")
+        val customs=editField(layout,t("customs"),"","%")
+        val tax=editField(layout,t("vat"),"","%")
+        val registration=editField(layout,t("registration"),"","€")
+        for(v in listOf(transport,customs,tax,registration))
+            v.inputType=InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        val result=text(t("estimateMissing"),14f,ink,true).apply {setPadding(0,px(10),0,px(10))}
+        layout.addView(result)
+        layout.addView(text(t("estimateOnly"),12f,muted))
+        val scroll=ScrollView(this).apply{addView(layout)}
+        val dialog=AlertDialog.Builder(this).setTitle(t("borderless")).setView(scroll)
+            .setPositiveButton(t("calculate"),null)
+            .setNegativeButton(t("cancel"),null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                fun value(field: EditText): Double? {
+                    val raw=field.text.toString().trim().replace(',','.')
+                    return if(raw.isEmpty())0.0 else raw.toDoubleOrNull()?.takeIf {it.isFinite()&&it>=0.0&&it<=1000000.0}
+                }
+                val vals=listOf(transport,customs,tax,registration).map{value(it)}
+                if(dest.selectedItemPosition==0 || vals.any{it==null} ||
+                    (vals[1]?:0.0)>100.0 || (vals[2]?:0.0)>100.0 ||
+                    listOf(transport,customs,tax,registration).all{it.text.isBlank()}){
+                    result.text=t("estimateMissing");return@setOnClickListener
+                }
+                val shipping=vals[0]?:0.0
+                val duty=(p+shipping)*(vals[1]?:0.0)/100.0
+                val vat=(p+shipping+duty)*(vals[2]?:0.0)/100.0
+                val reg=vals[3]?:0.0
+                val nf=NumberFormat.getCurrencyInstance(Locale.GERMANY).apply {
+                    currency=java.util.Currency.getInstance("EUR")
+                }
+                result.text=t("listedPrice")+": "+nf.format(p)+"\n"+
+                    t("transport")+": "+nf.format(shipping)+"\n"+
+                    t("customs")+": "+nf.format(duty)+"\n"+
+                    t("vat")+": "+nf.format(vat)+"\n"+
+                    t("registration")+": "+nf.format(reg)+"\n"+
+                    t("total")+": "+nf.format(p+shipping+duty+vat+reg)
+            }
+        }
+        dialog.show()
+    }
+    private fun renderPerformance() {
+        val main=container();toolbar(main,t("performance"),{navigate("home")})
+        val content=col().apply{setPadding(px(17),px(22),px(17),px(22))}
+        content.addView(text("LIMBA PERFORMANCE",22f,ink,true))
+        content.addView(space(6));content.addView(text(t("performanceDesc"),13f,muted));content.addView(space(16))
+        var found=false
+        for(car in cloudCars.filter{matchesCar(it)}+previewCars.filter{matchesPreview(it)}){
+            if(car.optString("modelExtension").isBlank()&&car.optString("modificationNotes").isBlank())continue
+            content.addView(previewCard(car));content.addView(space(12));found=true
+        }
+        if(!found)emptyState(content,t("noPerformance"))
+        body(main,content);navigation(main)
+    }
+
     private fun renderHome() {
         val main = container()
         toolbar(main, "AUTO · SÜDOSTEUROPA")
@@ -518,6 +604,33 @@ class MainActivity : Activity() {
         actions.addView(btn(t("saveSearch"), false) { captureFields(); saveSearch() }, LinearLayout.LayoutParams(0, px(46), 1f))
         form.addView(space(8));form.addView(actions)
         content.addView(form)
+        val spotlight=col(navy).apply{setPadding(px(18),px(17),px(18),px(17))}
+        spotlight.addView(text("✦ LIMBA SHOWROOM",13f,0xff8dccff.toInt(),true))
+        spotlight.addView(space(9))
+        val featured=cloudCars.firstOrNull{matchesCar(it)} ?: previewCars.firstOrNull{matchesPreview(it)}
+        val featureImage=ImageView(this).apply{
+            scaleType=ImageView.ScaleType.CENTER_CROP
+            background=c(0xff173f53.toInt(),12)
+            clipToOutline=true
+        }
+        if(featured!=null && featured.optString("image").startsWith("https://"))
+            com.bumptech.glide.Glide.with(this).load(featured.optString("image")).centerCrop().into(featureImage)
+        else if(carPhoto!=null)featureImage.setImageBitmap(carPhoto)
+        spotlight.addView(featureImage,lp(-1,170));spotlight.addView(space(12))
+        if(featured!=null){
+            spotlight.addView(text(vehicleDisplayName(featured),21f,paper,true))
+            spotlight.addView(space(5));spotlight.addView(text(euro(featured.optInt("price")),22f,0xff8dccff.toInt(),true))
+            spotlight.addView(space(10))
+            spotlight.addView(btn(t("openShowroom"),false){activePreviewCar=featured;openDetails("home")})
+        }else{
+            spotlight.addView(text("Nissan GT-R R35 Black Edition",21f,paper,true))
+            spotlight.addView(space(5));spotlight.addView(text(euro(68900),22f,0xff8dccff.toInt(),true))
+            spotlight.addView(text(t("demoOnly"),11f,paper))
+            spotlight.addView(space(10))
+            spotlight.addView(btn(t("openShowroom"),false){activePreviewCar=null;openDetails("home")})
+        }
+        content.addView(space(10));content.addView(spotlight)
+        content.addView(iconText(R.drawable.limba_car,t("performance"),{navigate("performance")}))
         val results = col().apply { setPadding(px(17), px(22), px(17), px(20)) }
         results.addView(text(t("latestCars"), 21f, ink, true))
         results.addView(space(7))
@@ -655,21 +768,74 @@ class MainActivity : Activity() {
     private fun setFavorite(value: Boolean) { starred = value; prefs.edit().putBoolean("favorite", value).apply() }
     private fun openDetails(from: String) { backFromDetail = from; navigate("details") }
 
+    private fun showGarageComparison(cars: List<JSONObject>) {
+        val pair=compareVehicleIds.mapNotNull {id->cars.firstOrNull{it.optString("id")==id}}
+        if(pair.size!=2){toast(t("selectTwo"));return}
+        val col=col().apply{setPadding(px(12),px(8),px(12),px(8))}
+        val head=row(navy).apply{setPadding(px(8),px(12),px(8),px(12))}
+        head.addView(text("",11f,paper),LinearLayout.LayoutParams(0,-2,.75f))
+        pair.forEach{head.addView(text(vehicleDisplayName(it),12f,paper,true),LinearLayout.LayoutParams(0,-2,1f))}
+        col.addView(head)
+        val fields=listOf(
+            t("price") to "price",t("firstReg") to "year",t("mileage") to "mileage",
+            t("power") to "power",t("fuel") to "fuel",t("transmission") to "transmission",
+            t("serviceHistory") to "serviceHistory",t("tuningDetails") to "modificationNotes"
+        )
+        fields.forEachIndexed{idx,(title,key)->
+            val row=row(if(idx%2==0)paper else mist).apply{setPadding(px(7),px(11),px(7),px(11))}
+            row.addView(text(title,11f,muted,true),LinearLayout.LayoutParams(0,-2,.75f))
+            pair.forEach{car->
+                val value=when(key){
+                    "price"->euro(car.optInt(key))
+                    "mileage"->number(car.optInt(key))+" km"
+                    "fuel","transmission"->t(car.optString(key))
+                    else->car.optString(key).ifBlank{t("noInfo")}
+                }
+                row.addView(text(value,12f,ink,true),LinearLayout.LayoutParams(0,-2,1f))
+            }
+            col.addView(row)
+        }
+        col.addView(space(9));col.addView(text(t("sellerClaims"),12f,muted))
+        val scroll=ScrollView(this).apply{addView(col)}
+        AlertDialog.Builder(this).setTitle(t("compare")).setView(scroll).setPositiveButton(t("cancel"),null).show()
+    }
     private fun renderFavorites() {
-        val main = container();toolbar(main, t("saved"))
-        val content = col().apply { setPadding(px(17), px(20), px(17), px(20)) }
-        content.addView(text(t("savedCars"), 22f, ink, true))
-        content.addView(space(18))
-        var any = false
-        cloudCars.filter { it.optString("id") in cloudStars }.forEach {
-            content.addView(previewCard(it));content.addView(space(11));any = true
+        val main=container();toolbar(main,t("garage"))
+        val content=col().apply{setPadding(px(17),px(20),px(17),px(20))}
+        content.addView(text(t("garage"),23f,ink,true))
+        content.addView(space(7));content.addView(text(t("garageDesc"),13f,muted));content.addView(space(16))
+        val cars=mutableListOf<JSONObject>()
+        cars.addAll(cloudCars.filter{it.optString("id") in cloudStars})
+        cars.addAll(previewCars.filter{it.optString("id") in previewStars && matchesPreview(it)})
+        if(starred)cars.add(JSONObject().put("id","demo-nissan-gtr")
+            .put("title","Nissan GT-R R35 Black Edition").put("make","Nissan").put("model","GT-R")
+            .put("price",68900).put("year",2013).put("mileage",49500).put("power",550)
+            .put("fuel","petrol").put("transmission","automatic"))
+        compareVehicleIds.retainAll(cars.map{it.optString("id")}.toSet())
+        if(cars.isEmpty())emptyState(content,t("noGarage"))
+        for(car in cars){
+            if(car.optString("id")=="demo-nissan-gtr")content.addView(carCard())
+            else content.addView(previewCard(car))
+            val id=car.optString("id")
+            val check=CheckBox(this).apply{
+                text=t("compare");textSize=13f;setTextColor(ink)
+                isChecked=id in compareVehicleIds
+                minHeight=px(45)
+                setOnCheckedChangeListener {button,checked->
+                    if(checked){
+                        if(compareVehicleIds.size>=2){button.isChecked=false;toast(t("compareTooMany"))}
+                        else compareVehicleIds.add(id)
+                    } else compareVehicleIds.remove(id)
+                }
+            }
+            content.addView(check);content.addView(space(12))
         }
-        previewCars.filter { it.optString("id") in previewStars && matchesPreview(it) }.forEach {
-            content.addView(previewCard(it));content.addView(space(11));any = true
+        if(cars.isNotEmpty()){
+            content.addView(btn(t("compare"),true){showGarageComparison(cars)})
+            content.addView(space(7))
+            content.addView(btn(t("clearCompare"),false){compareVehicleIds.clear();renderFavorites()})
         }
-        if (starred) { content.addView(carCard());any=true }
-        if (!any) emptyState(content, t("noCarsSaved"))
-        body(main, content);navigation(main)
+        body(main,content);navigation(main)
     }
     private fun renderSavedSearches() {
         val main = container();toolbar(main, t("yourSavedSearch"), {navigate("home")})
@@ -900,6 +1066,10 @@ class MainActivity : Activity() {
         }
         content.addView(space(15));content.addView(text(t("vehicleDescription"),20f,ink,true));content.addView(space(8))
         content.addView(text(car.optString("description"),14f,ink));content.addView(space(18))
+        showVehiclePassport(content,car)
+        content.addView(space(12))
+        content.addView(btn(t("borderless"),false){showBorderlessCalculator(car)})
+        content.addView(space(13))
         if(!live)content.addView(text(t("previewNotSynced"),12f,muted))
         if(live){
             val email=car.optString("contactEmail")
@@ -965,6 +1135,9 @@ class MainActivity : Activity() {
         info.addView(descriptionRow);info.addView(space(10))
         info.addView(text(t("description"),14f,ink).apply {setLineSpacing(px(5).toFloat(),1f)})
         info.addView(space(20))
+        showVehiclePassport(info,null)
+        info.addView(space(12));info.addView(btn(t("borderless"),false){showBorderlessCalculator(null)})
+        info.addView(space(15))
         info.addView(btn(t("photoCredit")+" Joshua Spence · CC BY-SA 4.0",false) {
             startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://commons.wikimedia.org/wiki/File:Nissan_GT-R_R35_Black_Edition.JPG")))
         })
@@ -1118,6 +1291,21 @@ class MainActivity : Activity() {
                 dlg.show()
             }
     }
+    private fun passportField(parent: LinearLayout, heading: String, value: String, maxChars: Int): EditText {
+        parent.addView(label(heading))
+        val field = EditText(this).apply {
+            setText(value); textSize = 14f; minLines = 2; maxLines = 4
+            setTextColor(ink); setHintTextColor(muted)
+            hint = t("sellerClaims")
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            filters = arrayOf(android.text.InputFilter.LengthFilter(maxChars))
+            setPadding(px(12),px(9),px(12),px(9))
+            background = c(paper, 11, border)
+        }
+        parent.addView(field, lp(-1, 83))
+        return field
+    }
+
     private fun showCarForm(existing: JSONObject? = null) {
         val isPreview = previewUser.isNotBlank()
         if(!isPreview && cloudUser==null){showAccount();return}
@@ -1175,6 +1363,11 @@ class MainActivity : Activity() {
         val accident=spinner(t("accidentCar"),accidents.map { it to t(if(it=="unknown")"accidentUnknown"else if(it=="yes")"accidentYes"else "accidentNo") })
         existing?.let {accident.setSelection(accidents.indexOf(it.optString("accidentStatus")).coerceAtLeast(0))}
         val note=editField(col,t("conditionShort"),existing?.optString("conditionNote")?:"",t("conditionShortHint"))
+        col.addView(text(t("vehiclePass"),19f,ink,true))
+        col.addView(text(t("sellerClaims"),12f,muted))
+        val service=passportField(col,t("serviceHistory"),existing?.optString("serviceHistory")?:"",500)
+        val mods=passportField(col,t("tuningDetails"),existing?.optString("modificationNotes")?:"",500)
+        val docs=passportField(col,t("documentNotes"),existing?.optString("documentNotes")?:"",240)
         val sellerTypes=listOf("privateSeller","dealer")
         val seller=spinner(t("sellerType"),sellerTypes.map { it to t(it) })
         existing?.let {seller.setSelection(sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0))}
@@ -1216,6 +1409,12 @@ class MainActivity : Activity() {
                         .put("transmission",gearbox[trans.selectedItemPosition]).put("body",bodies[body.selectedItemPosition])
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
                         .put("conditionNote",note.text.toString().trim().take(240)).put("description",description.take(3000))
+                        .put("serviceHistory",service.text.toString().trim().take(500))
+                        .put("modificationNotes",mods.text.toString().trim().take(500))
+                        .put("documentNotes",docs.text.toString().trim().take(240))
+                        .put("clearServiceHistory",existing?.optString("serviceHistory")?.isNotBlank()==true && service.text.isBlank())
+                        .put("clearModificationNotes",existing?.optString("modificationNotes")?.isNotBlank()==true && mods.text.isBlank())
+                        .put("clearDocumentNotes",existing?.optString("documentNotes")?.isNotBlank()==true && docs.text.isBlank())
                         .put("sellerType",sellerTypes[seller.selectedItemPosition])
                         .put("contactEmail","")
                     if (isPreview) {

@@ -78,6 +78,19 @@ try {
   await assertSucceeds(setDoc(tuned, {...car('tuned'),modelExtension:'MTM',title:'Nissan GT-R MTM'}));
   await assertFails(updateDoc(tuned, {modelExtension:'x'.repeat(41),title:'Nissan GT-R '+ 'x'.repeat(41)}));
   await assertFails(updateDoc(tuned, {modelExtension:'ABT'}));
+  // Public vehicle passport: optional seller statements, never verified data.
+  await assertSucceeds(updateDoc(tuned, {
+    serviceHistory:'Oil and filter service at 50000 km',
+    modificationNotes:'MTM tuning stated by seller',
+    documentNotes:'Service invoices available on request'
+  }));
+  await assertFails(updateDoc(tuned, {serviceHistory:'x'.repeat(501)}));
+  await assertFails(updateDoc(tuned, {modificationNotes:'x'.repeat(501)}));
+  await assertFails(updateDoc(tuned, {documentNotes:'x'.repeat(241)}));
+  await assertFails(updateDoc(tuned, {serviceHistory:{trusted:true}}));
+  await assertFails(updateDoc(tuned, {documentsVerified:true}));
+  await assertSucceeds(updateDoc(tuned, {serviceHistory:deleteField()}));
+
   await assertSucceeds(getDocs(query(collection(dbGuest, 'listings'), where('status', '==', 'active'))));
 
   // Public-list exploit and authentication/ownership attacks.
