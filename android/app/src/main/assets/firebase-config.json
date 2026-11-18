@@ -3,5 +3,6 @@
   "appId": "1:190623494655:android:f0b231d0bdd196d1a077ca",
   "projectId": "limba-auto",
   "storageBucket": "limba-auto.firebasestorage.app",
-  "messagingSenderId": "190623494655"
+  "messagingSenderId": "190623494655",
+  "appCheckEnabled": false
 }

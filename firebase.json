@@ -22,7 +22,8 @@
       "**/*.md",
       "**/*.py",
       "preview.html",
-      "work-auth-export.json"
+      "work-auth-export.json",
+      "functions/**"
     ],
     "cleanUrls": false,
     "trailingSlash": false,
@@ -30,29 +31,67 @@
       {
         "source": "**",
         "headers": [
-          { "key": "X-Content-Type-Options", "value": "nosniff" },
-          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-          { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "SAMEORIGIN"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "camera=(), microphone=(), geolocation=()"
+          }
         ]
       },
       {
         "source": "/config.js",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store, max-age=0"
+          }
         ]
       }
     ]
   },
   "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8082 },
-    "storage": { "port": 9199 },
-    "ui": { "enabled": true }
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8082
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true
+    },
+    "functions": {
+      "port": 5001
+    }
   },
   "auth": {
     "providers": {
       "emailPassword": true
     }
+  },
+  "functions": {
+    "source": "functions",
+    "codebase": "marketplace",
+    "runtime": "nodejs22",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "*.log",
+      ".env",
+      ".env.*"
+    ]
   }
 }

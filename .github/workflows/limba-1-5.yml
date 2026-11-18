@@ -1,0 +1,35 @@
+name: Limba 1.5 functions and Web safety checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'marketplace*.js'
+      - 'firebase-messaging-sw.js'
+      - 'build_preview.py'
+      - '.github/workflows/limba-1-5.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Web marketplace syntax
+        run: |
+          node --input-type=module --check < marketplace.js
+          node --input-type=module --check < marketplace-i18n.js
+          node --check firebase-messaging-sw.js
+          node --input-type=module --check < app.js
+          node --input-type=module --check < premium-ui.js
+          node --input-type=module --check < search-picker.js
+      - name: Install server dependencies and check syntax
+        working-directory: functions
+        run: |
+          npm install --no-audit --no-fund
+          npm run check

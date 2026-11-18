@@ -13,3 +13,6 @@ window.LIMBA_FIREBASE_CONFIG = {
 };
 // Older third-party integrations may still expect the historical LUMA name.
 window.LUMA_FIREBASE_CONFIG = window.LIMBA_FIREBASE_CONFIG;
+// Add the public reCAPTCHA v3 site key after registering the production domain.
+// Leave empty until App Check browser tests have passed.
+window.LIMBA_APP_CHECK_SITE_KEY = '';

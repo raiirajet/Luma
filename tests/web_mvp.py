@@ -23,7 +23,9 @@ try:
    page.locator('#loginBtn').click()
    page.locator('#demoQuick').click()
    assert page.locator('#modal').is_hidden()
-   page.locator('#fabAdd').click()
+   assert page.locator('#mobileSell').count()==0
+   assert page.locator('#fabSell').is_visible()
+   page.locator('#fabSell').click()
    form=page.locator('#sellForm')
    assert form.is_visible()
    form.locator('[name="make"]').fill('Toyota')
@@ -34,6 +36,7 @@ try:
    form.locator('[name="price"]').fill('14800')
    form.locator('[name="city"]').fill('Sarajevo')
    form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
+   form.locator('[name="allowOffers"]').uncheck()
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
@@ -41,21 +44,24 @@ try:
    form=page.locator('#sellForm')
    assert form.is_visible()
    assert form.locator('[name="city"]').input_value()=='Sarajevo'
+   assert not form.locator('[name="allowOffers"]').is_checked()
    form.locator('[name="city"]').fill('Tirana')
    form.locator('[name="price"]').fill('14500')
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid [data-edit]').count()==1
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
-   page.locator('#mineGrid [data-status="sold"]').click()
+   # Listings cannot be marked sold without a verified two-party transaction.
+   assert page.locator('#mineGrid [data-status="sold"]').count()==0
+   page.locator('#mineGrid [data-status="paused"]').click()
    assert page.locator('#mineGrid [data-status="active"]').count()==1
    page.locator('#mineGrid [data-status="active"]').click()
-   assert page.locator('#mineGrid [data-status="sold"]').count()==1
+   assert page.locator('#mineGrid [data-status="paused"]').count()==1
    page.once('dialog',lambda dialog:dialog.accept())
    page.locator('#mineGrid [data-delete]').click()
    assert page.locator('#mineGrid [data-edit]').count()==0
    assert errors==[],errors
-   print(f'PASS MVP {width}px: demo login, create, edit, sold, reactivate, delete')
+   print(f'PASS MVP {width}px: demo login, create, edit, pause, reactivate, delete')
    ctx.close()
   browser.close()
 finally:

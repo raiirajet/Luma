@@ -83,9 +83,20 @@ with sync_playwright() as p:
   page.locator(home_nav).click()
   assert page.locator('#carGrid .car-card').count()==1
   # Search preservation and load
+  page.locator('#advancedToggle').click()
+  assert page.locator('#keyword').is_visible()
   page.locator('#keyword').fill('GT-R')
+  if width<500:
+   page.locator('#filterApplyBtn').click()
+  else:
+   page.locator('#advancedToggle').click()
   page.locator('#saveSearchBtn').click()
+  page.locator('#advancedToggle').click()
   page.locator('#keyword').fill('nonexistent')
+  if width<500:
+   page.locator('#filterApplyBtn').click()
+  else:
+   page.locator('#advancedToggle').click()
   assert page.locator('#carGrid .car-card').count()==0
   page.locator('#settingsBtn').click()
   assert page.locator('#savedSearchesList [data-apply]').count()>=1
@@ -93,7 +104,7 @@ with sync_playwright() as p:
   assert page.locator('#carGrid .car-card').count()==1
   page.locator('#clearAll').click()
   # Swipe first-run tutorial and returning from info
-  swipe_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="swipe"]'
+  swipe_nav='.swipe-inline'
   page.locator(swipe_nav).click()
   assert page.locator('#swipeView').is_visible()
   assert page.locator('#swipeTutorial').is_visible()

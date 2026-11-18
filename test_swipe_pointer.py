@@ -10,8 +10,11 @@ with sync_playwright() as p:
   page.route('https://upload.wikimedia.org/**',lambda route:route.abort())
   page.evaluate("""() => {const p=history.pushState.bind(history);history.pushState=(s,t,u)=>p(s,t);const r=history.replaceState.bind(history);history.replaceState=(s,t,u)=>r(s,t)}""")
   page.set_content(html,wait_until='domcontentloaded')
-  selector=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="swipe"]'
-  page.locator(selector).click();page.locator('#swipeDone').click()
+  selector='.swipe-inline'
+  page.locator(selector).click()
+  assert page.locator('#swipeView').is_visible()
+  if page.locator('#swipeTutorial').is_visible():
+   page.locator('#swipeDone').click()
   bb=page.locator('#swipeCard').bounding_box()
   assert bb, 'swipe card not located'
   cx=bb['x']+bb['width']*.5;cy=bb['y']+bb['height']*.5

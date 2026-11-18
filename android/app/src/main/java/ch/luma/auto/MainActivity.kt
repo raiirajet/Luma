@@ -30,6 +30,8 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.ListenerRegistration
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
@@ -47,13 +49,18 @@ import android.text.InputType
  * not been configured. Demo listing information is fictional and identified as such.
  */
 class MainActivity : Activity() {
-    private val ink = Color.rgb(16, 43, 58)
-    private val navy = Color.rgb(12, 40, 56)
+    private val darkEnabled: Boolean get() {
+        val mode=prefs.getString("themeMode","system")
+        val night=resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return mode=="dark" || (mode=="system" && night==android.content.res.Configuration.UI_MODE_NIGHT_YES)
+    }
+    private val ink:Int get()=if(darkEnabled)Color.rgb(237,244,252)else Color.rgb(16,43,58)
+    private val navy:Int get()=Color.rgb(12,40,56)
     private val orange = Color.rgb(20, 121, 237)
-    private val paper = Color.WHITE
-    private val mist = Color.rgb(243, 247, 248)
-    private val muted = Color.rgb(100, 124, 137)
-    private val border = Color.rgb(218, 230, 234)
+    private val paper:Int get()=if(darkEnabled)Color.rgb(18,37,54)else Color.WHITE
+    private val mist:Int get()=if(darkEnabled)Color.rgb(11,21,33)else Color.rgb(243,247,248)
+    private val muted:Int get()=if(darkEnabled)Color.rgb(188,205,222)else Color.rgb(100,124,137)
+    private val border:Int get()=if(darkEnabled)Color.rgb(58,81,102)else Color.rgb(218,230,234)
     private lateinit var root: FrameLayout
     private lateinit var messages: JSONObject
     private lateinit var brands: JSONObject
@@ -62,13 +69,17 @@ class MainActivity : Activity() {
     private var screen = "home"
     private var backFromDetail = "home"
     private var starred = false
+    private var compareIds=mutableSetOf<String>()
     private var swipeSeen = false
     private var activeCountry = mutableSetOf<String>()
     private var keyword = ""
     private var make = ""
     private var model = ""
     private var maxPrice = ""
+    private var minPrice = ""
     private var yearFrom = ""
+    private var yearTo = ""
+    private var sellerType = ""
     private var maxMileage = ""
     private var fuel = ""
     private var transmission = ""
@@ -81,6 +92,10 @@ class MainActivity : Activity() {
     private var cloudStars = mutableSetOf<String>()
     private var cloudUser: com.google.firebase.auth.FirebaseUser? = null
     private lateinit var backend: LimbaFirebase
+    private lateinit var social: LimbaSocial
+    private var activeConversation = ""
+    private var focusOfferOnChat = false
+    private val socialListeners = mutableListOf<ListenerRegistration>()
     private val pickedImages = mutableListOf<Uri>()
     private var pickedImagesLabel: TextView? = null
     private val pickPhotosRequest = 1414
@@ -137,6 +152,7 @@ class MainActivity : Activity() {
         locale = prefs.getString("language", "de") ?: "de"
         if (locale !in codes) locale = "de"
         starred = prefs.getBoolean("favorite", false)
+        compareIds=(prefs.getStringSet("compareIds",emptySet()) ?: emptySet()).toMutableSet()
         swipeSeen = prefs.getBoolean("swipeSeen", false)
         activeCountry = (prefs.getStringSet("countries", emptySet()) ?: emptySet()).toMutableSet()
         previewUser = prefs.getString("previewUser", "") ?: ""
@@ -146,9 +162,11 @@ class MainActivity : Activity() {
         saveCount = prefs.getString("searches", "[]")?.let { runCatching { JSONArray(it).length() }.getOrDefault(0) } ?: 0
         try { assets.open("gtr.jpg").use { carPhoto = BitmapFactory.decodeStream(it) } } catch (_: Exception) { }
         backend = LimbaFirebase(this)
+        social = LimbaSocial(this)
         if (backend.ready) {
             backend.watchAuth { user ->
                 cloudUser = user
+                if(user != null && user.isEmailVerified && !user.phoneNumber.isNullOrBlank()) social.callable("syncPublicProfile",emptyMap()){_,_->}
                 backend.watchOwned(user?.uid) { cars ->
                     ownCars.clear();ownCars.addAll(cars);render()
                 }
@@ -204,7 +222,7 @@ class MainActivity : Activity() {
         if (bold) setTypeface(null, Typeface.BOLD)
         includeFontPadding = true
     }
-    private fun btn(s: String, filled: Boolean = true, action: () -> Unit): TextView = text(s, 14f, if (filled) paper else navy, true).apply {
+    private fun btn(s: String, filled: Boolean = true, action: () -> Unit): TextView = text(s, 14f, if (filled) Color.WHITE else ink, true).apply {
         gravity = Gravity.CENTER
         background = c(if (filled) orange else paper, 12, if (filled) null else border)
         setPadding(px(16), px(13), px(16), px(13))
@@ -245,9 +263,9 @@ class MainActivity : Activity() {
         isClickable = true; isFocusable = true; minimumHeight = px(48)
         contentDescription = caption
         setPadding(px(12), px(10), px(12), px(10))
-        addView(drawableIcon(res, if (fill) paper else navy, 20), lp(20, 20))
+        addView(drawableIcon(res, if (fill) Color.WHITE else ink, 20), lp(20, 20))
         addView(spaceHorizontal(8))
-        addView(text(caption, 13f, if (fill) paper else navy, true))
+        addView(text(caption, 13f, if (fill) Color.WHITE else ink, true))
         setOnClickListener { action() }
     }
     private fun label(s: String): TextView = text(s, 12f, muted, true).apply {
@@ -260,30 +278,14 @@ class MainActivity : Activity() {
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
     private fun euro(n: Int) = NumberFormat.getNumberInstance(Locale.GERMANY).format(n) + " €"
     private fun number(n: Int) = NumberFormat.getIntegerInstance(Locale.GERMANY).format(n)
-    private fun navigate(next: String) { screen = next; render() }
+    private fun clearSocialSubscriptions() { socialListeners.forEach { it.remove() };socialListeners.clear() }
+    private fun navigate(next: String) { clearSocialSubscriptions();screen = next; render() }
     private fun container(): LinearLayout {
         root.removeAllViews()
         root.setBackgroundColor(navy)
         val main = col()
         main.setBackgroundColor(mist)
         root.addView(main, fp())
-        if (screen != "details") {
-            val fab = row().apply {
-                setPadding(px(12), px(9), px(17), px(9));gravity = Gravity.CENTER_VERTICAL
-                background = c(orange, 30)
-                elevation = px(12).toFloat()
-                minimumHeight = px(58)
-                isClickable = true; isFocusable = true
-                contentDescription = t("addVehicle")
-                addView(drawableIcon(R.drawable.limba_add_car, paper, 37),lp(37,37))
-                addView(spaceHorizontal(7))
-                addView(text(t("addVehicle"),13f,paper,true))
-                setOnClickListener { showCarForm() }
-            }
-            val pos = fp(-2, -2, Gravity.BOTTOM or Gravity.END)
-            pos.setMargins(px(9),px(9),px(14),px(84))
-            root.addView(fab,pos)
-        }
         return main
     }
 
@@ -308,42 +310,152 @@ class MainActivity : Activity() {
     private fun navigation(main: LinearLayout) {
         val nav = row(paper).apply { gravity = Gravity.CENTER }
         val routes = listOf(
-            Triple("home", R.drawable.limba_search, t("carsNav")),
-            Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
+            Triple("home", R.drawable.limba_search, if(locale=="de")"Finden"else t("carsNav")),
+            Triple("swipe", R.drawable.limba_vehicle_cards, t("swipe")),
             Triple("favorites", R.drawable.limba_favorites, t("saved")),
-            Triple("settings", R.drawable.limba_settings, t("settings"))
+            Triple("messages", R.drawable.limba_messages, t("socialMessages")),
+            Triple("profile", R.drawable.limba_profile, t("socialProfile"))
         )
         routes.forEach { (route, icon, name) ->
             val selected = screen == route
             val cell = col().apply {
                 gravity = Gravity.CENTER
-                setPadding(px(3), px(6), px(3), px(6))
+                setPadding(px(1), px(6), px(1), px(6))
                 isClickable = true; isFocusable = true; minimumHeight = px(64)
                 contentDescription = name
                 if (selected) background = c(mist, 11)
             }
-            val glyph = drawableIcon(icon, if (selected) orange else muted, 23)
+            val glyph = drawableIcon(icon, if (selected) orange else muted, 21)
             val center = FrameLayout(this)
             center.addView(glyph, fp(23, 23, Gravity.CENTER))
-            cell.addView(center, lp(-1, 27))
-            cell.addView(text(name, 10f, if (selected) ink else muted, selected).apply {
+            cell.addView(center, lp(-1, 26))
+            cell.addView(text(name, 9f, if (selected) ink else muted, selected).apply {
                 gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
             cell.setOnClickListener { navigate(route) }
         }
         main.addView(nav, lp(-1, 66))
+        val plus=text("+",36f,Color.WHITE,true).apply {
+            gravity=Gravity.CENTER
+            background=GradientDrawable().apply {
+                shape=GradientDrawable.OVAL
+                setColor(0xff1479ed.toInt())
+                setStroke(px(2),Color.WHITE)
+            }
+            elevation=px(12).toFloat()
+            isClickable=true;isFocusable=true
+            contentDescription=t("sellCar")
+            setOnClickListener { showCarForm() }
+        }
+        val bubble=fp(56,56,Gravity.END or Gravity.BOTTOM).apply {
+            marginEnd=px(16);bottomMargin=px(82)
+        }
+        if(screen!="swipe")root.addView(plus,bubble)
+        if(compareIds.isNotEmpty() && screen!="swipe" && screen!="compare"){
+            val compare=btn(t("compare")+" "+compareIds.size+"/3",false){
+                if(compareIds.size<2)toast(t("compareNeedTwo"))else navigate("compare")
+            }
+            compare.elevation=px(8).toFloat()
+            val params=fp(-2,48,Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM).apply{
+                bottomMargin=px(151)
+            }
+            root.addView(compare,params)
+        }
+    }
+    private fun toggleCompare(id:String) {
+        if(id in compareIds)compareIds.remove(id)
+        else if(compareIds.size>=3){toast(t("compareLimit"));return}
+        else compareIds.add(id)
+        prefs.edit().putStringSet("compareIds",compareIds.toSet()).apply()
+        render()
+    }
+    private fun comparisonCars():List<JSONObject> {
+        val cars=cloudCars+previewCars
+        return compareIds.mapNotNull { id ->
+            when(id){
+                "demo-nissan-gtr"->JSONObject()
+                    .put("id",id).put("make","Nissan").put("model","GT-R")
+                    .put("price",68900).put("year",2013).put("mileage",49500)
+                    .put("power",550).put("fuel","petrol").put("transmission","automatic")
+                    .put("accidentStatus","unknown").put("city","Zagreb").put("country","HR")
+                else ->cars.firstOrNull{it.optString("id")==id}
+            }
+        }
+    }
+    private fun renderComparison() {
+        val main=container()
+        toolbar(main,t("compareTitle"),{navigate("home")})
+        val content=col().apply{setPadding(px(15),px(19),px(15),px(22))}
+        content.addView(text(t("compareTitle"),23f,ink,true))
+        content.addView(space(8));content.addView(text(t("compareHint"),12f,muted))
+        content.addView(space(15))
+        val cars=comparisonCars()
+        if(cars.size<2){
+            emptyState(content,t("compareNeedTwo"))
+        }else{
+            val scroller=android.widget.HorizontalScrollView(this).apply{
+                isHorizontalScrollBarEnabled=true
+            }
+            val columns=row().apply{gravity=Gravity.TOP}
+            val fields=listOf("price","firstReg","mileage","power","fuel",
+                "transmission","accidentCar","location")
+            cars.forEach { car ->
+                val box=col(paper).apply{
+                    background=c(paper,14,border)
+                    setPadding(px(12),px(12),px(12),px(12))
+                }
+                box.addView(text(car.optString("make")+" "+car.optString("model"),15f,ink,true))
+                box.addView(space(8))
+                box.addView(btn(t("removeFromCompare"),false){toggleCompare(car.optString("id"))})
+                box.addView(space(12))
+                fields.forEach { field ->
+                    val value=when(field){
+                        "price"->euro(car.optInt("price"))
+                        "firstReg"->car.optString("year")
+                        "mileage"->number(car.optInt("mileage"))+" km"
+                        "power"->car.optString("power")+" PS"
+                        "location"->car.optString("city")+" · "+car.optString("country")
+                        "accidentCar"->t(when(car.optString("accidentStatus")){
+                            "yes"->"accidentYes";"no"->"accidentNo";else->"accidentUnknown"})
+                        else->t(car.optString(field))
+                    }
+                    box.addView(text(t(field),11f,muted))
+                    box.addView(text(value,13f,ink,true))
+                    box.addView(space(12))
+                }
+                columns.addView(box,lp(185,-2))
+                columns.addView(spaceHorizontal(8))
+            }
+            scroller.addView(columns)
+            content.addView(scroller)
+        }
+        content.addView(space(16))
+        content.addView(btn(t("clearCompare"),false){
+            compareIds.clear()
+            prefs.edit().putStringSet("compareIds",emptySet()).apply()
+            navigate("home")
+        })
+        body(main,content);navigation(main)
     }
     private fun body(main: LinearLayout, content: LinearLayout) {
+        // The overlayed "+" control must never obscure the last actionable item.
+        content.setPadding(content.paddingLeft,content.paddingTop,content.paddingRight,
+            content.paddingBottom+px(76))
         val scroll = ScrollView(this).apply { isFillViewport = true; isVerticalScrollBarEnabled = false }
         scroll.addView(content)
         main.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
     }
     private fun render() {
+        clearSocialSubscriptions()
         when (screen) {
+            "messages" -> renderMessages()
+            "chat" -> renderConversation()
+            "profile" -> renderSocialProfile()
             "swipe" -> renderSwipe()
             "details" -> renderDetails()
             "favorites" -> renderFavorites()
+            "compare" -> renderComparison()
             "settings" -> renderSettings()
             "searches" -> renderSavedSearches()
             "mine" -> renderMine()
@@ -370,11 +482,14 @@ class MainActivity : Activity() {
         if (make.isNotBlank() && !"nissan".contains(make.trim().lowercase())) return false
         if (model.isNotBlank() && !"gt-r".contains(model.trim().lowercase())) return false
         if (maxPrice.toIntOrNull()?.let { 68900 > it } == true) return false
+        if (minPrice.toIntOrNull()?.let { 68900 < it } == true) return false
         if (yearFrom.toIntOrNull()?.let { 2013 < it } == true) return false
+        if (yearTo.toIntOrNull()?.let { 2013 > it } == true) return false
         if (maxMileage.toIntOrNull()?.let { 49500 > it } == true) return false
         if (fuel.isNotBlank() && fuel != "petrol") return false
         if (transmission.isNotBlank() && transmission != "automatic") return false
         if (body.isNotBlank() && body != "coupe") return false
+        if (sellerType.isNotBlank() && sellerType != "privateSeller") return false
         return true
     }
 
@@ -390,11 +505,18 @@ class MainActivity : Activity() {
     private fun autoComplete(value: String, hint: String, suggestions: List<String>, callback: (String) -> Unit): AutoCompleteTextView {
         val field = AutoCompleteTextView(this).apply {
             setSingleLine(true); setTextSize(15f); setTextColor(ink); setHintTextColor(muted)
-            setHint(hint); setText(value); threshold = 1
+            setHint(hint); setText(value); threshold = 0
             setPadding(px(13), px(11), px(13), px(11))
             background = c(paper, 11, border)
             setAdapter(ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, suggestions))
-            setOnFocusChangeListener { _, hasFocus -> if (!hasFocus) callback(text.toString().trim()) }
+            dropDownHeight = px(280)
+            dropDownVerticalOffset = px(3)
+            // On tap: show the complete offline list. Native filtering starts on typing.
+            setOnClickListener { if ((adapter?.count ?: 0) > 0) showDropDown() }
+            setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) post { if ((adapter?.count ?: 0) > 0) showDropDown() }
+                else callback(text.toString().trim())
+            }
             setOnItemClickListener { _, _, _, _ -> callback(text.toString().trim()) }
         }
         return field
@@ -435,7 +557,7 @@ class MainActivity : Activity() {
         heroBrand.addView(text("LIMBA AUTO", 12f, orange, true))
         hero.addView(heroBrand)
         hero.addView(space(13))
-        hero.addView(text(t("heroTitle1"), 30f, paper, true))
+        hero.addView(text(t("heroTitle1"), 30f, Color.WHITE, true))
         hero.addView(text(t("heroTitle2"), 29f, orange, true))
         hero.addView(space(11))
         hero.addView(text(t("heroDescription"), 13f, 0xffcbdce3.toInt()))
@@ -443,7 +565,8 @@ class MainActivity : Activity() {
         val form = col(paper).apply { setPadding(px(18), px(18), px(18), px(19)) }
         form.addView(text(t("findCar"), 19f, ink, true))
         form.addView(space(10))
-        val keywordField = editField(form, t("searchTerms"), keyword, t("keywordExample"))
+        form.addView(iconText(R.drawable.limba_vehicle_cards, t("swipe"), { navigate("swipe") }, true))
+        form.addView(space(12))
         val makes = brands.optJSONArray("makes")
         val makeItems = mutableListOf<String>()
         if (makes != null) for (i in 0 until makes.length()) makeItems.add(makes.optString(i))
@@ -470,7 +593,7 @@ class MainActivity : Activity() {
         val yearField = editField(form, t("yearFrom"), yearFrom, "2013", true)
         val kmField = editField(form, t("mileageTo"), maxMileage, "km", true)
         val search = btn(t("showResults"), true) {
-            keyword = keywordField.text.toString().trim(); make = makeField.text.toString().trim()
+            make = makeField.text.toString().trim()
             model = modelField.text.toString().trim(); maxPrice = priceField.text.toString().trim()
             yearFrom = yearField.text.toString().trim(); maxMileage = kmField.text.toString().trim()
             renderHome()
@@ -478,17 +601,46 @@ class MainActivity : Activity() {
         form.addView(space(17))
         form.addView(search)
         form.addView(space(8))
-        form.addView(iconText(R.drawable.limba_filter, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
+        form.addView(iconText(R.drawable.limba_filter, t("moreFilters"), { showAdvanced() }))
         val actions = row()
         actions.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() }, LinearLayout.LayoutParams(0, px(46), 1f))
         actions.addView(spaceHorizontal(8))
         actions.addView(btn(t("saveSearch"), false) { saveSearch() }, LinearLayout.LayoutParams(0, px(46), 1f))
         form.addView(space(8));form.addView(actions)
         content.addView(form)
+        val chips=row()
+        fun chip(label:String,value:String,clear:()->Unit) {
+            if(value.isNotBlank()){
+                chips.addView(btn(label+" "+value+" ×",false){clear();renderHome()})
+                chips.addView(spaceHorizontal(7))
+            }
+        }
+        chip(t("make"),make){make="";model=""}
+        chip(t("model"),model){model=""}
+        chip(t("priceTo"),maxPrice){maxPrice=""}
+        chip(t("priceFrom"),minPrice){minPrice=""}
+        chip(t("yearFrom"),yearFrom){yearFrom=""}
+        chip(t("yearTo"),yearTo){yearTo=""}
+        chip(t("mileageTo"),maxMileage){maxMileage=""}
+        chip(t("fuel"),fuel){fuel=""}
+        chip(t("transmission"),transmission){transmission=""}
+        chip(t("body"),body){body=""}
+        chip(t("sellerType"),sellerType){sellerType=""}
+        chip(t("searchTerms"),keyword){keyword=""}
+        if(chips.childCount>0){
+            val strip=android.widget.HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled=false
+                setPadding(px(12),px(9),px(12),px(9))
+                addView(chips)
+            }
+            content.addView(strip)
+        }
         val results = col().apply { setPadding(px(17), px(22), px(17), px(20)) }
         results.addView(text(t("latestCars"), 21f, ink, true))
         results.addView(space(7))
-        results.addView(text(t("singleDemoNotice"), 12f, muted))
+        results.addView(btn(t("swipe"), false) { navigate("swipe") })
+        results.addView(space(10))
+        if(cloudCars.isEmpty() && previewCars.isEmpty())results.addView(text(t("singleDemoNotice"), 12f, muted))
         results.addView(space(17))
         var listed = false
         cloudCars.filter { matchesCar(it) }.forEach { results.addView(previewCard(it));results.addView(space(12));listed = true }
@@ -498,7 +650,6 @@ class MainActivity : Activity() {
         results.addView(space(16))
         results.addView(btn(t("yourSavedSearch"), false) { navigate("searches") })
         results.addView(space(9))
-        results.addView(btn(t("addVehicle"), false) { showCarForm() })
         content.addView(results)
         body(main, content)
         navigation(main)
@@ -528,6 +679,10 @@ class MainActivity : Activity() {
             activePreviewCar=null;openDetails(if(screen == "favorites") "favorites" else "home")
         }, true))
         block.addView(space(6))
+        block.addView(btn(t("compare") + if("demo-nissan-gtr" in compareIds)" ✓" else "",false) {
+            toggleCompare("demo-nissan-gtr")
+        })
+        block.addView(space(6))
         block.addView(text(t("demoOnly"), 11f, muted))
         card.addView(block)
         return card
@@ -548,11 +703,14 @@ class MainActivity : Activity() {
         if (make.isNotBlank() && !x.optString("make").contains(make,ignoreCase=true)) return false
         if (model.isNotBlank() && !x.optString("model").contains(model,ignoreCase=true)) return false
         if (maxPrice.toIntOrNull()?.let { x.optInt("price") > it } == true) return false
+        if (minPrice.toIntOrNull()?.let { x.optInt("price") < it } == true) return false
         if (yearFrom.toIntOrNull()?.let { x.optInt("year") < it } == true) return false
+        if (yearTo.toIntOrNull()?.let { x.optInt("year") > it } == true) return false
         if (maxMileage.toIntOrNull()?.let { x.optInt("mileage") > it } == true) return false
         if (fuel.isNotBlank() && fuel != x.optString("fuel")) return false
         if (transmission.isNotBlank() && transmission != x.optString("transmission")) return false
         if (body.isNotBlank() && body != x.optString("body")) return false
+        if (sellerType.isNotBlank() && sellerType != x.optString("sellerType")) return false
         return true
     }
     private fun previewCard(car: JSONObject): LinearLayout {
@@ -569,9 +727,26 @@ class MainActivity : Activity() {
         view.addView(text(car.optString("make")+" "+car.optString("model"),20f,ink,true))
         view.addView(space(5))
         view.addView(text(car.optInt("year").toString()+" · "+number(car.optInt("mileage"))+" km · "+car.optInt("power")+" PS",13f,muted))
+        view.addView(space(5))
+        view.addView(text(t(if(car.optString("condition")=="new")"conditionNew"else "conditionUsed")+
+            " · "+t(when(car.optString("accidentStatus")){
+                "yes"->"accidentYes";"no"->"accidentNo";else->"accidentUnknown"
+            }),12f,muted,true))
         view.addView(text(car.optString("city")+" · "+car.optString("country"),12f,muted))
         view.addView(space(8))
         view.addView(text(euro(car.optInt("price")),23f,orange,true))
+        view.addView(space(4))
+        view.addView(btn(t("compare")+if(car.optString("id") in compareIds)" ✓" else "",false) {
+            toggleCompare(car.optString("id"))
+        })
+        val trust=text("★ — · "+t("socialProfile"),11f,muted)
+        view.addView(trust)
+        if(live && ::social.isInitialized) social.getProfile(car.optString("uid")) { profile ->
+            if(profile!=null) trust.text="★ "+(profile.getDouble("sellerRatingAverage") ?: 0.0).toString()+
+                " ("+(profile.getLong("sellerRatingCount") ?: 0)+") · "+
+                (if(profile.getBoolean("phoneVerified")==true)"✓ "else "")+
+                (profile.getString("alias") ?: t("socialProfile"))
+        }
         view.addView(space(10))
         val liked=if(live)car.optString("id") in cloudStars else car.optString("id") in previewStars
         view.addView(iconText(R.drawable.limba_favorites,t("saveFavourites"),{
@@ -599,21 +774,47 @@ class MainActivity : Activity() {
     }
 
     private fun showAdvanced() {
-        val panel = col().apply { setPadding(px(14), 0, px(14), px(12)) }
-        picker(panel, t("fuel"), listOf("" to t("allFuel"), "petrol" to t("petrol"), "diesel" to t("diesel"), "hybrid" to t("hybrid"), "electric" to t("electric")), fuel) { fuel = it }
-        picker(panel, t("transmission"), listOf("" to t("allTransmission"), "automatic" to t("automatic"), "manual" to t("manual")), transmission) { transmission = it }
-        picker(panel, t("body"), listOf("" to t("allBody"), "suv" to t("suv"), "sedan" to t("sedan"), "wagon" to t("wagon"), "hatchback" to t("hatchback"), "coupe" to t("coupe")), body) { body = it }
-        AlertDialog.Builder(this).setTitle(t("moreFilters")).setView(panel)
-            .setPositiveButton(t("showResults")) { _, _ -> renderHome() }
-            .setNegativeButton(t("cancel"), null).show()
+        val panel=col().apply { setPadding(px(14),px(2),px(14),px(16)) }
+        val freeText=editField(panel,t("advancedKeyword"),keyword,t("keywordExample"))
+        val min=editField(panel,t("priceFrom"),minPrice,"€",true)
+        val latestYear=editField(panel,t("yearTo"),yearTo,"2020",true)
+        var chosenFuel=fuel;var chosenTransmission=transmission;var chosenBody=body;var chosenSeller=sellerType
+        picker(panel,t("fuel"),listOf("" to t("allFuel"),"petrol" to t("petrol"),
+            "diesel" to t("diesel"),"hybrid" to t("hybrid"),"electric" to t("electric")),chosenFuel){ chosenFuel=it }
+        picker(panel,t("transmission"),listOf("" to t("allTransmission"),
+            "automatic" to t("automatic"),"manual" to t("manual")),chosenTransmission){ chosenTransmission=it }
+        picker(panel,t("body"),listOf("" to t("allBody"),"suv" to t("suv"),
+            "sedan" to t("sedan"),"wagon" to t("wagon"),
+            "hatchback" to t("hatchback"),"coupe" to t("coupe")),chosenBody){ chosenBody=it }
+        picker(panel,t("sellerType"),listOf("" to t("allSeller"),
+            "privateSeller" to t("privateSeller"),"dealer" to t("dealer")),chosenSeller){ chosenSeller=it }
+        val scroller=ScrollView(this).apply {addView(panel);isFillViewport=false}
+        AlertDialog.Builder(this).setTitle(t("moreFilters")).setView(scroller)
+            .setPositiveButton(t("showResults")) { _,_ ->
+                keyword=freeText.text.toString().trim()
+                minPrice=min.text.toString().trim()
+                yearTo=latestYear.text.toString().trim()
+                fuel=chosenFuel;transmission=chosenTransmission;body=chosenBody;sellerType=chosenSeller
+                renderHome()
+            }
+            .setNegativeButton(t("cancel"),null)
+            .create().also { dialog ->
+                dialog.show()
+                val availableHeight=(resources.displayMetrics.heightPixels-px(55))
+                    .coerceAtLeast(px(350))
+                dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT,availableHeight)
+            }
     }
-    private fun clearFilters() { keyword="";make="";model="";maxPrice="";yearFrom="";maxMileage="";fuel="";transmission="";body="" }
+    private fun clearFilters() {
+        keyword="";make="";model="";maxPrice="";minPrice="";yearFrom="";yearTo=""
+        maxMileage="";fuel="";transmission="";body="";sellerType=""
+    }
     private fun saveSearch() {
         val arr = runCatching { JSONArray(prefs.getString("searches", "[]")) }.getOrElse { JSONArray() }
         arr.put(JSONObject().apply {
             put("keyword", keyword);put("make", make);put("model", model)
-            put("maxPrice", maxPrice);put("yearFrom", yearFrom);put("maxMileage", maxMileage)
-            put("fuel", fuel);put("transmission", transmission);put("body", body)
+            put("maxPrice", maxPrice);put("minPrice", minPrice);put("yearFrom", yearFrom);put("yearTo", yearTo);put("maxMileage", maxMileage)
+            put("fuel", fuel);put("transmission", transmission);put("body", body);put("sellerType",sellerType)
             put("countries", JSONArray(activeCountry.toList()))
         })
         prefs.edit().putString("searches", arr.toString()).apply()
@@ -660,8 +861,8 @@ class MainActivity : Activity() {
             cell.addView(space(6));cell.addView(text(t("searchSaveLabel")+" #${i+1}",12f,muted))
             cell.setOnClickListener {
                 keyword=item.optString("keyword");make=item.optString("make");model=item.optString("model")
-                maxPrice=item.optString("maxPrice");yearFrom=item.optString("yearFrom");maxMileage=item.optString("maxMileage")
-                fuel=item.optString("fuel");transmission=item.optString("transmission");body=item.optString("body")
+                maxPrice=item.optString("maxPrice");minPrice=item.optString("minPrice");yearFrom=item.optString("yearFrom");yearTo=item.optString("yearTo");maxMileage=item.optString("maxMileage")
+                fuel=item.optString("fuel");transmission=item.optString("transmission");body=item.optString("body");sellerType=item.optString("sellerType")
                 val arr=item.optJSONArray("countries");activeCountry=mutableSetOf()
                 if(arr!=null) for(z in 0 until arr.length()) activeCountry.add(arr.optString(z))
                 navigate("home")
@@ -686,7 +887,25 @@ class MainActivity : Activity() {
                 if(selected!=locale){locale=selected;prefs.edit().putString("language",selected).apply();renderSettings()}
             }
         }
-        content.addView(spinner,lp(-1,52));content.addView(space(25))
+        content.addView(spinner,lp(-1,52));content.addView(space(20))
+        content.addView(text(t("themeTitle"),16f,ink,true))
+        val themeModes=listOf("system","light","dark")
+        val themeSpinner=Spinner(this).apply {background=c(paper,12,border)}
+        themeSpinner.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,
+            listOf(t("themeSystem"),t("themeLight"),t("themeDark")))
+        val chosenTheme=prefs.getString("themeMode","system") ?: "system"
+        themeSpinner.setSelection(themeModes.indexOf(chosenTheme).coerceAtLeast(0))
+        themeSpinner.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent:android.widget.AdapterView<*>?){}
+            override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long){
+                val next=themeModes[position]
+                if(next!=prefs.getString("themeMode","system")){
+                    prefs.edit().putString("themeMode",next).apply()
+                    renderSettings()
+                }
+            }
+        }
+        content.addView(themeSpinner,lp(-1,52));content.addView(space(25))
         val countryHeader = row()
         countryHeader.addView(drawableIcon(R.drawable.limba_map, orange, 28), lp(28,28))
         countryHeader.addView(spaceHorizontal(9))
@@ -716,19 +935,22 @@ class MainActivity : Activity() {
         return cars
     }
     private fun renderSwipe() {
-        root.removeAllViews();root.setBackgroundColor(navy)
+        val main=container()
+        main.setBackgroundColor(navy)
         val all=swipeCandidates()
         if (all.isEmpty()) {
             val empty=col().apply {gravity=Gravity.CENTER;setPadding(px(20),px(20),px(20),px(20))}
-            empty.addView(text(t("emptyCars"),20f,paper,true))
+            empty.addView(text(t("emptyCars"),20f,Color.WHITE,true))
             empty.addView(space(20));empty.addView(btn(t("backToMarket"),true){navigate("home")})
-            root.addView(empty,fp())
+            main.addView(empty,LinearLayout.LayoutParams(-1,0,1f))
+            navigation(main)
             return
         }
         swipeIndex=swipeIndex.coerceIn(0,all.size-1)
         val current=all[swipeIndex]
         val full=FrameLayout(this)
-        root.addView(full,fp())
+        main.addView(full,LinearLayout.LayoutParams(-1,0,1f))
+        navigation(main)
         val placeholder=if(current==null) image() else FrameLayout(this).apply {
             setBackgroundColor(navy)
             if(current.optString("image").startsWith("https://")) {
@@ -764,11 +986,11 @@ class MainActivity : Activity() {
         })
         full.addView(View(this).apply {background=gradient();isClickable=false},fp())
         val top=row().apply {setPadding(px(16),px(12),px(16),0)}
-        top.addView(iconButton(R.drawable.limba_info,t("learnSwipeAgain"),paper,0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_info,t("learnSwipeAgain"),Color.WHITE,0x99213449.toInt()) {
             showSwipeTutorial()
         },lp(48,48))
         top.addView(View(this),LinearLayout.LayoutParams(0,1,1f))
-        top.addView(iconButton(R.drawable.limba_home,t("backToMarket"),paper,0x99213449.toInt()) {
+        top.addView(iconButton(R.drawable.limba_home,t("backToMarket"),Color.WHITE,0x99213449.toInt()) {
             navigate("home")
         },lp(48,48))
         full.addView(top,fp(-1,-2,Gravity.TOP))
@@ -777,11 +999,11 @@ class MainActivity : Activity() {
         overlay.addView(text((if(live)t("carsNav")else t("previewOnly")).uppercase()+"  ·  "+(swipeIndex+1)+"/"+all.size,11f,orange,true))
         overlay.addView(space(7))
         val title=if(current==null)"Nissan GT-R R35 Black Edition"else current.optString("make")+" "+current.optString("model")
-        overlay.addView(text(title,27f,paper,true));overlay.addView(space(5))
-        overlay.addView(text(euro(current?.optInt("price")?:68900),26f,paper,true));overlay.addView(space(5))
+        overlay.addView(text(title,27f,Color.WHITE,true));overlay.addView(space(5))
+        overlay.addView(text(euro(current?.optInt("price")?:68900),26f,Color.WHITE,true));overlay.addView(space(5))
         val info=if(current==null)"2013 · 49.500 km · 550 PS · 🇭🇷 Zagreb"
            else current.optString("year")+" · "+number(current.optInt("mileage"))+" km · "+current.optString("power")+" PS · "+current.optString("city")
-        overlay.addView(text(info,13f,paper));overlay.addView(space(16))
+        overlay.addView(text(info,13f,Color.WHITE));overlay.addView(space(16))
         val buttons=row()
         buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"),{details()}),LinearLayout.LayoutParams(0,px(50),1f))
         buttons.addView(spaceHorizontal(10))
@@ -829,6 +1051,50 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun showPhotoGallery(car:JSONObject?=null) {
+        val pics=mutableListOf<String>()
+        val list=car?.optJSONArray("images")
+        if(list!=null)for(i in 0 until list.length())list.optString(i).takeIf{it.isNotBlank()}?.let{pics.add(it)}
+        if(pics.isEmpty() && car?.optString("image")?.isNotBlank()==true)pics.add(car.optString("image"))
+        val dialog=android.app.Dialog(this)
+        val frame=FrameLayout(this).apply{setBackgroundColor(0xff061420.toInt())}
+        val image=ImageView(this).apply{scaleType=ImageView.ScaleType.FIT_CENTER}
+        frame.addView(image,fp(-1,-1,Gravity.CENTER))
+        val controls=col().apply{
+            setPadding(px(16),px(12),px(16),px(16))
+            background=c(0xe90b2333.toInt(),14)
+        }
+        val status=text("",14f,Color.WHITE,true).apply{gravity=Gravity.CENTER}
+        controls.addView(status)
+        controls.addView(space(10))
+        val buttons=row()
+        val back=btn("‹  "+t("photoPrevious"),false){ }
+        val next=btn(t("photoNext")+"  ›",false){ }
+        buttons.addView(back,LinearLayout.LayoutParams(0,px(47),1f))
+        buttons.addView(spaceHorizontal(8))
+        buttons.addView(next,LinearLayout.LayoutParams(0,px(47),1f))
+        controls.addView(buttons)
+        controls.addView(space(8))
+        controls.addView(btn(t("cancelPreview"),true){dialog.dismiss()})
+        frame.addView(controls,fp(-1,-2,Gravity.BOTTOM))
+        var index=0
+        fun update(){
+            status.text=(index+1).toString()+" / "+maxOf(1,pics.size)
+            if(car==null && carPhoto!=null)image.setImageBitmap(carPhoto)
+            else if(pics.isNotEmpty())com.bumptech.glide.Glide.with(this@MainActivity)
+                .load(pics[index]).fitCenter().into(image)
+            else image.setImageResource(R.drawable.limba_car)
+            back.isEnabled=pics.size>1;next.isEnabled=pics.size>1
+        }
+        back.setOnClickListener{if(pics.size>1){index=(index-1+pics.size)%pics.size;update()}}
+        next.setOnClickListener{if(pics.size>1){index=(index+1)%pics.size;update()}}
+        dialog.setContentView(frame)
+        dialog.show()
+        dialog.window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT)
+        update()
+    }
+
     private fun renderPreviewDetails() {
         val car=activePreviewCar ?: return
         val main=container();toolbar(main,t("vehicleProfile"),{activePreviewCar=null;navigate(backFromDetail)})
@@ -839,7 +1105,11 @@ class MainActivity : Activity() {
         if(live && car.optString("image").startsWith("https://")){
             val photo=ImageView(this).apply{scaleType=ImageView.ScaleType.CENTER_CROP}
             content.addView(photo,lp(-1,240))
+            photo.setOnClickListener{showPhotoGallery(car)}
             com.bumptech.glide.Glide.with(this).load(car.optString("image")).centerCrop().into(photo)
+            content.addView(btn(t("fullscreenPhoto")+" · "+(car.optJSONArray("images")?.length()?:1),false) {
+                showPhotoGallery(car)
+            })
             content.addView(space(12))
         }
         content.addView(text(car.optString("make")+" "+car.optString("model"),25f,ink,true))
@@ -863,16 +1133,90 @@ class MainActivity : Activity() {
         content.addView(text(car.optString("description"),14f,ink));content.addView(space(18))
         if(!live)content.addView(text(t("previewNotSynced"),12f,muted))
         if(live){
-            val email=car.optString("contactEmail")
-            if(email.isNotBlank())content.addView(btn(t("askSeller"),false){
-                startActivity(Intent(Intent.ACTION_SENDTO,Uri.parse("mailto:"+Uri.encode(email))))
+            val carId=car.optString("id")
+            content.addView(text(t("priceHistory"),19f,ink,true))
+            content.addView(space(8))
+            val priceRows=col(paper).apply{
+                background=c(paper,12,border)
+                setPadding(px(12),px(12),px(12),px(12))
+            }
+            priceRows.addView(text(t("historyEmpty"),12f,muted))
+            content.addView(priceRows)
+            social.getPriceHistory(carId){records,error->
+                if(screen!="details"||activePreviewCar?.optString("id")!=carId)return@getPriceHistory
+                priceRows.removeAllViews()
+                if(error!=null)priceRows.addView(text(t("historyUnavailable"),12f,muted))
+                else if(records.isEmpty())priceRows.addView(text(t("historyEmpty"),12f,muted))
+                else records.forEach{ record ->
+                    val previous=record.getLong("oldPriceEur")
+                    val latest=record.getLong("newPriceEur") ?: 0L
+                    val time=record.getTimestamp("createdAt")?.toDate()
+                    val date=time?.let{
+                        java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT,Locale.getDefault()).format(it)
+                    } ?: "—"
+                    val change=if(previous!=null) {
+                        "  ("+(if(latest<previous)"↓ "else "↑ ")+euro(kotlin.math.abs((latest-previous).toInt()))+")"
+                    }else " · "+t("initialPrice")
+                    priceRows.addView(text(date+"  ·  "+euro(latest.toInt())+change,13f,ink,true))
+                    priceRows.addView(space(5))
+                }
+            }
+            content.addView(space(12))
+            if(car.optString("uid")!=social.uid){
+                var watchEnabled=false
+                val watch=btn(t("priceAlert"),false){
+                    social.setPriceAlert(carId,!watchEnabled){enabled,error->
+                        if(error!=null)toast(error)
+                        else if(enabled!=null){
+                            watchEnabled=enabled
+                            toast(t(if(enabled)"priceAlertSaved"else "priceAlertRemoved"))
+                        }
+                    }
+                }
+                fun refreshWatch(){
+                    watch.text=t(if(watchEnabled)"priceAlertOn"else "priceAlert")
+                }
+                content.addView(watch)
+                content.addView(text(t("priceAlertHint"),12f,muted))
+                social.getPriceAlert(carId){enabled,_->
+                    if(enabled!=null){watchEnabled=enabled;refreshWatch()}
+                }
+                watch.setOnClickListener{
+                    social.setPriceAlert(carId,!watchEnabled){enabled,error->
+                        if(error!=null)toast(error) else if(enabled!=null) {
+                            watchEnabled=enabled;refreshWatch()
+                            toast(t(if(enabled)"priceAlertSaved"else "priceAlertRemoved"))
+                        }
+                    }
+                }
+                content.addView(space(13))
+            }
+            val uid=car.optString("uid")
+            val seller=text(t("socialSeller")+" · ★ —",14f,muted,true)
+            content.addView(seller)
+            if(::social.isInitialized) social.getProfile(uid) { profile ->
+                if(profile!=null)seller.text=(profile.getString("alias") ?: t("socialSeller"))+
+                    " · ★ "+(profile.getDouble("sellerRatingAverage") ?: 0.0).toString()+
+                    " ("+(profile.getLong("sellerRatingCount") ?: 0)+")"+
+                    if(profile.getBoolean("phoneVerified")==true)" ✓" else ""
+            }
+            content.addView(btn(t("socialMessage"),true) {
+                social.beginConversation(car.optString("id")) { id,error ->
+                    if(error!=null)toast(error) else if(id!=null){focusOfferOnChat=false;activeConversation=id;navigate("chat")}
+                }
             })
+            content.addView(space(8))
+            if(car.optBoolean("allowOffers",true))content.addView(btn(t("socialProposePrice"),false) {
+                social.beginConversation(car.optString("id")) { id,error ->
+                    if(error!=null)toast(error) else if(id!=null){focusOfferOnChat=true;activeConversation=id;navigate("chat")}
+                }
+            }) else content.addView(text(t("offersDisabled"),13f,muted))
             content.addView(space(9))
             content.addView(btn(t("reportCar"),false) {
                 if(cloudUser==null){showAccount()} else AlertDialog.Builder(this)
                     .setTitle(t("reportCar"))
                     .setItems(arrayOf(t("reportFraud"),t("reportDuplicate"),t("reportInappropriate"),t("reportOther"))) { _,choice ->
-                        backend.report(car.optString("id"),listOf("fraud","duplicate","inappropriate","other")[choice]) { error ->
+                        social.report("listing",car.optString("id"),listOf("fraud","duplicate","inappropriate","other")[choice]) { error ->
                             toast(error ?: t("reportSent"))
                         }
                     }.show()
@@ -886,11 +1230,13 @@ class MainActivity : Activity() {
         if(activePreviewCar!=null){renderPreviewDetails();return}
         val main=container();toolbar(main,"NISSAN GT-R",{navigate(backFromDetail)})
         val content=col()
-        content.addView(image(280),lp(-1,280))
+        val heroPhoto=image(280).apply{setOnClickListener{showPhotoGallery()}}
+        content.addView(heroPhoto,lp(-1,280))
         val info=col().apply {setPadding(px(19),px(22),px(19),px(25))}
         info.addView(text(t("demoOnly"),11f,orange,true))
         info.addView(space(8))
         info.addView(text("Nissan GT-R R35 Black Edition",26f,ink,true))
+        info.addView(btn(t("fullscreenPhoto"),false){showPhotoGallery()})
         info.addView(space(9));info.addView(text(euro(68900),28f,orange,true))
         info.addView(space(7));val locationRow = row()
         locationRow.addView(drawableIcon(R.drawable.limba_location, orange, 20), lp(20, 20))
@@ -1134,6 +1480,15 @@ class MainActivity : Activity() {
         val sellerTypes=listOf("privateSeller","dealer")
         val seller=spinner(t("sellerType"),sellerTypes.map { it to t(it) })
         existing?.let {seller.setSelection(sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0))}
+        val allowOffers=CheckBox(this).apply {
+            text=t("allowOffers")
+            isChecked=existing?.optBoolean("allowOffers",true) ?: true
+            setTextColor(ink);textSize=15f
+            buttonTintList=ColorStateList.valueOf(orange)
+            minHeight=px(50)
+        }
+        col.addView(allowOffers)
+        col.addView(text(t("allowOffersHelp"),12f,muted))
         col.addView(label(t("vehicleDescription")))
         val desc=EditText(this).apply { setTextColor(ink);minLines=3;maxLines=6;setPadding(px(13),px(10),px(13),px(10));background=c(paper,12,border) }
         desc.setText(existing?.optString("description") ?: "")
@@ -1169,6 +1524,7 @@ class MainActivity : Activity() {
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
                         .put("conditionNote",note.text.toString().trim().take(240)).put("description",description.take(3000))
                         .put("sellerType",sellerTypes[seller.selectedItemPosition])
+                        .put("allowOffers",allowOffers.isChecked)
                         .put("contactEmail","")
                     if (isPreview) {
                         existing?.let { previewCars.remove(it) }
@@ -1208,7 +1564,7 @@ class MainActivity : Activity() {
                 content.addView(text(t("statusLabel")+": "+t("status"+car.optString("status","active").replaceFirstChar{it.uppercase()}),
                     13f,muted))
                 content.addView(btn(t("editAd"),false) {showCarForm(car)})
-                listOf("active","paused","sold").forEach { status ->
+                listOf("active","paused").forEach { status ->
                     if(status!=car.optString("status")) content.addView(btn(t("status"+status.replaceFirstChar{it.uppercase()}),false){
                         backend.status(car,status){error->if(error!=null)toast(error)}
                     })
@@ -1224,16 +1580,281 @@ class MainActivity : Activity() {
                     .setNegativeButton(t("cancelPreview"),null).show()
             });content.addView(space(16))
         }
-        content.addView(iconText(R.drawable.limba_add_car,t("addVehicle"),{showCarForm()},true))
         if(previewUser.isNotBlank()){content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))}
         body(main,content);navigation(main)
     }
+
+    // All new social screens use the same native Android view hierarchy as the rest of Limba.
+    private fun renderMessages() {
+        val main=container();toolbar(main,t("socialMessages"),{navigate("home")})
+        val content=col().apply {setPadding(px(17),px(18),px(17),px(26))}
+        content.addView(text(t("socialMessages"),23f,ink,true))
+        body(main,content);navigation(main)
+        if(!social.ready || social.uid==null) {
+            content.addView(btn(t("login"),true){showAccount()});return
+        }
+        val listener=social.watchConversations({ rows ->
+            if(screen!="messages")return@watchConversations
+            content.removeViews(1,(content.childCount-1).coerceAtLeast(0))
+            if(rows.isEmpty())emptyState(content,t("socialNoMessages"))
+            rows.forEach { d ->
+                val c=d.data ?: emptyMap<String,Any>()
+                content.addView(btn(
+                    (c["lastMessagePreview"] as? String).orEmpty().ifBlank{t("socialMessage")},
+                    false) {activeConversation=d.id;navigate("chat")})
+                content.addView(space(10))
+            }
+        },{e->toast(e)})
+        if(listener!=null)socialListeners.add(listener)
+    }
+
+    private fun renderConversation() {
+        val id=activeConversation
+        val main=container();toolbar(main,t("socialMessages"),{navigate("messages")})
+        val content=col().apply {setPadding(px(15),px(15),px(15),px(26))}
+        val conversationTitle=text(t("socialMessages"),22f,ink,true)
+        content.addView(conversationTitle);content.addView(space(12))
+        val messagePane=col(paper).apply {background=c(paper,14,border);setPadding(px(12),px(12),px(12),px(12))}
+        messagePane.addView(text(t("socialNoMessages"),13f,muted))
+        content.addView(messagePane);content.addView(space(14))
+        val offerPane=col()
+        content.addView(offerPane)
+        val transactionPane=col()
+        content.addView(transactionPane)
+        val write=EditText(this).apply {hint=t("socialWriteMessage");minHeight=px(50);background=c(paper,10,border)}
+        content.addView(write);content.addView(space(8))
+        content.addView(btn(t("socialSend"),true) {
+            val body=write.text.toString().trim()
+            if(body.length !in 1..1000){toast("1–1000");return@btn}
+            social.sendMessage(id,body) { e ->if(e==null)write.text.clear() else toast(e) }
+        })
+        content.addView(space(16))
+        val negotiation=col(paper).apply {
+            background=c(paper,14,border)
+            setPadding(px(13),px(14),px(13),px(14))
+            visibility=View.GONE // Only the authenticated buyer can propose a price.
+        }
+        negotiation.addView(text(t("socialProposePrice"),17f,ink,true))
+        negotiation.addView(space(7))
+        negotiation.addView(text(t("socialOfferGuidance"),12f,muted))
+        negotiation.addView(space(9))
+        val quotaLabel=text(t("socialOfferQuotaLoading"),12f,orange,true)
+        quotaLabel.contentDescription=t("socialOfferQuotaLoading")
+        negotiation.addView(quotaLabel)
+        negotiation.addView(space(9))
+        val amount=EditText(this).apply {
+            hint=t("socialOffer")+" €"
+            inputType=InputType.TYPE_CLASS_NUMBER
+            background=c(paper,10,border);minHeight=px(50)
+            setPadding(px(12),px(10),px(12),px(10))
+        }
+        negotiation.addView(amount);negotiation.addView(space(8))
+        var inFlight=false
+        fun refreshQuota(){
+            social.getOfferQuota{remaining,error->
+                if(screen!="chat"||id!=activeConversation)return@getOfferQuota
+                if(remaining!=null){
+                    quotaLabel.text=t("socialOfferQuotaRemaining")
+                        .replace("{remaining}",remaining.toString()).replace("{limit}","3")
+                    quotaLabel.contentDescription=quotaLabel.text
+                    amount.isEnabled=remaining>0
+                } else quotaLabel.text=error ?: t("socialOfferQuotaUnavailable")
+            }
+        }
+        val submit=btn(t("socialProposePrice"),false) {
+            if(inFlight)return@btn
+            val price=amount.text.toString().toIntOrNull()
+            if(price==null || price !in 1..999999999){toast("1–999999999 €");return@btn}
+            inFlight=true
+            social.createOffer(id,price) { err ->
+                inFlight=false
+                if(err!=null)toast(err)
+                else {amount.text.clear();toast(t("socialOfferSent"))}
+                refreshQuota()
+            }
+        }
+        negotiation.addView(submit)
+        content.addView(negotiation)
+        content.addView(space(14))
+        content.addView(text(t("socialNoPayment"),12f,muted))
+        social.isConversationBuyer(id){isBuyer->
+            if(screen!="chat"||id!=activeConversation)return@isConversationBuyer
+            if(isBuyer==true){
+                negotiation.visibility=View.VISIBLE
+                refreshQuota()
+                if(focusOfferOnChat){
+                    focusOfferOnChat=false
+                    negotiation.post{ (content.parent as? ScrollView)?.smoothScrollTo(0,negotiation.top) }
+                }
+            }
+        }
+        body(main,content);navigation(main)
+        social.watchMessages(id) { rows ->
+            if(screen!="chat"||id!=activeConversation)return@watchMessages
+            messagePane.removeAllViews()
+            if(rows.isEmpty())messagePane.addView(text(t("socialNoMessages"),13f,muted))
+            rows.forEach { snap ->
+                val d=snap.data ?: emptyMap<String,Any>()
+                val mine=d["senderUid"]==social.uid
+                val bubble=col(if(mine)0xffe0efff.toInt() else mist).apply {
+                    background=c(if(mine)0xffe0efff.toInt() else mist,12)
+                    setPadding(px(12),px(10),px(12),px(10))
+                }
+                bubble.addView(text((d["text"] as? String).orEmpty(),14f,ink))
+                messagePane.addView(bubble);messagePane.addView(space(6))
+            }
+        }?.let { socialListeners.add(it) }
+        social.watchOffers(id) { rows ->
+            if(screen!="chat"||id!=activeConversation)return@watchOffers
+            offerPane.removeAllViews()
+            rows.sortedByDescending { it.getTimestamp("createdAt")?.seconds ?: 0L }.forEach { offer ->
+                val status=offer.getString("status").orEmpty()
+                val expired=status=="open"&&(offer.getTimestamp("validUntil")?.toDate()?.time ?: Long.MAX_VALUE)<System.currentTimeMillis()
+                val displayStatus=if(expired)"expired"else status
+                val statusKey=when(displayStatus){"open"->"offerOpen";"accepted"->"offerAccepted";
+                    "rejected"->"offerRejected";"closed"->"offerClosed";"expired"->"offerExpired";else->"offerOpen"}
+                val line=col(paper).apply {background=c(paper,12,border);setPadding(px(10),px(10),px(10),px(10))}
+                line.addView(text(euro((offer.getLong("amountEur") ?: 0L).toInt())+
+                    " · "+t(statusKey),15f,ink,true))
+                if(status=="open"&&!expired&&offer.getString("creatorUid")!=social.uid){
+                    val key=id+"~"+offer.id
+                    line.addView(btn(t("socialAccept"),true){
+                        social.respond(key,true){e->if(e!=null)toast(e)}
+                    })
+                    line.addView(btn(t("socialReject"),false){
+                        social.respond(key,false){e->if(e!=null)toast(e)}
+                    })
+                }
+                offerPane.addView(line);offerPane.addView(space(8))
+            }
+        }?.let { socialListeners.add(it) }
+        social.watchTransaction(id) { trans ->
+            if(screen!="chat"||id!=activeConversation)return@watchTransaction
+            transactionPane.removeAllViews()
+            if(trans?.exists()!=true)return@watchTransaction
+            val status=trans.getString("status").orEmpty()
+            transactionPane.addView(text(t("socialTransaction")+" · "+status,18f,ink,true))
+            when {
+                status=="reserved"&&trans.getString("sellerUid")==social.uid ->
+                    transactionPane.addView(btn(t("socialHandover"),true){
+                        social.handover(id){e->if(e!=null)toast(e)}
+                    })
+                status=="handover_confirmed"&&trans.getString("buyerUid")==social.uid ->
+                    transactionPane.addView(btn(t("socialPurchase"),true){
+                        social.purchase(id){e->if(e!=null)toast(e)}
+                    })
+                status=="completed"->transactionPane.addView(btn(t("socialReview"),true){
+                    showSocialReview(id,trans)
+                })
+            }
+            transactionPane.addView(space(12))
+        }?.let { socialListeners.add(it) }
+    }
+
+    private fun showSocialReview(transactionId:String,transaction:DocumentSnapshot) {
+        social.getReview(transactionId){ old ->
+            val status=old?.getString("status")
+            val stamp=old?.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+            if(status=="withdrawn"){toast(t("socialWithdrawn"));return@getReview}
+            val editAllowed=old==null||!old.exists()||System.currentTimeMillis()-stamp<30*60*1000L
+            val holder=col().apply {setPadding(px(16),px(8),px(16),px(8))}
+            val stars=Spinner(this).apply {
+                adapter=ArrayAdapter(this@MainActivity,android.R.layout.simple_spinner_dropdown_item,
+                    listOf("1 ★","2 ★","3 ★","4 ★","5 ★"))
+                setSelection(((old?.getLong("stars") ?: 5L).toInt()-1).coerceIn(0,4))
+            }
+            holder.addView(stars,lp(-1,54))
+            val buyerRole=transaction.getString("sellerUid")==social.uid
+            val tags=if(buyerRole) listOf("goodCommunication","punctual","reliable","smoothClosing")
+                     else listOf("descriptionAccurate","goodCommunication","reliable","goodHandover")
+            val checks=tags.map { tag ->CheckBox(this).apply { text=t("socialTag_"+tag)
+                isChecked=(old?.get("tags") as? List<*>)?.contains(tag)==true;minHeight=px(44)
+                holder.addView(this,lp(-1,44))} }
+            val comment=EditText(this).apply {
+                hint=t("socialComment");setText(old?.getString("comment").orEmpty());maxLines=5
+                filters=arrayOf(android.text.InputFilter.LengthFilter(500))
+            }
+            holder.addView(comment,lp(-1,100))
+            val builder=AlertDialog.Builder(this).setTitle(t("socialReview")).setView(holder)
+                .setNegativeButton(t("cancelPreview"),null)
+            if(editAllowed)builder.setPositiveButton(t("socialSave")) { _,_ ->
+                val selected=checks.filter{it.isChecked}.map { tags[checks.indexOf(it)] }
+                if(selected.size>3){toast(t("socialThreeTags"));return@setPositiveButton}
+                val done:(String?)->Unit={error->toast(error ?: t("socialSaved"))}
+                val count=stars.selectedItemPosition+1
+                if(old?.exists()==true)social.editReview(transactionId+"_"+social.uid,count,selected,comment.text.toString(),done)
+                else social.submitReview(transactionId,count,selected,comment.text.toString(),done)
+            }
+            if(status=="visible")builder.setNeutralButton(t("socialWithdraw")) { _,_ ->
+                social.withdrawReview(transactionId+"_"+social.uid){error->toast(error ?: t("socialWithdrawn"))}
+            }
+            builder.show()
+        }
+    }
+
+    private fun renderSocialProfile() {
+        val main=container();toolbar(main,t("socialProfile"),{navigate("home")})
+        val content=col().apply {setPadding(px(18),px(18),px(18),px(26))}
+        content.addView(text(t("socialProfile"),24f,ink,true));content.addView(space(10))
+        body(main,content);navigation(main)
+        if(social.uid==null){content.addView(btn(t("login"),true){showAccount()});return}
+        social.getProfile(social.uid!!){ profile ->
+            if(screen!="profile")return@getProfile
+            val data=profile
+            val alias=data?.getString("alias") ?: (cloudUser?.email?.substringBefore("@") ?: "Mitglied")
+            val existing=content.childCount
+            if(existing>1)content.removeViews(1,existing-1)
+            content.addView(text(alias,22f,ink,true));content.addView(space(8))
+            content.addView(text(t("socialSeller")+" ★ "+
+                (data?.getDouble("sellerRatingAverage") ?: 0.0)+" ("+
+                (data?.getLong("sellerRatingCount") ?: 0L)+")",15f,muted))
+            content.addView(text(t("socialBuyer")+" ★ "+
+                (data?.getDouble("buyerRatingAverage") ?: 0.0)+" ("+
+                (data?.getLong("buyerRatingCount") ?: 0L)+")",15f,muted))
+            content.addView(space(14))
+            val input=EditText(this).apply {setText(alias);hint=t("socialAlias")}
+            content.addView(input,lp(-1,50))
+            content.addView(btn(t("socialSave"),false){
+                social.saveAlias(input.text.toString()){e->
+                    if(e!=null)toast(e)else {toast(t("socialSaved"));renderSocialProfile()}
+                }
+            })
+            content.addView(space(12))
+            content.addView(text(if(social.linkedPhone)t("socialVerified")else t("socialNotVerified"),13f,muted))
+            content.addView(btn(t("socialPhone"),false){
+                social.linkPhone({toast(t("socialVerified"));renderSocialProfile()},{e->toast(e)})
+            })
+            content.addView(space(10))
+            content.addView(btn(t("socialPush"),false){
+                social.enablePush { e ->toast(e ?: t("socialSaved")) }
+            })
+            content.addView(space(18))
+            content.addView(text(t("socialReviews"),20f,ink,true))
+            val reviews=col()
+            content.addView(reviews)
+            social.watchReviews(social.uid!!){ snapshots ->
+                if(screen!="profile")return@watchReviews
+                reviews.removeAllViews()
+                val seller=snapshots.filter{it.getString("revieweeRole")=="seller"}
+                val buyer=snapshots.filter{it.getString("revieweeRole")=="buyer"}
+                reviews.addView(text(t("socialSeller"),17f,ink,true))
+                seller.forEach{reviews.addView(text("★ "+it.getLong("stars")+
+                    " · "+it.getString("comment").orEmpty(),13f,muted))}
+                if(seller.isEmpty())reviews.addView(text(t("socialNoReviews"),13f,muted))
+                reviews.addView(space(12));reviews.addView(text(t("socialBuyer"),17f,ink,true))
+                buyer.forEach{reviews.addView(text("★ "+it.getLong("stars")+
+                    " · "+it.getString("comment").orEmpty(),13f,muted))}
+                if(buyer.isEmpty())reviews.addView(text(t("socialNoReviews"),13f,muted))
+            }?.let { socialListeners.add(it) }
+        }
+    }
+
     private fun showBackendInfo() {
         AlertDialog.Builder(this).setTitle(t("registerToSell"))
             .setMessage(t("authUnavailable")+"\n\n"+t("demoOnly"))
             .setPositiveButton("OK",null).show()
     }
-    override fun onDestroy() { if(::backend.isInitialized) backend.close(); super.onDestroy() }
+    override fun onDestroy() { clearSocialSubscriptions();if(::backend.isInitialized) backend.close(); super.onDestroy() }
 
     @Deprecated("Activity result API retained for compatibility with Activity base class")
     override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
@@ -1249,6 +1870,7 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         when(screen){
             "details"->{activePreviewCar=null;navigate(backFromDetail)}
+            "chat"->navigate("messages")
             "home"->super.onBackPressed()
             else->navigate("home")
         }

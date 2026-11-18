@@ -73,6 +73,10 @@ try {
 
   // Positive marketplace path.
   await assertSucceeds(setDoc(listed, car('car1')));
+  await assertSucceeds(updateDoc(listed,{allowOffers:false}));
+  await assertSucceeds(updateDoc(listed,{allowOffers:true}));
+  await assertFails(updateDoc(listed,{allowOffers:'yes'}));
+  await assertFails(setDoc(doc(dbA,'listings','badopt'),{...car('badopt'),allowOffers:1}));
   await assertSucceeds(getDoc(doc(dbGuest, 'listings', 'car1')));
   await assertSucceeds(getDocs(query(collection(dbGuest, 'listings'), where('status', '==', 'active'))));
 
@@ -100,7 +104,9 @@ try {
   await assertFails(updateDoc(listed, { status: 'archived' }));
 
   // Owner workflow and private account paths.
-  await assertSucceeds(updateDoc(listed, { status: 'sold' }));
+  await assertFails(updateDoc(listed, { status: 'sold' }));
+  await assertFails(updateDoc(listed, { status: 'reserved' }));
+  await assertSucceeds(updateDoc(listed, { status: 'paused' }));
   await assertFails(getDoc(doc(dbGuest, 'listings', 'car1')));
   await assertFails(getDoc(doc(dbB, 'listings', 'car1')));
   await assertSucceeds(getDoc(listed));
@@ -138,6 +144,77 @@ try {
   await assertFails(setDoc(doc(dbU, 'reports', 'unverified_car1'), {
     listingId: 'car1', reporterUid: 'unverified', reason: 'fraud', createdAt: serverTimestamp()
   }));
+
+
+  // Server-seeded social records. Clients can only read their own private paths.
+  const three = authenticated('charlie', true).firestore();
+  const convId = 'conversation_a';
+  const transactionId = 'transaction_a';
+  const reviewId = 'transaction_a_bob';
+  await env.withSecurityRulesDisabled(async ctx => {
+    const admin = ctx.firestore();
+    await setDoc(doc(admin, 'conversations', convId), {
+      listingId:'car1',participantUids:['alice','bob'],sellerUid:'alice',buyerUid:'bob',
+      status:'open',lastMessageAt:null
+    });
+    await setDoc(doc(admin,'conversations',convId,'messages','m1'), {
+      senderUid:'alice', type:'text',text:'private',createdAt:new Date()
+    });
+    await setDoc(doc(admin,'conversations',convId,'offers','o1'), {
+      creatorUid:'bob',status:'open',amountEur:20000,createdAt:new Date()
+    });
+    await setDoc(doc(admin,'transactions',transactionId), {
+      listingId:'car1',sellerUid:'alice',buyerUid:'bob',status:'completed'
+    });
+    await setDoc(doc(admin,'reviews',reviewId), {
+      transactionId,reviewerUid:'bob',revieweeUid:'alice',
+      reviewerRole:'buyer',revieweeRole:'seller',stars:5,status:'visible'
+    });
+    await setDoc(doc(admin,'reviews','hidden_a'), {
+      reviewerUid:'bob',revieweeUid:'alice',status:'hidden'
+    });
+    await setDoc(doc(admin,'profiles','alice'),{
+      alias:'Alice',memberSince:new Date(),sellerRatingAverage:5,sellerRatingCount:1,
+      phoneVerified:true,emailVerified:true
+    });
+    await setDoc(doc(admin,'users','alice','deviceTokens','token1'),{token:'secret'});
+    await setDoc(doc(admin,'appConfig','marketplace'),{chat:false,offers:false,reviews:false,push:false});
+  });
+  await assertSucceeds(getDoc(doc(dbA,'conversations',convId)));
+  await assertSucceeds(getDoc(doc(dbB,'conversations',convId,'messages','m1')));
+  await assertSucceeds(getDoc(doc(dbB,'conversations',convId,'offers','o1')));
+  await assertFails(getDoc(doc(three,'conversations',convId)));
+  await assertFails(getDoc(doc(three,'conversations',convId,'messages','m1')));
+  await assertFails(getDoc(doc(three,'conversations',convId,'offers','o1')));
+  await assertFails(setDoc(doc(dbB,'conversations','forged'),{sellerUid:'alice'}));
+  await assertFails(setDoc(doc(dbB,'conversations',convId,'messages','forged'),{
+    senderUid:'bob',type:'text',text:'bypass',createdAt:serverTimestamp()
+  }));
+  await assertFails(updateDoc(doc(dbB,'conversations',convId,'offers','o1'),{status:'accepted'}));
+  const quotaRef=doc(dbB,'offerQuotas','bob_20261118');
+  await assertFails(setDoc(quotaRef,{uid:'bob',date:'20261118',usedCount:0}));
+  await assertFails(getDoc(quotaRef));
+  await assertFails(setDoc(doc(dbA,'offerQuotas','bob_20261118'),{uid:'bob',usedCount:0}));
+  await assertFails(setDoc(doc(dbA,'priceAlerts','fake'),{uid:'alice',listingId:'car1',enabled:true}));
+  await assertFails(getDoc(doc(dbA,'priceAlerts','fake')));
+  await assertFails(setDoc(doc(dbA,'listingPriceHistory','car1','entries','fake'),{newPriceEur:10}));
+  await assertSucceeds(getDoc(doc(dbA,'listingPriceHistory','car1','entries','fake')));
+  await assertFails(getDoc(doc(three,'listingPriceHistory','missing-listing','entries','fake')));
+  await assertSucceeds(getDoc(doc(dbA,'transactions',transactionId)));
+  await assertSucceeds(getDoc(doc(dbB,'transactions',transactionId)));
+  await assertFails(getDoc(doc(three,'transactions',transactionId)));
+  await assertFails(updateDoc(doc(dbA,'transactions',transactionId),{status:'refunded'}));
+  await assertFails(setDoc(doc(dbB,'reviews','faked'),{stars:5}));
+  await assertSucceeds(getDoc(doc(dbGuest,'reviews',reviewId)));
+  await assertFails(getDoc(doc(dbGuest,'reviews','hidden_a')));
+  await assertSucceeds(getDoc(doc(dbGuest,'profiles','alice')));
+  await assertFails(updateDoc(doc(dbA,'profiles','alice'),{sellerRatingAverage:1}));
+  await assertSucceeds(updateDoc(doc(dbA,'profiles','alice'),{alias:'Alice M.'}));
+  await assertFails(updateDoc(doc(dbB,'profiles','alice'),{alias:'Impersonated'}));
+  await assertFails(getDoc(doc(dbA,'users','alice','deviceTokens','token1')));
+  await assertFails(setDoc(doc(dbA,'users','alice','deviceTokens','token2'),{token:'fake'}));
+  await assertSucceeds(getDoc(doc(dbGuest,'appConfig','marketplace')));
+  await assertFails(updateDoc(doc(dbA,'appConfig','marketplace'),{chat:true}));
 
   // Storage path, verification, content type and file-slot enforcement.
   const storeAlice = alice.storage('gs://limba-auto.firebasestorage.app');
