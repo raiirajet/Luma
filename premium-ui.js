@@ -157,7 +157,7 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
       expand.type='button';expand.className='outline-btn photo-fullscreen';
       expand.textContent=L('fullscreenPhoto');
       controls.appendChild(expand);
-      const current=()=>Math.max(0,images.indexOf(img.getAttribute('src')));
+      const current=()=>Math.max(0,images.findIndex(url=>new URL(url,document.baseURI).href===img.src));
       const updateThumbs=()=>{
         const idx=current();
         counter.textContent=(idx+1)+' / '+images.length;

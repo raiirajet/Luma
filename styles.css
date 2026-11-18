@@ -388,3 +388,9 @@ body:has(#swipeView:not(.hidden)) .compare-dock{display:none}
 [data-theme="dark"] .catalogue-dropdown-head,[data-theme="dark"] .profile-scores>div{background:#213a50;color:#eaf3ff;border-color:#49637a}
 [data-theme="dark"] .catalogue-option:hover,[data-theme="dark"] .catalogue-option.is-highlighted{background:#244f72}
 [data-theme="dark"] .fab-add{border-color:#99c8fd}
+
+/* Correct class of card comparison action. */
+.card-compare{position:absolute;right:11px;top:56px;z-index:2;display:grid;place-items:center;
+ width:40px;height:40px;border-radius:50%;border:1px solid #a9c5d9;background:#fffffff0;color:#14476a}
+.card-compare .ui-icon{width:19px;height:19px}
+.card-compare.is-selected{background:#1479ed;color:#fff;border-color:#fff}
