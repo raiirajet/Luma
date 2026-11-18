@@ -83,6 +83,8 @@ with sync_playwright() as p:
   page.locator(home_nav).click()
   assert page.locator('#carGrid .car-card').count()==1
   # Search preservation and load
+  page.locator('#advancedToggle').click()
+  assert page.locator('#keyword').is_visible()
   page.locator('#keyword').fill('GT-R')
   page.locator('#saveSearchBtn').click()
   page.locator('#keyword').fill('nonexistent')
