@@ -623,7 +623,7 @@ class MainActivity : Activity() {
 
     private fun showAdvanced() {
         val panel=col().apply { setPadding(px(14),px(2),px(14),px(16)) }
-        val freeText=editField(panel,t("searchTerms"),keyword,t("keywordExample"))
+        val freeText=editField(panel,t("advancedKeyword"),keyword,t("keywordExample"))
         val min=editField(panel,t("priceFrom"),minPrice,"€",true)
         val latestYear=editField(panel,t("yearTo"),yearTo,"2020",true)
         var chosenFuel=fuel;var chosenTransmission=transmission;var chosenBody=body;var chosenSeller=sellerType

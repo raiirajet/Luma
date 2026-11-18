@@ -44,7 +44,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Nachrichten",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Nachrichten"
+    "inboxTitle": "Nachrichten",
+    "keywordMore": "Stichwort (optional)",
+    "noSuggestions": "Keine passenden Vorschläge"
   },
   "en": {
     "message": "Message",
@@ -90,7 +92,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Messages",
     "navProfile": "Profile",
     "profileTitle": "Profile",
-    "inboxTitle": "Messages"
+    "inboxTitle": "Messages",
+    "keywordMore": "Keyword (optional)",
+    "noSuggestions": "No matching suggestions"
   },
   "sq": {
     "message": "Mesazh",
@@ -136,7 +140,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Mesazhet",
     "navProfile": "Profili",
     "profileTitle": "Profili",
-    "inboxTitle": "Mesazhet"
+    "inboxTitle": "Mesazhet",
+    "keywordMore": "Fjalë kyçe (opsionale)",
+    "noSuggestions": "Nuk ka sugjerime të përshtatshme"
   },
   "tr": {
     "message": "Mesaj",
@@ -182,7 +188,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Mesajlar",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Mesajlar"
+    "inboxTitle": "Mesajlar",
+    "keywordMore": "Anahtar kelime (isteğe bağlı)",
+    "noSuggestions": "Eşleşen öneri yok"
   },
   "el": {
     "message": "Μήνυμα",
@@ -228,7 +236,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Μηνύματα",
     "navProfile": "Προφίλ",
     "profileTitle": "Προφίλ",
-    "inboxTitle": "Μηνύματα"
+    "inboxTitle": "Μηνύματα",
+    "keywordMore": "Λέξη-κλειδί (προαιρετικά)",
+    "noSuggestions": "Δεν βρέθηκαν προτάσεις"
   },
   "sr-Latn": {
     "message": "Poruka",
@@ -274,7 +284,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Poruke",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Poruke"
+    "inboxTitle": "Poruke",
+    "keywordMore": "Ključna reč (opciono)",
+    "noSuggestions": "Nema odgovarajućih predloga"
   },
   "sr-Cyrl": {
     "message": "Порука",
@@ -320,7 +332,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Поруке",
     "navProfile": "Профил",
     "profileTitle": "Профил",
-    "inboxTitle": "Поруке"
+    "inboxTitle": "Поруке",
+    "keywordMore": "Кључна реч (опционо)",
+    "noSuggestions": "Нема одговарајућих предлога"
   },
   "sl": {
     "message": "Sporočilo",
@@ -366,7 +380,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Sporočila",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Sporočila"
+    "inboxTitle": "Sporočila",
+    "keywordMore": "Ključna beseda (neobvezno)",
+    "noSuggestions": "Ni ujemajočih predlogov"
   },
   "hr": {
     "message": "Poruka",
@@ -412,7 +428,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Poruke",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Poruke"
+    "inboxTitle": "Poruke",
+    "keywordMore": "Ključna riječ (neobavezno)",
+    "noSuggestions": "Nema odgovarajućih prijedloga"
   },
   "mk": {
     "message": "Порака",
@@ -458,7 +476,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Пораки",
     "navProfile": "Профил",
     "profileTitle": "Профил",
-    "inboxTitle": "Пораки"
+    "inboxTitle": "Пораки",
+    "keywordMore": "Клучен збор (опционално)",
+    "noSuggestions": "Нема соодветни предлози"
   },
   "bs": {
     "message": "Poruka",
@@ -504,7 +524,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Poruke",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Poruke"
+    "inboxTitle": "Poruke",
+    "keywordMore": "Ključna riječ (opcionalno)",
+    "noSuggestions": "Nema odgovarajućih prijedloga"
   },
   "cnr": {
     "message": "Poruka",
@@ -550,7 +572,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Poruke",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Poruke"
+    "inboxTitle": "Poruke",
+    "keywordMore": "Ključna riječ (opciono)",
+    "noSuggestions": "Nema odgovarajućih predloga"
   },
   "bg": {
     "message": "Съобщение",
@@ -596,7 +620,9 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Съобщения",
     "navProfile": "Профил",
     "profileTitle": "Профил",
-    "inboxTitle": "Съобщения"
+    "inboxTitle": "Съобщения",
+    "keywordMore": "Ключова дума (по избор)",
+    "noSuggestions": "Няма съвпадащи предложения"
   },
   "ro": {
     "message": "Mesaj",
@@ -642,6 +668,8 @@ export const SOCIAL_TRANSLATIONS = {
     "navMessages": "Mesaje",
     "navProfile": "Profil",
     "profileTitle": "Profil",
-    "inboxTitle": "Mesaje"
+    "inboxTitle": "Mesaje",
+    "keywordMore": "Cuvânt-cheie (opțional)",
+    "noSuggestions": "Nu există sugestii potrivite"
   }
 };

@@ -1,7 +1,7 @@
 // Scrollable, accessible type-ahead menus backed by the bundled car catalogue.
 import {normalizeMake} from './car-brands.js';
 let pickerSerial=0;
-export function attachSearchPicker({input,getOptions,onChoose,getLabel}) {
+export function attachSearchPicker({input,getOptions,onChoose,getLabel,getEmptyText}) {
   if(!input || typeof getOptions!=='function')throw Error('Search picker input missing');
   const host=input.closest('.search-field');
   if(!host)throw Error('Search field wrapper missing');
@@ -43,7 +43,7 @@ export function attachSearchPicker({input,getOptions,onChoose,getLabel}) {
     if(!choices.length){
       const empty=document.createElement('div');
       empty.className='catalogue-dropdown-empty';
-      empty.textContent='Keine passenden Einträge';
+      empty.textContent=getEmptyText?getEmptyText():'No matching suggestions';
       list.append(empty);
     }
     choices.forEach((name,index)=>{

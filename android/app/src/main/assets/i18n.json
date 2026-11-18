@@ -239,7 +239,8 @@
     "socialTag_reliable": "Zuverlässig",
     "socialTag_goodHandover": "Gute Übergabe",
     "socialTag_punctual": "Pünktlich",
-    "socialTag_smoothClosing": "Reibungsloser Abschluss"
+    "socialTag_smoothClosing": "Reibungsloser Abschluss",
+    "advancedKeyword": "Stichwort (optional)"
   },
   "en": {
     "displayName": "English",
@@ -481,7 +482,8 @@
     "socialTag_reliable": "Reliable",
     "socialTag_goodHandover": "Good handover",
     "socialTag_punctual": "Punctual",
-    "socialTag_smoothClosing": "Smooth closing"
+    "socialTag_smoothClosing": "Smooth closing",
+    "advancedKeyword": "Keyword (optional)"
   },
   "sq": {
     "displayName": "Shqip",
@@ -723,7 +725,8 @@
     "socialTag_reliable": "I besueshëm",
     "socialTag_goodHandover": "Dorëzim i mirë",
     "socialTag_punctual": "Në kohë",
-    "socialTag_smoothClosing": "Përfundim i lehtë"
+    "socialTag_smoothClosing": "Përfundim i lehtë",
+    "advancedKeyword": "Fjalë kyçe (opsionale)"
   },
   "tr": {
     "displayName": "Türkçe",
@@ -965,7 +968,8 @@
     "socialTag_reliable": "Güvenilir",
     "socialTag_goodHandover": "İyi teslim",
     "socialTag_punctual": "Dakik",
-    "socialTag_smoothClosing": "Sorunsuz işlem"
+    "socialTag_smoothClosing": "Sorunsuz işlem",
+    "advancedKeyword": "Anahtar kelime (isteğe bağlı)"
   },
   "el": {
     "displayName": "Ελληνικά",
@@ -1207,7 +1211,8 @@
     "socialTag_reliable": "Αξιόπιστος",
     "socialTag_goodHandover": "Καλή παράδοση",
     "socialTag_punctual": "Συνεπής",
-    "socialTag_smoothClosing": "Ομαλή ολοκλήρωση"
+    "socialTag_smoothClosing": "Ομαλή ολοκλήρωση",
+    "advancedKeyword": "Λέξη-κλειδί (προαιρετικά)"
   },
   "sr-Latn": {
     "displayName": "Srpski",
@@ -1449,7 +1454,8 @@
     "socialTag_reliable": "Pouzdan",
     "socialTag_goodHandover": "Dobra primopredaja",
     "socialTag_punctual": "Tačan",
-    "socialTag_smoothClosing": "Uspešno završeno"
+    "socialTag_smoothClosing": "Uspešno završeno",
+    "advancedKeyword": "Ključna reč (opciono)"
   },
   "sr-Cyrl": {
     "displayName": "Српски",
@@ -1691,7 +1697,8 @@
     "socialTag_reliable": "Поуздан",
     "socialTag_goodHandover": "Добра примопредаја",
     "socialTag_punctual": "Тачан",
-    "socialTag_smoothClosing": "Успешно завршено"
+    "socialTag_smoothClosing": "Успешно завршено",
+    "advancedKeyword": "Кључна реч (опционо)"
   },
   "sl": {
     "displayName": "Slovenščina",
@@ -1933,7 +1940,8 @@
     "socialTag_reliable": "Zanesljiv",
     "socialTag_goodHandover": "Dobra predaja",
     "socialTag_punctual": "Točen",
-    "socialTag_smoothClosing": "Gladek zaključek"
+    "socialTag_smoothClosing": "Gladek zaključek",
+    "advancedKeyword": "Ključna beseda (neobvezno)"
   },
   "hr": {
     "displayName": "Hrvatski",
@@ -2175,7 +2183,8 @@
     "socialTag_reliable": "Pouzdan",
     "socialTag_goodHandover": "Dobra primopredaja",
     "socialTag_punctual": "Točan",
-    "socialTag_smoothClosing": "Jednostavan završetak"
+    "socialTag_smoothClosing": "Jednostavan završetak",
+    "advancedKeyword": "Ključna riječ (neobavezno)"
   },
   "mk": {
     "displayName": "Македонски",
@@ -2417,7 +2426,8 @@
     "socialTag_reliable": "Сигурен",
     "socialTag_goodHandover": "Добро предавање",
     "socialTag_punctual": "Точен",
-    "socialTag_smoothClosing": "Успешно завршување"
+    "socialTag_smoothClosing": "Успешно завршување",
+    "advancedKeyword": "Клучен збор (опционално)"
   },
   "bs": {
     "displayName": "Bosanski",
@@ -2659,7 +2669,8 @@
     "socialTag_reliable": "Pouzdan",
     "socialTag_goodHandover": "Dobra predaja",
     "socialTag_punctual": "Tačan",
-    "socialTag_smoothClosing": "Jednostavan završetak"
+    "socialTag_smoothClosing": "Jednostavan završetak",
+    "advancedKeyword": "Ključna riječ (opcionalno)"
   },
   "cnr": {
     "displayName": "Crnogorski",
@@ -2901,7 +2912,8 @@
     "socialTag_reliable": "Pouzdan",
     "socialTag_goodHandover": "Dobra predaja",
     "socialTag_punctual": "Tačan",
-    "socialTag_smoothClosing": "Jednostavan završetak"
+    "socialTag_smoothClosing": "Jednostavan završetak",
+    "advancedKeyword": "Ključna riječ (opciono)"
   },
   "bg": {
     "displayName": "Български",
@@ -3143,7 +3155,8 @@
     "socialTag_reliable": "Надежден",
     "socialTag_goodHandover": "Добро предаване",
     "socialTag_punctual": "Точен",
-    "socialTag_smoothClosing": "Лесно приключване"
+    "socialTag_smoothClosing": "Лесно приключване",
+    "advancedKeyword": "Ключова дума (по избор)"
   },
   "ro": {
     "displayName": "Română",
@@ -3385,6 +3398,7 @@
     "socialTag_reliable": "De încredere",
     "socialTag_goodHandover": "Predare bună",
     "socialTag_punctual": "Punctual",
-    "socialTag_smoothClosing": "Finalizare fără probleme"
+    "socialTag_smoothClosing": "Finalizare fără probleme",
+    "advancedKeyword": "Cuvânt-cheie (opțional)"
   }
 }
