@@ -1120,6 +1120,64 @@ class MainActivity : Activity() {
         content.addView(text(car.optString("description"),14f,ink));content.addView(space(18))
         if(!live)content.addView(text(t("previewNotSynced"),12f,muted))
         if(live){
+            val carId=car.optString("id")
+            content.addView(text(t("priceHistory"),19f,ink,true))
+            content.addView(space(8))
+            val priceRows=col(paper).apply{
+                background=c(paper,12,border)
+                setPadding(px(12),px(12),px(12),px(12))
+            }
+            priceRows.addView(text(t("historyEmpty"),12f,muted))
+            content.addView(priceRows)
+            social.getPriceHistory(carId){records,error->
+                if(screen!="details"||activePreviewCar?.optString("id")!=carId)return@getPriceHistory
+                priceRows.removeAllViews()
+                if(error!=null)priceRows.addView(text(t("historyUnavailable"),12f,muted))
+                else if(records.isEmpty())priceRows.addView(text(t("historyEmpty"),12f,muted))
+                else records.forEach{ record ->
+                    val previous=record.getLong("oldPriceEur")
+                    val latest=record.getLong("newPriceEur") ?: 0L
+                    val time=record.getTimestamp("createdAt")?.toDate()
+                    val date=time?.let{
+                        java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT,Locale.getDefault()).format(it)
+                    } ?: "—"
+                    val change=if(previous!=null) {
+                        "  ("+(if(latest<previous)"↓ "else "↑ ")+euro(kotlin.math.abs((latest-previous).toInt()))+")"
+                    }else " · "+t("initialPrice")
+                    priceRows.addView(text(date+"  ·  "+euro(latest.toInt())+change,13f,ink,true))
+                    priceRows.addView(space(5))
+                }
+            }
+            content.addView(space(12))
+            if(car.optString("uid")!=social.uid){
+                var watchEnabled=false
+                val watch=btn(t("priceAlert"),false){
+                    social.setPriceAlert(carId,!watchEnabled){enabled,error->
+                        if(error!=null)toast(error)
+                        else if(enabled!=null){
+                            watchEnabled=enabled
+                            toast(t(if(enabled)"priceAlertSaved"else "priceAlertRemoved"))
+                        }
+                    }
+                }
+                fun refreshWatch(){
+                    watch.text=t(if(watchEnabled)"priceAlertOn"else "priceAlert")
+                }
+                content.addView(watch)
+                content.addView(text(t("priceAlertHint"),12f,muted))
+                social.getPriceAlert(carId){enabled,_->
+                    if(enabled!=null){watchEnabled=enabled;refreshWatch()}
+                }
+                watch.setOnClickListener{
+                    social.setPriceAlert(carId,!watchEnabled){enabled,error->
+                        if(error!=null)toast(error) else if(enabled!=null) {
+                            watchEnabled=enabled;refreshWatch()
+                            toast(t(if(enabled)"priceAlertSaved"else "priceAlertRemoved"))
+                        }
+                    }
+                }
+                content.addView(space(13))
+            }
             val uid=car.optString("uid")
             val seller=text(t("socialSeller")+" · ★ —",14f,muted,true)
             content.addView(seller)
@@ -1135,11 +1193,11 @@ class MainActivity : Activity() {
                 }
             })
             content.addView(space(8))
-            content.addView(btn(t("socialProposePrice"),false) {
+            if(car.optBoolean("allowOffers",true))content.addView(btn(t("socialProposePrice"),false) {
                 social.beginConversation(car.optString("id")) { id,error ->
                     if(error!=null)toast(error) else if(id!=null){focusOfferOnChat=true;activeConversation=id;navigate("chat")}
                 }
-            })
+            }) else content.addView(text(t("offersDisabled"),13f,muted))
             content.addView(space(9))
             content.addView(btn(t("reportCar"),false) {
                 if(cloudUser==null){showAccount()} else AlertDialog.Builder(this)
@@ -1639,10 +1697,14 @@ class MainActivity : Activity() {
             offerPane.removeAllViews()
             rows.sortedByDescending { it.getTimestamp("createdAt")?.seconds ?: 0L }.forEach { offer ->
                 val status=offer.getString("status").orEmpty()
+                val expired=status=="open"&&(offer.getTimestamp("validUntil")?.toDate()?.time ?: Long.MAX_VALUE)<System.currentTimeMillis()
+                val displayStatus=if(expired)"expired"else status
+                val statusKey=when(displayStatus){"open"->"offerOpen";"accepted"->"offerAccepted";
+                    "rejected"->"offerRejected";"closed"->"offerClosed";"expired"->"offerExpired";else->"offerOpen"}
                 val line=col(paper).apply {background=c(paper,12,border);setPadding(px(10),px(10),px(10),px(10))}
                 line.addView(text(euro((offer.getLong("amountEur") ?: 0L).toInt())+
-                    " · "+status,15f,ink,true))
-                if(status=="open"&&offer.getString("creatorUid")!=social.uid){
+                    " · "+t(statusKey),15f,ink,true))
+                if(status=="open"&&!expired&&offer.getString("creatorUid")!=social.uid){
                     val key=id+"~"+offer.id
                     line.addView(btn(t("socialAccept"),true){
                         social.respond(key,true){e->if(e!=null)toast(e)}
