@@ -26,6 +26,21 @@ with sync_playwright() as p:
   page.locator('#carGrid .car-card').first.wait_for()
   assert page.locator('#carGrid .car-card').count()==1,'expected exactly one demo car'
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
+
+  # Clean search should keep 6 primary fields available as compact pairs.
+  assert page.locator('#searchForm #fuel').count()==1
+  assert page.locator('#advancedFilters #fuel').count()==0
+  assert page.locator('#searchForm #advancedFilters #transmission').count()==1
+  if width < 500:
+   positions=page.evaluate("""() => {
+     const fields=['make','model','priceTo','yearFrom','mileageTo','fuel','keyword'];
+     return Object.fromEntries(fields.map(k=>{const r=document.getElementById(k).getBoundingClientRect();return[k,{x:r.x,y:r.y,w:r.width,right:r.right}]}));
+   }""")
+   for left,right in [('make','model'),('priceTo','yearFrom'),('mileageTo','fuel')]:
+    assert abs(positions[left]['y']-positions[right]['y'])<4, (left,right,positions)
+    assert positions[left]['right']<=positions[right]['x']+2, (left,right,positions)
+    assert positions[left]['w']>=125 and positions[right]['w']>=125, positions
+   assert page.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2'), 'horizontal overflow'
   assert page.locator('#makeOptions option[value="Nissan"]').count()==1
   assert page.locator('#makeOptions option').count()>=400
   assert page.locator('#makeOptions option[value="Togg"]').count()==1

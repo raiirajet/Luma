@@ -428,65 +428,94 @@ class MainActivity : Activity() {
         parent.addView(spinner, lp(-1, 52))
     }
 
+    // Two equally sized search controls with aligned labels and 48dp touch targets.
+    private fun compactSearchPair(parent: LinearLayout, leftLabel: String, leftField: View,
+                                  rightLabel: String, rightField: View) {
+        fun cell(caption: String, field: View): LinearLayout = col().apply {
+            addView(label(caption).apply {
+                minHeight = px(43)
+                gravity = Gravity.BOTTOM or Gravity.START
+                setPadding(0, px(4), 0, px(6))
+            }, lp(-1, -2))
+            addView(field, lp(-1, 48))
+        }
+        val pair = row().apply { gravity = Gravity.BOTTOM }
+        pair.addView(cell(leftLabel, leftField), LinearLayout.LayoutParams(0, -2, 1f))
+        pair.addView(spaceHorizontal(10))
+        pair.addView(cell(rightLabel, rightField), LinearLayout.LayoutParams(0, -2, 1f))
+        parent.addView(pair, lp(-1, -2))
+        parent.addView(space(4))
+    }
+
     private fun renderHome() {
         val main = container()
         toolbar(main, "AUTO · SÜDOSTEUROPA")
         val content = col()
-        val hero = col(navy).apply { setPadding(px(22), px(29), px(22), px(28)) }
+        val hero = col(navy).apply { setPadding(px(20), px(18), px(20), px(19)) }
         val heroBrand = row()
         heroBrand.addView(drawableIcon(R.drawable.limba_car, orange, 18), lp(18, 18))
         heroBrand.addView(spaceHorizontal(9))
         heroBrand.addView(text("LIMBA AUTO", 12f, orange, true))
         hero.addView(heroBrand)
-        hero.addView(space(13))
-        hero.addView(text(t("heroTitle1"), 30f, paper, true))
-        hero.addView(text(t("heroTitle2"), 29f, orange, true))
-        hero.addView(space(11))
-        hero.addView(text(t("heroDescription"), 13f, 0xffcbdce3.toInt()))
+        hero.addView(space(8))
+        hero.addView(text(t("heroTitle1"), 25f, paper, true))
+        hero.addView(text(t("heroTitle2"), 24f, orange, true))
+        hero.addView(space(7))
+        hero.addView(text(t("heroDescription"), 12f, 0xffcbdce3.toInt()))
         content.addView(hero)
-        val form = col(paper).apply { setPadding(px(18), px(18), px(18), px(19)) }
-        form.addView(text(t("findCar"), 19f, ink, true))
-        form.addView(space(10))
+        val form = col(paper).apply { setPadding(px(16), px(15), px(16), px(16)) }
+        form.addView(text(t("findCar"), 18f, ink, true))
+        form.addView(space(7))
         val keywordField = editField(form, t("searchTerms"), keyword, t("keywordExample"))
         val makes = brands.optJSONArray("makes")
         val makeItems = mutableListOf<String>()
         if (makes != null) for (i in 0 until makes.length()) makeItems.add(makes.optString(i))
-        form.addView(label(t("make")))
         val makeField = autoComplete(make, t("allMakes"), makeItems) { make = it }
-        form.addView(makeField, lp(-1, 49))
-        form.addView(label(t("model")))
         val modelArr = brands.optJSONObject("models")?.optJSONArray(canonicalBrand(make))
         val models = mutableListOf<String>()
         if (modelArr != null) for (i in 0 until modelArr.length()) models.add(modelArr.optString(i))
         val modelField = autoComplete(model, t("allModels"), models) { model = it }
-        form.addView(modelField, lp(-1, 49))
+        compactSearchPair(form, t("make"), makeField, t("model"), modelField)
         makeField.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val arr = brands.optJSONObject("models")?.optJSONArray(canonicalBrand(s.toString()))
                 val choices = mutableListOf<String>()
                 if (arr != null) for (i in 0 until arr.length()) choices.add(arr.optString(i))
+                // Only reset the selected model after an actual make change.
+                if (s.toString().trim() != make && modelField.text.isNotBlank()) modelField.setText("")
                 modelField.setAdapter(ArrayAdapter(this@MainActivity, android.R.layout.simple_dropdown_item_1line, choices))
             }
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
-        val priceField = editField(form, t("priceTo"), maxPrice, "€", true)
-        val yearField = editField(form, t("yearFrom"), yearFrom, "2013", true)
-        val kmField = editField(form, t("mileageTo"), maxMileage, "km", true)
-        val search = btn(t("showResults"), true) {
+        val priceField = input(maxPrice, "€", true)
+        val yearField = input(yearFrom, "2013", true)
+        compactSearchPair(form, t("priceTo"), priceField, t("yearFrom"), yearField)
+        val kmField = input(maxMileage, "km", true)
+        val fuelValues = listOf("", "petrol", "diesel", "hybrid", "electric")
+        val fuelField = Spinner(this).apply {
+            background = c(paper, 11, border)
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf(t("allFuel"), t("petrol"), t("diesel"), t("hybrid"), t("electric")))
+            setSelection(fuelValues.indexOf(fuel).coerceAtLeast(0))
+        }
+        compactSearchPair(form, t("mileageTo"), kmField, t("fuel"), fuelField)
+        val captureFields = {
             keyword = keywordField.text.toString().trim(); make = makeField.text.toString().trim()
             model = modelField.text.toString().trim(); maxPrice = priceField.text.toString().trim()
             yearFrom = yearField.text.toString().trim(); maxMileage = kmField.text.toString().trim()
-            renderHome()
+            fuel = fuelValues[fuelField.selectedItemPosition.coerceIn(fuelValues.indices)]
         }
-        form.addView(space(17))
-        form.addView(search)
+        form.addView(space(9))
+        form.addView(btn(t("showResults"), true) { captureFields(); renderHome() })
         form.addView(space(8))
-        form.addView(iconText(R.drawable.limba_filter, t("moreFilters") + " · " + t("fuel") + " / " + t("transmission"), { showAdvanced() }))
+        form.addView(iconText(R.drawable.limba_filter, t("moreFilters") + " · " + t("transmission"), {
+            captureFields(); showAdvanced()
+        }))
         val actions = row()
         actions.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() }, LinearLayout.LayoutParams(0, px(46), 1f))
         actions.addView(spaceHorizontal(8))
-        actions.addView(btn(t("saveSearch"), false) { saveSearch() }, LinearLayout.LayoutParams(0, px(46), 1f))
+        actions.addView(btn(t("saveSearch"), false) { captureFields(); saveSearch() }, LinearLayout.LayoutParams(0, px(46), 1f))
         form.addView(space(8));form.addView(actions)
         content.addView(form)
         val results = col().apply { setPadding(px(17), px(22), px(17), px(20)) }
