@@ -84,7 +84,10 @@ try:
    page.locator('#advancedToggle').click()
    assert page.locator('#keyword').is_visible()
    assert page.locator('#fuel').is_visible()
-   page.locator('#advancedToggle').click()
+   if width<=760:
+    page.locator('#filterApplyBtn').click()
+   else:
+    page.locator('#advancedToggle').click()
    assert page.locator('#keyword').is_hidden()
    page.locator('#clearAll').click()
    assert page.locator('#keyword').is_hidden(), 'optional keyword is in more filters only'
