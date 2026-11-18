@@ -198,7 +198,8 @@ try {
   await assertFails(setDoc(doc(dbA,'priceAlerts','fake'),{uid:'alice',listingId:'car1',enabled:true}));
   await assertFails(getDoc(doc(dbA,'priceAlerts','fake')));
   await assertFails(setDoc(doc(dbA,'listingPriceHistory','car1','entries','fake'),{newPriceEur:10}));
-  await assertFails(getDoc(doc(dbA,'listingPriceHistory','car1','entries','fake')));
+  await assertSucceeds(getDoc(doc(dbA,'listingPriceHistory','car1','entries','fake')));
+  await assertFails(getDoc(doc(three,'listingPriceHistory','missing-listing','entries','fake')));
   await assertSucceeds(getDoc(doc(dbA,'transactions',transactionId)));
   await assertSucceeds(getDoc(doc(dbB,'transactions',transactionId)));
   await assertFails(getDoc(doc(three,'transactions',transactionId)));
