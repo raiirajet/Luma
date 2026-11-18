@@ -154,10 +154,14 @@ class LimbaFirebase(private val activity: Activity) {
 
     private fun data(car: JSONObject): MutableMap<String, Any> {
         val fields = mutableMapOf<String,Any>()
-        for (key in listOf("make","model","modelExtension","description","city","country","fuel","transmission",
+        for (key in listOf("make","model","description","city","country","fuel","transmission",
             "body","condition","accidentStatus","conditionNote","sellerType")) {
             fields[key] = car.optString(key)
         }
+        // Preserve compatibility with current production rules until the optional field is deployed.
+        val modelExtension = car.optString("modelExtension")
+        if (modelExtension.isNotBlank()) fields["modelExtension"] = modelExtension
+        else if (car.optBoolean("clearModelExtension")) fields["modelExtension"] = FieldValue.delete()
         // Public listing documents never contain seller PII.
         fields["contactEmail"] = ""
         fields["title"] = listOf(car.optString("make"),car.optString("model"),car.optString("modelExtension")).filter{it.isNotBlank()}.joinToString(" ")

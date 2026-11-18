@@ -202,10 +202,15 @@ async function publishCar(e){e.preventDefault();const form=e.currentTarget;const
  persist('previewCars',state.listings.filter(x=>x.isPreview));closeModal();toast(F('previewSaved'));showView('mine');return}
  const {db,storage,modules:m}=state.fb;
  const fields={title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),condition:String(fd.get('condition')),contactEmail:'',make,model,modelExtension,year,mileage,power,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim()};
+ // Existing production rules do not yet allow this optional new field.
+ if(!modelExtension){
+   if(existing?.modelExtension)fields.modelExtension=m.deleteField();
+   else delete fields.modelExtension;
+ }
  if(existing){
   if(existing.uid!==state.user.uid)throw Error('Not listing owner');
   await m.updateDoc(m.doc(db,'listings',existing.id),fields);
-  Object.assign(existing,fields);renderAll();closeModal();toast(W('editAd'));showView('mine');return;
+  Object.assign(existing,{...fields,modelExtension});renderAll();closeModal();toast(W('editAd'));showView('mine');return;
  }
  const doc=m.doc(m.collection(db,'listings'));id=doc.id;const images=[];for(let i=0;i<files.length;i++){const file=files[i];const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';const ref=m.ref(storage,`listings/${state.user.uid}/${id}/${i}.${ext}`);await m.uploadBytes(ref,file,{contentType:file.type});uploadedRefs.push(ref);images.push(await m.getDownloadURL(ref))}
  const data={category:'vehicles',uid:state.user.uid,status:'active',createdAt:m.serverTimestamp(),...fields,image:images[0],images};await m.setDoc(doc,data);state.listings.unshift({...data,id,createdAt:Date.now()});renderAll();closeModal();toast(T('carPublished'));showView('mine')

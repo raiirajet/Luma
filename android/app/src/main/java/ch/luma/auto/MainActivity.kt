@@ -1180,7 +1180,9 @@ class MainActivity : Activity() {
                     if(mk.length !in 2..35||mdl.length !in 1..65||modelExtension.length>40||fullTitle.length>110||yr==null||yr !in 1950..(java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)+1)||km==null||km !in 0..1500000||hp==null||hp !in 1..2000||eur==null||eur !in 1..999999999||town.isBlank()||description.length<15){toast(t("requiredFields"));return@setOnClickListener}
                     val car=JSONObject().put("id",existing?.optString("id") ?: "preview-"+System.currentTimeMillis())
                         .put("uid",if(isPreview)previewUser else cloudUser?.uid ?: "")
-                        .put("make",mk).put("model",mdl).put("modelExtension",modelExtension).put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
+                        .put("make",mk).put("model",mdl).put("modelExtension",modelExtension)
+                        .put("clearModelExtension",existing?.optString("modelExtension")?.isNotBlank()==true && modelExtension.isBlank())
+                        .put("year",yr).put("mileage",km).put("power",hp).put("price",eur)
                         .put("city",town).put("country",countries[country.selectedItemPosition].first).put("fuel",fuels[fuel.selectedItemPosition])
                         .put("transmission",gearbox[trans.selectedItemPosition]).put("body",bodies[body.selectedItemPosition])
                         .put("condition",conditions[condition.selectedItemPosition]).put("accidentStatus",accidents[accident.selectedItemPosition])
