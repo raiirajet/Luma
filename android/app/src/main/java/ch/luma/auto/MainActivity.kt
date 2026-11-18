@@ -399,9 +399,9 @@ class MainActivity : Activity() {
             dropDownHeight = px(280)
             dropDownVerticalOffset = px(3)
             // On tap: show the complete offline list. Native filtering starts on typing.
-            setOnClickListener { if (adapter?.count ?: 0 > 0) showDropDown() }
+            setOnClickListener { if ((adapter?.count ?: 0) > 0) showDropDown() }
             setOnFocusChangeListener { _, hasFocus ->
-                if (hasFocus) post { if (adapter?.count ?: 0 > 0) showDropDown() }
+                if (hasFocus) post { if ((adapter?.count ?: 0) > 0) showDropDown() }
                 else callback(text.toString().trim())
             }
             setOnItemClickListener { _, _, _, _ -> callback(text.toString().trim()) }
