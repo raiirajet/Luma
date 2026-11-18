@@ -1,6 +1,6 @@
 // Limba premium interactions: no extra client writes to protected marketplace fields.
 import {mt} from './marketplace-i18n.js';
-export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,modal,closeModal,renderAll,showDetails,setFilter,renderInputs,formatPrice,escape:esc,T,notify}) {
+export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,modal,closeModal,renderAll,showDetails,setFilter,renderInputs,formatPrice,escape:esc,T,F,notify}) {
   const $=id=>document.getElementById(id);
   const L=key=>mt(key,state.locale);
   const STORAGE='luma_auto_compare_v15';
@@ -37,6 +37,8 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
   }
   function render() {
     renderChips();renderCompare();
+    const apply=$('filterApplyBtn');if(apply)apply.textContent=T('showResults');
+    advanced.dataset.drawerTitle=T('moreFilters');
     const label=$('themeLabel');if(label)label.textContent=L('themeTitle');
     const picker=$('themeSelect');
     if(picker){
@@ -61,7 +63,7 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
       ['power',x=>(x.power??'—')+' PS'],
       ['fuel',x=>T(x.fuel||'—')],
       ['transmission',x=>T(x.transmission||'—')],
-      ['accidentHistory',x=>L(x.accidentStatus==='no'?'accidentNo':x.accidentStatus==='yes'?'accidentYes':'accidentUnknown')],
+      ['accidentHistory',x=>F(x.accidentStatus==='no'?'accidentNo':x.accidentStatus==='yes'?'accidentYes':'accidentUnknown')],
       ['country',x=>x.country+' · '+x.city]
     ];
     const table='<div class="compare-scroll"><table class="compare-table"><thead><tr><th scope="col">'+esc(L('compareFeature'))+'</th>'+
@@ -90,7 +92,8 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
       advanced.setAttribute('data-filter-drawer','true');
       advanced.setAttribute('role','dialog');
       advanced.setAttribute('aria-modal','true');
-      advanced.setAttribute('aria-label',L('moreFilters'));
+      advanced.setAttribute('aria-label',T('moreFilters'));
+      advanced.dataset.drawerTitle=T('moreFilters');
       $('filterShade').classList.remove('hidden');
       document.body.classList.add('filter-sheet-open');
     }else{
@@ -217,7 +220,7 @@ export function createPremiumUI({state,getUser,getFirebase,openAuth,openPhone,mo
     $('advancedToggle')?.addEventListener('click',updateDrawer);
     $('filterShade')?.addEventListener('click',closeDrawer);
     const footer=document.createElement('button');footer.type='button';footer.id='filterApplyBtn';
-    footer.className='primary-btn filter-apply';footer.textContent=L('showResults');
+    footer.className='primary-btn filter-apply';footer.textContent=T('showResults');
     footer.addEventListener('click',()=>{closeDrawer();$('resultsSection')?.scrollIntoView({behavior:'smooth'})});
     advanced.appendChild(footer);
     window.addEventListener('resize',()=>{

@@ -299,5 +299,5 @@ const market=createMarketplace({getUser:()=>state.user,getFirebase:()=>state.fb,
  notify:toast,openAuth,escape:h,formatPrice:price,onNavigate:showView,rerender:renderAll});
 const networkBanner=()=>{$('marketNetwork').classList.toggle('hidden',navigator.onLine);$('marketNetwork').textContent=state.locale==='de'?'Offline – Änderungen benötigen eine Verbindung.':mt('offline',state.locale)};
 window.addEventListener('online',networkBanner);window.addEventListener('offline',networkBanner);networkBanner();
-premium=createPremiumUI({state,getUser:()=>state.user,getFirebase:()=>state.fb,openAuth,openPhone:()=>market.openPhoneVerification(),modal,closeModal,renderAll,showDetails,setFilter,renderInputs,formatPrice:price,escape:h,T,notify:toast});
+premium=createPremiumUI({state,getUser:()=>state.user,getFirebase:()=>state.fb,openAuth,openPhone:()=>market.openPhoneVerification(),modal,closeModal,renderAll,showDetails,setFilter,renderInputs,formatPrice:price,escape:h,T,F,notify:toast});
 wire();premium.bind();connectFirebase();
