@@ -517,6 +517,7 @@ async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || wind
   const generation=++accountLoad;
   unsubscribeOwned?.();unsubscribeOwned=null;serverOwned=[];
   unsubscribeSearches?.();unsubscribeSearches=null;
+  const guestCountries=!state.user?[...state.countries]:[];
   switchAccount(user);
   if(user){
    try{await user.reload()}catch{}
@@ -528,7 +529,14 @@ async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || wind
     ]);
     if(generation!==accountLoad||state.user?.uid!==user.uid)return;
     state.favorites=favoriteSnap.docs.map(d=>d.id);
-    if(prefs.exists())state.countries=(prefs.data().countries||[]).filter(x=>COUNTRIES.some(c=>c[0]===x));
+    if(prefs.exists()){
+     state.countries=(prefs.data().countries||[]).filter(x=>COUNTRIES.some(c=>c[0]===x));
+    }else{
+     // Transfer guest selection only when no server-side preference exists.
+     const initial=state.countries.length?state.countries:guestCountries;
+     state.countries=[...new Set(initial)].filter(code=>COUNTRIES.some(([valid])=>valid===code));
+     if(state.countries.length)await saveCountries({notify:false});
+    }
    }catch(err){console.warn('account load',err)}
    if(generation!==accountLoad||state.user?.uid!==user.uid)return;
    persistAccount('favorites',state.favorites);persistAccount('countries',state.countries);
