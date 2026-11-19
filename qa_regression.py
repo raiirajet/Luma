@@ -292,7 +292,7 @@ with sync_playwright() as p:
    assert page.locator('#modal').is_visible()
    page.locator('#modalClose').click()
    page.locator('#loginBtn').click()
-  page.locator('#accountPreferencesBtn').click()
+   page.locator('#accountPreferencesBtn').click()
    assert page.locator('#settingsLanguage').is_visible()
   context.close()
  browser.close()
