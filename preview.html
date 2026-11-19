@@ -425,6 +425,12 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 
 .swipe-empty { margin: 25vh auto; max-width: 480px; }
 
+.seller-segments { margin: 0 0 14px; }
+.seller-segments [aria-pressed="true"] { background: var(--ink, #102b3a); color: #fff; }
+#dealerAccountPanel { margin-top: 16px; }
+.dealer-queue-item { padding: 12px 0; border-bottom: 1px solid #dae6ea; }
+.dealer-queue-item p { overflow-wrap: anywhere; }
+
 </style>
 <script>window.LIMBA_OFFLINE_PREVIEW=true;window.LIMBA_FIREBASE_CONFIG=null;window.LUMA_FIREBASE_CONFIG=null;</script>
 
@@ -463,6 +469,11 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 <label class="search-field"><span data-i18n="fuel">Kraftstoff</span><select id="fuel"></select></label><label class="search-field"><span data-i18n="transmission">Getriebe</span><select id="transmission"></select></label><label class="search-field"><span data-i18n="body">Karosserie</span><select id="body"></select></label><label class="search-field"><span data-i18n="sellerType">Anbieter</span><select id="sellerType"></select></label><label class="search-field"><span data-i18n="priceFrom">Preis ab (€)</span><input id="priceFrom" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Min. €"></label><label class="search-field"><span data-i18n="yearTo">Erstzulassung bis</span><select id="yearTo"></select></label><label class="search-field"><span data-filter="mileageFrom">Kilometer ab</span><input id="mileageFrom" type="number" min="0" max="1500000" inputmode="numeric" placeholder="Min. km"></label><label class="search-field"><span data-filter="powerFrom">Leistung ab (PS)</span><input id="powerFrom" type="number" min="0" max="2000" inputmode="numeric" placeholder="Min. PS"></label><label class="search-field"><span data-filter="powerTo">Leistung bis (PS)</span><input id="powerTo" type="number" min="0" max="2000" inputmode="numeric" placeholder="Max. PS"></label><label class="search-field"><span data-filter="engineTerm">Motorbezeichnung</span><input id="engineTerm" type="search" autocomplete="off" maxlength="80" placeholder="z. B. V6, TDI"></label><label class="search-field"><span data-filter="capacityFrom">Hubraum ab (cm³)</span><input id="capacityFrom" type="number" min="0" max="12000" inputmode="numeric" placeholder="Min. cm³"></label><label class="search-field"><span data-filter="capacityTo">Hubraum bis (cm³)</span><input id="capacityTo" type="number" min="0" max="12000" inputmode="numeric" placeholder="Max. cm³"></label><label class="search-field"><span data-i18n="searchTerms">Suche nach Marke oder Modell</span><input id="keyword" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Golf, A4, BMW" data-i18n-placeholder="keywordExample"></label></div>
 </form></div><section class="wrap showroom-spotlight" id="showroomSpotlight" aria-label="Limba Showroom"></section>
 <section class="wrap main-content" id="resultsSection"><div class="section-intro"><div><div class="overline dark-overline" data-i18n="featuredCars">FAHRZEUGE ENTDECKEN</div><h2 data-i18n="latestCars">Aktuelle Fahrzeugangebote</h2></div><div class="result-ops"><span id="resultCount" class="result-count"></span><label for="sort" class="sr-only" data-i18n="sort">Sortieren</label><select id="sort" class="sort-select"></select></div></div>
+<div class="detail-actions seller-segments" role="group" aria-label="Anbieter" data-i18n-aria="sellerType">
+<button type="button" class="outline-btn" data-seller-segment="" aria-pressed="true" data-i18n="allSeller">Alle</button>
+<button type="button" class="outline-btn" data-seller-segment="privateSeller" aria-pressed="false" data-i18n="privateSeller">Privat</button>
+<button type="button" class="outline-btn" data-seller-segment="dealer" aria-pressed="false" data-i18n="dealer">Händler</button>
+</div>
 <div class="active-filters hidden" id="activeFilters" aria-label="Aktive Filter"></div>
 <div class="body-quick" id="bodyQuick"><button data-body="" class="quick-card is-selected"><span class="quick-icon"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/car.png" alt="" aria-hidden="true" draggable="false"></span><b data-i18n="allCars">Alle Autos</b></button><button data-body="suv" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-suv"></use></svg></span><b data-i18n="suv">SUV</b></button><button data-body="sedan" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-sedan"></use></svg></span><b data-i18n="sedan">Limousine</b></button><button data-body="wagon" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-wagon"></use></svg></span><b data-i18n="wagon">Kombi</b></button><button data-body="hatchback" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-hatchback"></use></svg></span><b data-i18n="hatchback">Kompakt</b></button><button data-body="coupe" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-coupe"></use></svg></span><b data-i18n="coupe">Coupé</b></button></div>
 <div id="carGrid" class="car-grid"></div><div id="emptyResults" class="empty-panel hidden"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><h3 data-i18n="emptyCars">Keine passenden Fahrzeuge gefunden.</h3><p data-i18n="adjustSearch">Ändere die Filter oder erweitere die Suchländer in den Einstellungen.</p><button class="primary-btn" id="resetEmpty" data-i18n="resetFilters">Filter zurücksetzen</button></div></section>
@@ -1742,9 +1753,46 @@ const translations = {
   ]
 };
 
+const dealerTranslations = {
+  "de": {
+    "accountType": "Kontotyp",
+    "dealerCompany": "Firmenname",
+    "dealerApply": "Händlerfreigabe beantragen",
+    "dealerSend": "Antrag absenden",
+    "dealerReview": "Freigabe Händler",
+    "dealerApprove": "Freigeben",
+    "dealerReject": "Ablehnen",
+    "dealerQueueEmpty": "Keine offenen Händleranträge.",
+    "dealerVerificationRequired": "Händlerantrag · E-Mail bestätigen",
+    "dealerPending": "Händlerantrag · In Prüfung",
+    "dealerApproved": "Händler · Freigegeben",
+    "dealerRejected": "Händlerantrag · Abgelehnt",
+    "dealerSaveError": "Der Händlerantrag konnte nicht gespeichert werden.",
+    "dealerLoadError": "Händlerfreigaben konnten nicht geladen werden.",
+    "dealerListingHint": "Als Händler kannst du nach deiner Freigabe inserieren."
+  },
+  "en": {
+    "accountType": "Account type",
+    "dealerCompany": "Company name",
+    "dealerApply": "Apply for dealer approval",
+    "dealerSend": "Submit application",
+    "dealerReview": "Dealer approvals",
+    "dealerApprove": "Approve",
+    "dealerReject": "Decline",
+    "dealerQueueEmpty": "No dealer applications to review.",
+    "dealerVerificationRequired": "Dealer application · Verify your email",
+    "dealerPending": "Dealer application · Under review",
+    "dealerApproved": "Dealer · Approved",
+    "dealerRejected": "Dealer application · Declined",
+    "dealerSaveError": "The dealer application could not be saved.",
+    "dealerLoadError": "Dealer approvals could not be loaded.",
+    "dealerListingHint": "You can publish dealer listings once approved."
+  }
+};
+
 const RELEASE_TRANSLATIONS = Object.fromEntries(
   Object.entries(translations).map(([locale, entries]) => [
-    locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])) }
+    locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])), ...dealerTranslations.en, ...dealerTranslations[locale] }
   ])
 );
 
@@ -2214,6 +2262,197 @@ function createLimbaMarketplace(api) {
 }
 
 
+/* limba-dealer-ui.js */
+function createDealerAccountUI({ el, state, h, L, T, modal, toast, openAuth }) {
+  let application;
+  let canReview = false;
+  let stopApplication;
+  let reviewingUid = null;
+  let loadingVerification = false;
+
+  function applicationRef(user) {
+    const { db, modules } = state.fb;
+    return modules.doc(db, 'dealerApplications', user.uid);
+  }
+
+  async function saveApplication(user, name) {
+    const { modules } = state.fb;
+    const reference = applicationRef(user);
+    if (user.emailVerified) await user.getIdToken(true);
+    const existing = await modules.getDocFromServer(reference);
+    const data = {
+      companyName: name.trim(),
+      email: user.email,
+      status: user.emailVerified ? 'pending' : 'verificationRequired',
+      reviewerUid: '',
+      updatedAt: modules.serverTimestamp(),
+    };
+    if (existing.exists()) {
+      await modules.updateDoc(reference, data);
+    } else {
+      await modules.setDoc(reference, { ...data, createdAt: modules.serverTimestamp() });
+    }
+  }
+
+  async function submitVerified(user) {
+    if (!user?.emailVerified || user.uid !== state.user?.uid ||
+        application?.status !== 'verificationRequired' || loadingVerification) return;
+    loadingVerification = true;
+    try {
+      await user.getIdToken(true);
+      const { modules } = state.fb;
+      await modules.updateDoc(applicationRef(user), {
+        email: user.email,
+        status: 'pending',
+        updatedAt: modules.serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn('dealer application verification', error.code);
+    } finally {
+      loadingVerification = false;
+    }
+  }
+
+  function connectAccount(user) {
+    stopApplication?.();
+    stopApplication = undefined;
+    application = undefined;
+    canReview = false;
+    reviewingUid = user?.uid ?? null;
+    if (!state.fb || !user || user.isPreview) return;
+    const { modules } = state.fb;
+    stopApplication = modules.onSnapshot(applicationRef(user), snapshot => {
+      if (state.user?.uid !== user.uid || snapshot.metadata.hasPendingWrites) return;
+      application = snapshot.data() ?? null;
+      renderAccount();
+      void submitVerified(user);
+    }, () => {
+      if (state.user?.uid !== user.uid) return;
+      const panel = el('dealerAccountPanel');
+      if (panel) panel.textContent = L('dealerLoadError');
+    });
+  }
+
+  async function refreshReviewer() {
+    const user = state.user;
+    if (!user || user.isPreview) return;
+    const uid = user.uid;
+    try {
+      const token = await user.getIdTokenResult(true);
+      if (reviewingUid !== uid || state.user?.uid !== uid) return;
+      canReview = user.emailVerified && token.claims.limbaAdmin === true;
+      renderAccount();
+    } catch {
+      // Firestore still enforces the reviewer claim for reads and decisions.
+    }
+  }
+
+  const statusKeys = {
+    verificationRequired: 'dealerVerificationRequired',
+    pending: 'dealerPending',
+    approved: 'dealerApproved',
+    rejected: 'dealerRejected',
+  };
+
+  function renderAccount() {
+    const panel = el('dealerAccountPanel');
+    if (!panel || !state.user || state.user.isPreview) return;
+    const status = application?.status;
+    const label = application === undefined ? L('loading') : status ? L(statusKeys[status]) : T('privateSeller');
+    const apply = application === null || status === 'rejected';
+    panel.innerHTML = `<p role="status"><strong>${h(L('accountType'))}</strong> · ${h(label)}</p>
+      <div class="detail-actions">
+      ${apply ? `<button type="button" id="dealerApply" class="outline-btn">${h(L('dealerApply'))}</button>` : ''}
+      ${canReview ? `<button type="button" id="dealerReview" class="primary-btn">${h(L('dealerReview'))}</button>` : ''}
+      </div>`;
+    el('dealerApply')?.addEventListener('click', openApplication);
+    el('dealerReview')?.addEventListener('click', showReview);
+  }
+
+  function openApplication() {
+    const user = state.user;
+    if (!user || user.isPreview) return;
+    modal(`<h2 id="modalTitle">${h(L('dealerApply'))}</h2>
+      <form id="dealerForm" class="form-stack">
+        <label>${h(L('dealerCompany'))}<input id="dealerCompany" required minlength="2" maxlength="120"
+          autocomplete="organization" value="${h(application?.companyName ?? '')}"></label>
+        <button class="primary-btn" type="submit">${h(L('dealerSend'))}</button>
+        <p class="helper" role="status"></p>
+      </form>`);
+    const form = el('dealerForm');
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const name = el('dealerCompany').value.trim();
+      if (name.length < 2) {
+        form.querySelector('[role=status]').textContent = L('dealerCompany');
+        return;
+      }
+      const button = form.querySelector('button');
+      button.disabled = true;
+      try {
+        await saveApplication(user, name);
+        if (form.isConnected) openAuth();
+      } catch {
+        form.querySelector('[role=status]').textContent = L('dealerSaveError');
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  function showReview() {
+    if (!canReview) return;
+    modal(`<h2 id="modalTitle">${h(L('dealerReview'))}</h2><div id="dealerQueue" class="form-stack" aria-live="polite"></div>`);
+    const panel = el('dealerQueue');
+    const uid = state.user.uid;
+    const { db, modules } = state.fb;
+    async function loadQueue() {
+      panel.textContent = L('loading');
+      try {
+        const rows = await modules.getDocs(modules.query(modules.collection(db, 'dealerApplications'),
+          modules.where('status', '==', 'pending'), modules.limit(50)));
+        if (!panel.isConnected || state.user?.uid !== uid) return;
+        if (!rows.size) {
+          panel.textContent = L('dealerQueueEmpty');
+          return;
+        }
+        panel.replaceChildren(...rows.docs.map(row => {
+          const { companyName, email } = row.data();
+          const section = document.createElement('section');
+          section.className = 'dealer-queue-item';
+          section.innerHTML = `<strong>${h(companyName)}</strong><p>${h(email)}</p><div class="detail-actions">
+            <button type="button" class="primary-btn" data-dealer-decision="approved">${h(L('dealerApprove'))}</button>
+            <button type="button" class="outline-btn" data-dealer-decision="rejected">${h(L('dealerReject'))}</button></div>`;
+          section.querySelectorAll('button').forEach(button => button.addEventListener('click', async () => {
+            section.querySelectorAll('button').forEach(action => action.disabled = true);
+            try {
+              await modules.updateDoc(row.ref, {
+                status: button.dataset.dealerDecision,
+                reviewerUid: uid,
+                updatedAt: modules.serverTimestamp(),
+              });
+              if (panel.isConnected) await loadQueue();
+            } catch {
+              toast(L('dealerSaveError'));
+              if (panel.isConnected) await loadQueue();
+            }
+          }));
+          return section;
+        }));
+      } catch {
+        panel.textContent = L('dealerLoadError');
+      }
+    }
+    void loadQueue();
+  }
+
+  return {
+    connectAccount, renderAccount, refreshReviewer, saveApplication, submitVerified,
+    approved: () => application?.status === 'approved',
+  };
+}
+
+
 /* app.js */
 
 const $=id=>document.getElementById(id);
@@ -2252,6 +2491,7 @@ function switchAccount(user){
  if(state.user?.uid!==user?.uid&&($('marketThreads')||$('marketMessageList')||$('marketNotifications')))closeModal();
  state.user=user;
  marketUI.connectAccount(user);
+ dealerUI.connectAccount(user);
  const suffix=user?.uid?'user:'+user.uid+':':'';
  state.favorites=restore(suffix+'favorites',[]).filter(x=>!String(x).startsWith('demo-')||(offlinePreview&&x==='demo-nissan-gtr'));
  state.searches=restore(suffix+'searches',[]);
@@ -2277,6 +2517,7 @@ const isDemo=x=>Boolean(x?.isDemo||x?.isPreview||String(x?.id||'').startsWith('d
 const toast=(msg)=>{$('toast').textContent=msg;$('toast').classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('visible'),3200)};
 const luxUI=createLimbaExperiences({el:$,state,filtered:()=>filtered(),carCard:x=>carCard(x),price,number,flag,countryLabel,h,safeURL,T,F,X,L,isDemo,openDetails:(id)=>showDetails(id),modal,toast});
 const marketUI=createLimbaMarketplace({el:$,state,h,price,number,L,T,F,W,X,modal,toast,openAuth,openListing,renderSavedSearches});
+const dealerUI=createDealerAccountUI({el:$,state,h,L,T,modal,toast,openAuth});
 function applyTranslations(){document.documentElement.lang=state.locale;document.title=`Limba Auto · ${T('heroTitle1')}`;document.querySelector('meta[name="description"]').content=T('footerCar');document.querySelector('meta[property="og:title"]').content=document.title;document.querySelector('meta[property="og:description"]').content=T('heroDescription');document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=T(el.dataset.i18n)});document.querySelectorAll('[data-release]').forEach(el=>{el.textContent=L(el.dataset.release)});marketUI.updateInboxButton();document.querySelectorAll('[data-lux]').forEach(el=>{el.textContent=X(el.dataset.lux)});document.querySelectorAll('[data-filter]').forEach(el=>{el.textContent=S(el.dataset.filter)});document.querySelectorAll('[data-filter-aria]').forEach(el=>{el.setAttribute('aria-label',S(el.dataset.filterAria))});document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',T(el.dataset.i18nAria)));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=T(el.dataset.i18nPlaceholder));$('loginText').textContent=state.user?(state.user.email?.split('@')[0]||T('logout')):T('login');$('loginBtn').setAttribute('aria-label',$('loginText').textContent);$('accountStatus').textContent=state.user?.isPreview?F('previewMode'):T(state.user?'profileSync':'guestSync');$('fabAdd').setAttribute('aria-label',F('addVehicle'));$('fabAdd').title=F('addVehicle');$('fabAddLabel').textContent=F('addVehicle');$('settingsLanguageLabel').textContent=F('chooseLanguage');$('swipeHelp').setAttribute('aria-label',T('learnSwipeAgain'));$('swipeHome').setAttribute('aria-label',T('backToMarket'));$('swipeFavorite').setAttribute('aria-label',T('saveFavourites'));$('modalClose').setAttribute('aria-label',T('cancel'));$('swipeTutorialBack').querySelector('span').textContent=D('backToCar');document.querySelector('.swipe-photo').setAttribute('aria-label',T('swipeTitle'));renderInputs();renderAll()}
 function opts(items,first,chosen){return `<option value="">${h(T(first))}</option>`+items.map(v=>`<option value="${h(v)}" ${chosen===v?'selected':''}>${h(T(v))}</option>`).join('')}
 let catalogChooser=null;
@@ -2355,6 +2596,8 @@ function filtered(){const f=state.filters;const term=f.keyword.trim().toLocaleLo
  if(state.sort==='priceLow')items.sort((a,b)=>a.price-b.price);else if(state.sort==='priceHigh')items.sort((a,b)=>b.price-a.price);else items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));return items}
 function carCard(x){const liked=state.favorites.includes(x.id);return `<article class="car-card" data-open="${h(x.id)}" tabindex="0"><div class="car-img"><img loading="lazy" src="${h(safeURL(x.image)||'assets/limba/icons/car.png')}" alt="${h(x.title)}"/><span class="car-tag">${h(isDemo(x)?F('previewOnly'):T(x.sellerType||'privateSeller'))}</span><button class="card-heart ${liked?'active':''}" data-like="${h(x.id)}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button></div><div class="card-body"><strong class="car-price car-price-overview">${price(x.price)}</strong><h3 class="car-title">${h(x.title)}</h3><p class="car-sub">${h(T(x.fuel||'petrol'))} · ${h(T(x.transmission||'manual'))}${x.engineName?' · '+h(x.engineName):''}</p><div class="car-specs"><span>${h(String(x.year||'—'))}</span><span>${number(x.mileage)} ${h(T('kmUnit'))}</span><span>${number(x.power)} ${h(T('powerUnit'))}</span></div><div class="car-bottom"><div class="car-location">${icon('location')} ${flag(x.country)} ${h(x.city)}<br>${h(countryLabel(x.country))}</div></div></div></article>`}
 function renderAll(){const arr=filtered();$('carGrid').innerHTML=arr.map(carCard).join('');$('emptyResults').classList.toggle('hidden',arr.length!==0);$('resultCount').textContent=`${number(arr.length)} ${T('searchResultCount')}`;$('heroCount').textContent=number(arr.length);document.querySelectorAll('[data-body]').forEach(b=>b.classList.toggle('is-selected',b.dataset.body===state.filters.body));
+ document.querySelectorAll('[data-seller-segment]').forEach(button=>
+  button.setAttribute('aria-pressed',String(button.dataset.sellerSegment===state.filters.sellerType)));
  renderActiveFilters();
  const fav=state.listings.filter(x=>state.favorites.includes(x.id)&&x.category==='vehicles');$('favoritesGrid').innerHTML=luxUI.garageCards(fav);
  const mine=state.listings.filter(x=>state.user&&x.uid===state.user.uid&&x.category==='vehicles');
@@ -2621,9 +2864,10 @@ function resetFilters(){state.filters=Object.fromEntries(Object.keys(state.filte
 async function hashPreviewPassword(password,salt){const encoded=new TextEncoder();const key=await crypto.subtle.importKey('raw',encoded.encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoded.encode(salt),iterations:120000,hash:'SHA-256'},key,256);return Array.from(new Uint8Array(bits)).map(v=>v.toString(16).padStart(2,'0')).join('')}
 function loginPreview(username){const label=username.trim().toLowerCase();switchAccount({uid:'preview-'+label,email:label,isPreview:true,emailVerified:true});persist('previewSession',{username:label});closeModal();applyTranslations();toast(F('welcomePreview'))}
 function openAuth(){
- if(state.user){const preview=Boolean(state.user.isPreview);modal(`<h2 id="modalTitle">${icon('user')} ${h(state.user.email||'')}</h2>${preview?`<div class="sample-note">${h(F('previewMode'))} · ${h(F('previewNotSynced'))}</div>`:`<p>${h(T(state.user.emailVerified?'verifiedBadge':'notVerified'))}</p>`}<div class="detail-actions"><button id="logout" class="outline-btn">${h(F('signOut'))}</button>${!preview&&!state.user.emailVerified?`<button id="verification" class="primary-btn">${h(T('sendVerification'))}</button><button id="verificationRefresh" class="outline-btn">${h(D('refreshVerification'))}</button>`:''}</div>`);
+ if(state.user){const preview=Boolean(state.user.isPreview);modal(`<h2 id="modalTitle">${icon('user')} ${h(state.user.email||'')}</h2>${preview?`<div class="sample-note">${h(F('previewMode'))} · ${h(F('previewNotSynced'))}</div>`:`<p>${h(T(state.user.emailVerified?'verifiedBadge':'notVerified'))}</p>`}<div class="detail-actions"><button id="logout" class="outline-btn">${h(F('signOut'))}</button>${!preview&&!state.user.emailVerified?`<button id="verification" class="primary-btn">${h(T('sendVerification'))}</button><button id="verificationRefresh" class="outline-btn">${h(D('refreshVerification'))}</button>`:''}</div>${preview?'':`<section id="dealerAccountPanel"></section>`}`);
+  if(!preview){dealerUI.renderAccount();void dealerUI.refreshReviewer()}
   $('logout').addEventListener('click',async()=>{if(preview){switchAccount(null);persist('previewSession',null);closeModal();applyTranslations()}else if(state.fb){await state.fb.modules.signOut(state.fb.auth);closeModal()}});
-  if(!preview&&!state.user.emailVerified){$('verification').addEventListener('click',async()=>{try{await state.fb.modules.sendEmailVerification(state.user);toast(T('checkEmail'))}catch{toast(T('authFailure'))}});$('verificationRefresh').addEventListener('click',async()=>{try{await state.user.reload();await state.user.getIdToken(true);applyTranslations();openAuth()}catch{toast(T('authFailure'))}})}return;
+  if(!preview&&!state.user.emailVerified){$('verification').addEventListener('click',async()=>{try{await state.fb.modules.sendEmailVerification(state.user);toast(T('checkEmail'))}catch{toast(T('authFailure'))}});$('verificationRefresh').addEventListener('click',async()=>{try{await state.user.reload();await state.user.getIdToken(true);await dealerUI.submitVerified(state.user);applyTranslations();openAuth()}catch{toast(T('authFailure'))}})}return;
  }
  if(offlinePreview){openPreviewAuth();return}
  modal(`<h2 id="modalTitle">${icon('lock')} ${h(F('accountLogin'))}</h2>
@@ -2632,13 +2876,29 @@ function openAuth(){
    <label>${h(T('password'))}<input id="authPassword" type="password" required autocomplete="current-password"></label>
    <label id="confirmWrap" class="hidden">${h(F('confirmPassword'))}<input id="authConfirm" type="password" autocomplete="new-password"></label>
    <label><input id="registerCheck" type="checkbox"> ${h(T('register'))}</label>
+   <fieldset id="accountTypeFields" class="form-stack hidden" disabled>
+    <label>${h(L('accountType'))}<select id="registrationType"><option value="privateSeller">${h(T('privateSeller'))}</option><option value="dealer">${h(T('dealer'))}</option></select></label>
+    <label id="registrationCompanyField" class="hidden">${h(L('dealerCompany'))}
+      <input id="registrationCompany" minlength="2" maxlength="120" autocomplete="organization"></label>
+   </fieldset>
    <button id="authSubmit" class="primary-btn" type="submit">${h(T('login'))}</button>
    <button type="button" id="passwordReset" class="outline-btn">${h(T('forgotPassword'))}</button>
    <p id="authNote" class="helper" role="status" aria-live="polite"></p>
   </form>`);
  const email=$('authEmail'), password=$('authPassword'), confirm=$('authConfirm');
  const register=$('registerCheck'), submit=$('authSubmit'), reset=$('passwordReset'), note=$('authNote');
+ const typeFields=$('accountTypeFields'), type=$('registrationType'), company=$('registrationCompany');
+ function syncAccountType(){
+  const dealer=register.checked&&type.value==='dealer';
+  typeFields.classList.toggle('hidden',!register.checked);
+  typeFields.disabled=!register.checked;
+  $('registrationCompanyField').classList.toggle('hidden',!dealer);
+  company.required=dealer;
+  company.disabled=!dealer;
+ }
+ type.addEventListener('change',syncAccountType);
  register.addEventListener('change',()=>{
+  syncAccountType();
   $('confirmWrap').classList.toggle('hidden',!register.checked);
   confirm.required=register.checked;
   password.autocomplete=register.checked?'new-password':'current-password';
@@ -2662,11 +2922,14 @@ function openAuth(){
   const value=password.value;
   if(register.checked&&value.length<8){note.textContent=F('minPassword');return}
   if(register.checked&&confirm.value!==value){note.textContent=F('passwordsMismatch');return}
+  const dealerName=register.checked&&type.value==='dealer'?company.value.trim():null;
+  if(dealerName!==null&&dealerName.length<2){note.textContent=L('dealerCompany');return}
   void withAuth(async ({auth,modules})=>{
    if(register.checked){
     const credential=await modules.createUserWithEmailAndPassword(auth,address,value);
+    const application=dealerName?dealerUI.saveApplication(credential.user,dealerName).then(()=>true,()=>false):Promise.resolve(true);
     await modules.sendEmailVerification(credential.user);
-    toast(T('checkEmail'));
+    toast(await application?T('checkEmail'):L('dealerSaveError'));
    }else await modules.signInWithEmailAndPassword(auth,address,value);
    if(submit.isConnected)closeModal();
   });
@@ -2721,12 +2984,14 @@ function openPreviewAuth(){
 
 let sellCatalogChooser=null;
 function openSell(id=null){if(typeof id!=='string')id=null;const existing=id?state.listings.find(x=>x.id===id&&x.uid===state.user?.uid):null;const editing=!!existing;if(id&&!editing)return;
+ const dealerApproved=dealerUI.approved();
  if(!state.user){openAuth();return}if(!state.user.isPreview&&!state.firebaseReady){openAuth();return}if(!state.user.emailVerified){toast(T('verifiedRequired'));openAuth();return}
  const mk=CAR_MAKES.map(v=>`<option value="${h(v)}"></option>`).join('');const y=Array.from({length:new Date().getFullYear()-1949},(_,i)=>new Date().getFullYear()+1-i).map(v=>`<option value="${v}">${v}</option>`).join('');const cs=COUNTRIES.map(([c,fl])=>`<option value="${c}">${fl} ${h(countryLabel(c))}</option>`).join('');const chooser=(name,values)=>`<label>${h(T(name))}<select name="${name}" required>${values.map(v=>`<option value="${v}">${h(T(v))}</option>`).join('')}</select></label>`;
- modal(`<h2 id="modalTitle">${icon('add_car')} ${h(F('vehicleProfile'))}</h2><p class="sample-note">${h(state.user.isPreview?F('previewMode'):T('uploadPhotoNote'))}</p><form id="sellForm" class="form-grid"><div class="sell-catalog-label"><label for="sellMake">${h(T('make'))}</label><div class="catalog-select"><input id="sellMake" name="make" maxlength="35" required autocomplete="off" placeholder="${h(T('makeExample'))}" role="combobox" aria-controls="sellMakeDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellMake" aria-label="${h(S('showMakes'))}">▾</button><div id="sellMakeDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellMakeOptions">${mk}</datalist></div><div class="sell-catalog-label"><label for="sellModel">${h(T('model'))}</label><div class="catalog-select"><input id="sellModel" name="model" maxlength="65" required autocomplete="off" role="combobox" aria-controls="sellModelDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellModel" aria-label="${h(S('showModels'))}">▾</button><div id="sellModelDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellModelOptions"></datalist></div><label>${h(F('modelExtension'))}<input name="modelExtension" maxlength="40" autocomplete="off" placeholder="${h(F('modelExtensionHint'))}"></label><label>${h(T('firstReg'))}<select name="year" required>${y}</select></label><label>${h(T('mileage'))}<input name="mileage" type="number" min="0" max="1500000" required></label>${chooser('fuel',['petrol','diesel','hybrid','electric'])}${chooser('transmission',['manual','automatic'])}${chooser('body',['suv','sedan','wagon','hatchback','coupe'])}<label>${h(T('power'))} (${h(T('powerUnit'))})<input name="power" type="number" min="1" max="2000" required></label><label>${h(S('engineName'))}<input name="engineName" maxlength="80" autocomplete="off" placeholder="${h(S('engineInfo'))}"></label><label>${h(S('engineCapacity'))}<input name="engineCapacity" type="number" min="0" max="12000" inputmode="numeric" placeholder="cm³"></label><label>${h(T('price'))} (€)<input name="price" type="number" min="1" max="999999999" required></label>${chooser('sellerType',['privateSeller','dealer'])}<label>${h(T('country'))}<select name="country" required>${cs}</select></label><label>${h(T('location'))}<input name="city" maxlength="90" required></label><label>${h(T('carCondition'))}<select name="condition"><option value="used">${h(T('conditionUsed'))}</option><option value="new">${h(T('conditionNew'))}</option></select></label><label>${h(F('accidentCar'))}<select name="accidentStatus" required><option value="unknown">${h(F('accidentUnknown'))}</option><option value="no">${h(F('accidentNo'))}</option><option value="yes">${h(F('accidentYes'))}</option></select></label><label class="full-span">${h(F('conditionShort'))}<input name="conditionNote" maxlength="240" placeholder="${h(F('conditionShortHint'))}"></label><label class="full-span">${h(X('serviceHistory'))}<textarea name="serviceHistory" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('tuningDetails'))}<textarea name="modificationNotes" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('documentNotes'))}<textarea name="documentNotes" maxlength="240" rows="2" placeholder="${h(X('notVerified'))}"></textarea></label><label class="full-span">${h(T('vehicleDescription'))}<textarea name="description" required minlength="15" maxlength="3000"></textarea></label><label class="full-span">${icon('camera')} ${h(state.user.isPreview?F('optionalPhoto'):T('listingPhotos'))}<input id="sellImages" name="images" type="file" accept="image/jpeg,image/png,image/webp" ${state.user.isPreview||editing?'':'required'} multiple></label><fieldset class="market-listing-section full-span"><legend>${h(L('photoDetails'))}</legend><p>${h(L('photoGuide'))}</p><div class="market-photo-fields" id="marketPhotoFields"></div></fieldset>${marketUI.batteryFields(existing?.batteryReport||{})}<div class="full-span"><p class="helper" id="sellNote" role="status"></p><button id="sellSubmit" type="submit" class="primary-btn full-width">${h(state.user.isPreview?F('savePreviewCar'):T('publish'))}</button></div></form>`);const form=$('sellForm');
+ modal(`<h2 id="modalTitle">${icon('add_car')} ${h(F('vehicleProfile'))}</h2><p class="sample-note">${h(state.user.isPreview?F('previewMode'):T('uploadPhotoNote'))}</p><form id="sellForm" class="form-grid"><div class="sell-catalog-label"><label for="sellMake">${h(T('make'))}</label><div class="catalog-select"><input id="sellMake" name="make" maxlength="35" required autocomplete="off" placeholder="${h(T('makeExample'))}" role="combobox" aria-controls="sellMakeDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellMake" aria-label="${h(S('showMakes'))}">▾</button><div id="sellMakeDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellMakeOptions">${mk}</datalist></div><div class="sell-catalog-label"><label for="sellModel">${h(T('model'))}</label><div class="catalog-select"><input id="sellModel" name="model" maxlength="65" required autocomplete="off" role="combobox" aria-controls="sellModelDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellModel" aria-label="${h(S('showModels'))}">▾</button><div id="sellModelDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellModelOptions"></datalist></div><label>${h(F('modelExtension'))}<input name="modelExtension" maxlength="40" autocomplete="off" placeholder="${h(F('modelExtensionHint'))}"></label><label>${h(T('firstReg'))}<select name="year" required>${y}</select></label><label>${h(T('mileage'))}<input name="mileage" type="number" min="0" max="1500000" required></label>${chooser('fuel',['petrol','diesel','hybrid','electric'])}${chooser('transmission',['manual','automatic'])}${chooser('body',['suv','sedan','wagon','hatchback','coupe'])}<label>${h(T('power'))} (${h(T('powerUnit'))})<input name="power" type="number" min="1" max="2000" required></label><label>${h(S('engineName'))}<input name="engineName" maxlength="80" autocomplete="off" placeholder="${h(S('engineInfo'))}"></label><label>${h(S('engineCapacity'))}<input name="engineCapacity" type="number" min="0" max="12000" inputmode="numeric" placeholder="cm³"></label><label>${h(T('price'))} (€)<input name="price" type="number" min="1" max="999999999" required></label>${chooser('sellerType',dealerApproved?['privateSeller','dealer']:['privateSeller'])}${!dealerApproved&&!state.user.isPreview?`<p class="helper">${h(L('dealerListingHint'))}</p>`:''}<label>${h(T('country'))}<select name="country" required>${cs}</select></label><label>${h(T('location'))}<input name="city" maxlength="90" required></label><label>${h(T('carCondition'))}<select name="condition"><option value="used">${h(T('conditionUsed'))}</option><option value="new">${h(T('conditionNew'))}</option></select></label><label>${h(F('accidentCar'))}<select name="accidentStatus" required><option value="unknown">${h(F('accidentUnknown'))}</option><option value="no">${h(F('accidentNo'))}</option><option value="yes">${h(F('accidentYes'))}</option></select></label><label class="full-span">${h(F('conditionShort'))}<input name="conditionNote" maxlength="240" placeholder="${h(F('conditionShortHint'))}"></label><label class="full-span">${h(X('serviceHistory'))}<textarea name="serviceHistory" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('tuningDetails'))}<textarea name="modificationNotes" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('documentNotes'))}<textarea name="documentNotes" maxlength="240" rows="2" placeholder="${h(X('notVerified'))}"></textarea></label><label class="full-span">${h(T('vehicleDescription'))}<textarea name="description" required minlength="15" maxlength="3000"></textarea></label><label class="full-span">${icon('camera')} ${h(state.user.isPreview?F('optionalPhoto'):T('listingPhotos'))}<input id="sellImages" name="images" type="file" accept="image/jpeg,image/png,image/webp" ${state.user.isPreview||editing?'':'required'} multiple></label><fieldset class="market-listing-section full-span"><legend>${h(L('photoDetails'))}</legend><p>${h(L('photoGuide'))}</p><div class="market-photo-fields" id="marketPhotoFields"></div></fieldset>${marketUI.batteryFields(existing?.batteryReport||{})}<div class="full-span"><p class="helper" id="sellNote" role="status"></p><button id="sellSubmit" type="submit" class="primary-btn full-width">${h(state.user.isPreview?F('savePreviewCar'):T('publish'))}</button></div></form>`);const form=$('sellForm');
+ if(!editing&&dealerApproved)form.elements.sellerType.value='dealer';
  if(existing){
   for(const name of ['make','model','modelExtension','year','mileage','power','engineName','engineCapacity','price','fuel','transmission','body','sellerType','country','city','condition','accidentStatus','conditionNote','serviceHistory','modificationNotes','documentNotes','description']){
-   const el=form.elements.namedItem(name);if(el&&existing[name]!==undefined)el.value=String(existing[name]);
+   const el=form.elements.namedItem(name);if(el&&existing[name]!==undefined&&(name!=='sellerType'||existing.sellerType!=='dealer'||dealerApproved))el.value=String(existing[name]);
   }
   $('sellImages').required=false;
   $('sellImages').closest('label').classList.add('hidden'); // Photos remain unchanged when editing.
@@ -2884,6 +3149,7 @@ async function startFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window
   if(user){
    try{await user.reload()}catch{}
    if(generation!==accountLoad||state.user?.uid!==user.uid)return;
+   void dealerUI.submitVerified(user);
    try{
     const [favoriteSnap,prefs]=await Promise.all([
      db.getDocs(db.collection(state.fb.db,'users',user.uid,'favorites')),
@@ -2946,7 +3212,12 @@ function wireMarketplace(){
   if(orphan)marketUI.toggleAlert(Number(orphan.dataset.orphanAlert),true);
  });
 }
-function wire(){wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu();if(!e.target.closest('#searchCountryField'))closeSearchCountries()});$('searchCountryToggle').addEventListener('click',()=>{const expanded=!$('searchCountryPanel').classList.toggle('hidden');$('searchCountryToggle').setAttribute('aria-expanded',String(expanded))});$('searchCountryField').addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearchCountries();$('searchCountryToggle').focus();e.stopPropagation()}});$('fabAdd').addEventListener('click',openSell);$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>{$('advancedFilters').classList.toggle('hidden');$('filterChevron').classList.toggle('rotated',!$('advancedFilters').classList.contains('hidden'));$('advancedToggle').setAttribute('aria-expanded',String(!$('advancedFilters').classList.contains('hidden')))});['clearAll','resetEmpty'].forEach(id=>$(id).addEventListener('click',resetFilters));$('sort').addEventListener('change',e=>{state.sort=e.target.value;renderAll()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
+function wire(){
+ document.querySelectorAll('[data-seller-segment]').forEach(button=>button.addEventListener('click',()=>{
+  $('sellerType').value=button.dataset.sellerSegment;
+  setFilter('sellerType',button.dataset.sellerSegment);
+ }));
+wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu();if(!e.target.closest('#searchCountryField'))closeSearchCountries()});$('searchCountryToggle').addEventListener('click',()=>{const expanded=!$('searchCountryPanel').classList.toggle('hidden');$('searchCountryToggle').setAttribute('aria-expanded',String(expanded))});$('searchCountryField').addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearchCountries();$('searchCountryToggle').focus();e.stopPropagation()}});$('fabAdd').addEventListener('click',openSell);$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>{$('advancedFilters').classList.toggle('hidden');$('filterChevron').classList.toggle('rotated',!$('advancedFilters').classList.contains('hidden'));$('advancedToggle').setAttribute('aria-expanded',String(!$('advancedFilters').classList.contains('hidden')))});['clearAll','resetEmpty'].forEach(id=>$(id).addEventListener('click',resetFilters));$('sort').addEventListener('change',e=>{state.sort=e.target.value;renderAll()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
  document.addEventListener('click',e=>{const heart=e.target.closest('[data-like]');if(heart){e.preventDefault();e.stopPropagation();return toggleFavorite(heart.dataset.like)}const card=e.target.closest('[data-open]');if(card)return showDetails(card.dataset.open);const edit=e.target.closest('[data-edit]');if(edit)return openSell(edit.dataset.edit);
  const status=e.target.closest('[data-status-id]');if(status)return updateListingStatus(status.dataset.statusId,status.dataset.status);
  const del=e.target.closest('[data-delete]');if(del)return removeListing(del.dataset.delete);const apply=e.target.closest('[data-apply]');if(apply){const item=state.searches[Number(apply.dataset.apply)];if(item){state.filters={...state.filters,...item.filters};state.countries=item.countries||[];void saveCountries({notify:false});renderInputs();showView('home');$('resultsSection').scrollIntoView({behavior:'smooth'})}return}const drop=e.target.closest('[data-drop]');if(drop){drop.disabled=true;void dropSearch(Number(drop.dataset.drop))}});

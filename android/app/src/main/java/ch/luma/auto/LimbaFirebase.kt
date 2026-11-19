@@ -395,13 +395,88 @@ class LimbaFirebase(private val activity: Activity) {
             .addOnFailureListener { done(it.localizedMessage ?: "Login failed") }
     }
 
-    fun register(email: String, password: String, done: (String?) -> Unit) {
-        val a = auth ?: return done("Firebase not configured")
-        a.createUserWithEmailAndPassword(email,password).addOnSuccessListener {
-            it.user?.sendEmailVerification()?.addOnSuccessListener { done(null) }
-                ?.addOnFailureListener { err -> done(err.localizedMessage ?: "Email failed") }
-                ?: done("Missing user")
+    fun register(email: String, password: String, dealerName: String?, done: (String?) -> Unit) {
+        val service = auth ?: return done("Firebase not configured")
+        service.createUserWithEmailAndPassword(email, password).addOnSuccessListener { credential ->
+            val user = credential.user ?: return@addOnSuccessListener done("Missing user")
+            fun sendVerification(applicationError: String?) {
+                user.sendEmailVerification().addOnSuccessListener { done(applicationError) }
+                    .addOnFailureListener { done(it.localizedMessage ?: "Email failed") }
+            }
+            if (dealerName == null) sendVerification(null)
+            else saveDealerApplication(dealerName, ::sendVerification)
         }.addOnFailureListener { done(it.localizedMessage ?: "Registration failed") }
+    }
+
+    fun watchDealerApplication(done: (JSONObject?, String?) -> Unit): ListenerRegistration? {
+        val uid = auth?.currentUser?.uid ?: return null
+        return db?.collection("dealerApplications")?.document(uid)?.addSnapshotListener { snapshot, error ->
+            if (auth?.currentUser?.uid != uid || snapshot?.metadata?.hasPendingWrites() == true) return@addSnapshotListener
+            done(snapshot?.takeIf { it.exists() }?.let(::featureDocument), error?.localizedMessage)
+        }
+    }
+
+    fun saveDealerApplication(companyName: String, done: (String?) -> Unit) {
+        val user = auth?.currentUser ?: return done("Sign in required")
+        val service = db ?: return done("Firestore unavailable")
+        val reference = service.collection("dealerApplications").document(user.uid)
+        val task = service.runTransaction { transaction ->
+            val existing = transaction.get(reference)
+            val data = mutableMapOf<String, Any>(
+                "companyName" to companyName.trim(),
+                "email" to user.email.orEmpty(),
+                "status" to if (user.isEmailVerified) "pending" else "verificationRequired",
+                "reviewerUid" to "",
+                "updatedAt" to FieldValue.serverTimestamp(),
+            )
+            if (existing.exists()) transaction.update(reference, data)
+            else {
+                data["createdAt"] = FieldValue.serverTimestamp()
+                transaction.set(reference, data)
+            }
+            Unit
+        }
+        finish(task, done)
+    }
+
+    fun submitVerifiedDealerApplication(done: (String?) -> Unit) {
+        val user = auth?.currentUser ?: return done("Sign in required")
+        val reference = db?.collection("dealerApplications")?.document(user.uid) ?: return done("Firestore unavailable")
+        if (!user.isEmailVerified) return done("Verify your email first")
+        user.getIdToken(true).addOnSuccessListener {
+            finish(reference.update(mapOf(
+                "email" to user.email.orEmpty(),
+                "status" to "pending",
+                "updatedAt" to FieldValue.serverTimestamp(),
+            )), done)
+        }.addOnFailureListener { done(it.localizedMessage ?: "Firebase request failed") }
+    }
+
+    fun mayReviewDealers(done: (Boolean) -> Unit) {
+        val user = auth?.currentUser ?: return done(false)
+        if (!user.isEmailVerified) return done(false)
+        user.getIdToken(true).addOnSuccessListener { result ->
+            done(auth?.currentUser?.uid == user.uid && result.claims["limbaAdmin"] == true)
+        }.addOnFailureListener { done(false) }
+    }
+
+    fun pendingDealers(done: (List<JSONObject>, String?) -> Unit) {
+        val uid = auth?.currentUser?.uid ?: return done(emptyList(), "Sign in required")
+        val applications = db?.collection("dealerApplications") ?: return done(emptyList(), "Firestore unavailable")
+        applications.whereEqualTo("status", "pending").limit(50).get(Source.SERVER).addOnSuccessListener { snapshot ->
+            if (auth?.currentUser?.uid == uid) done(snapshot.documents.map(::featureDocument), null)
+        }.addOnFailureListener { done(emptyList(), it.localizedMessage ?: "Firebase request failed") }
+    }
+
+    fun reviewDealer(uid: String, approved: Boolean, done: (String?) -> Unit) {
+        val reviewer = auth?.currentUser?.uid ?: return done("Sign in required")
+        if (!isDocumentId(uid)) return done("Invalid account")
+        val applicant = db?.collection("dealerApplications")?.document(uid) ?: return done("Firestore unavailable")
+        finish(applicant.update(mapOf(
+            "status" to if (approved) "approved" else "rejected",
+            "reviewerUid" to reviewer,
+            "updatedAt" to FieldValue.serverTimestamp(),
+        )), done)
     }
 
     fun refreshVerification(done: (Boolean) -> Unit) {

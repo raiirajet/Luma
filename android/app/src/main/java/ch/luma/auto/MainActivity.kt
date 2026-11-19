@@ -119,6 +119,9 @@ class MainActivity : Activity() {
     private var cloudStars = mutableSetOf<String>()
     private var cloudUser: com.google.firebase.auth.FirebaseUser? = null
     private var countryRegistration: ListenerRegistration? = null
+    private var dealerRegistration: ListenerRegistration? = null
+    private var dealerApplication: JSONObject? = null
+    private var submittingDealerApplication = false
     private var cloudSearches = emptyList<JSONObject>()
     private var searchAlerts = emptyList<JSONObject>()
     private var searchAlertsLoaded = false
@@ -213,17 +216,29 @@ class MainActivity : Activity() {
         if (intent.getBooleanExtra(openNotificationsExtra, false)) screen = "notifications"
         if (backend.ready) {
             backend.watchAuth { user ->
-                if (cloudUser?.uid != user?.uid) {
+                val accountChanged = cloudUser?.uid != user?.uid
+                if (accountChanged) {
                     openingSellerChat = false
                     conversationDialog?.dismiss()
                     countryRegistration?.remove()
                     countryRegistration = null
+                    dealerRegistration?.remove()
+                    dealerRegistration = null
+                    dealerApplication = null
                     activeCountry = (prefs.getStringSet(
                         if (user == null) "countries" else "countries:" + user.uid,
                         emptySet()
                     ) ?: emptySet()).toMutableSet()
                 }
                 cloudUser = user
+                if (accountChanged && user != null) {
+                    dealerRegistration = backend.watchDealerApplication { application, error ->
+                        if (cloudUser?.uid == user.uid && error == null) {
+                            dealerApplication = application
+                            submitDealerAfterVerification()
+                        }
+                    }
+                }
                 syncDeviceNotificationListener()
                 searchRegistrations.forEach { it.remove() }
                 searchRegistrations.clear()
@@ -843,6 +858,15 @@ class MainActivity : Activity() {
             results.addView(text(t("latestCars"),21f,ink,true))
             results.addView(space(5))
             results.addView(text(total.toString()+" "+t("searchResultCount"),12f,orange,true))
+            val sellerSegments = row()
+            for ((value, label) in listOf("" to "allSeller", "privateSeller" to "privateSeller", "dealer" to "dealer")) {
+                if (sellerSegments.childCount > 0) sellerSegments.addView(spaceHorizontal(5))
+                sellerSegments.addView(btn(t(label), sellerFilter == value) {
+                    sellerFilter = value
+                    refreshResults()
+                }, LinearLayout.LayoutParams(0, px(44), 1f))
+            }
+            results.addView(sellerSegments)
             showFilterChips(results)
             results.addView(space(13))
             available.forEach{results.addView(previewCard(it));results.addView(space(12))}
@@ -1920,24 +1944,48 @@ class MainActivity : Activity() {
             }
     }
 
+    private fun submitDealerAfterVerification() {
+        if (cloudUser?.isEmailVerified != true || dealerApplication?.optString("status") != "verificationRequired" ||
+            submittingDealerApplication) return
+        submittingDealerApplication = true
+        backend.submitVerifiedDealerApplication { submittingDealerApplication = false }
+    }
+
     private fun showFirebaseAccount() {
         val user = cloudUser
-        if(user != null) {
-            val choices = arrayOf(t("myAds"), t("messages"), t("notifications"), t("refreshVerification"), t("sendVerification"), t("signOut"))
-            AlertDialog.Builder(this).setTitle(user.email ?: "Limba")
-                .setMessage(if(user.isEmailVerified)t("verifiedBadge") else t("notVerified"))
-                .setItems(choices) { _,which ->
-                    when(which) {
-                        0 -> navigate("mine")
-                        1 -> navigate("messages")
-                        2 -> navigate("notifications")
-                        3 -> backend.refreshVerification { confirmed ->
-                            toast(if(confirmed)t("verifiedBadge")else t("notVerified"));render()
+        if (user != null) {
+            backend.mayReviewDealers { reviewer ->
+                if (cloudUser?.uid != user.uid || isFinishing || isDestroyed) return@mayReviewDealers
+                val status = dealerApplication?.optString("status")
+                val label = t(when (status) {
+                    "verificationRequired" -> "dealerVerificationRequired"
+                    "pending" -> "dealerPending"
+                    "approved" -> "dealerApproved"
+                    "rejected" -> "dealerRejected"
+                    else -> "privateSeller"
+                })
+                val actions = mutableListOf<Pair<String, () -> Unit>>(
+                    "myAds" to { navigate("mine") },
+                    "messages" to { navigate("messages") },
+                    "notifications" to { navigate("notifications") },
+                )
+                if (!user.isEmailVerified) {
+                    actions.add("refreshVerification" to {
+                        backend.refreshVerification { verified ->
+                            if (verified) submitDealerAfterVerification()
+                            toast(t(if (verified) "verifiedBadge" else "notVerified"))
+                            render()
                         }
-                        4 -> backend.sendVerification { err -> toast(err ?: t("checkEmail")) }
-                        5 -> backend.auth?.signOut()
-                    }
-                }.setNegativeButton(t("cancel"),null).show()
+                    })
+                    actions.add("sendVerification" to { backend.sendVerification { error -> toast(error ?: t("checkEmail")) } })
+                }
+                if (status == null || status == "rejected") actions.add("dealerApply" to ::showDealerApplication)
+                if (reviewer) actions.add("dealerReview" to ::showDealerReview)
+                actions.add("signOut" to { backend.auth?.signOut() })
+                AlertDialog.Builder(this).setTitle("${user.email ?: "Limba"}\n$label")
+                    .setItems(actions.map { t(it.first) }.toTypedArray()) { _, chosen -> actions[chosen].second() }
+                    .setNegativeButton(t("cancel"), null).show()
+            }
             return
         }
         AlertDialog.Builder(this).setTitle(t("accountLogin"))
@@ -1949,6 +1997,59 @@ class MainActivity : Activity() {
                 }
             }.setNegativeButton(t("cancel"),null).show()
     }
+    private fun showDealerApplication() {
+        val form = col().apply { setPadding(px(18), px(9), px(18), px(9)) }
+        val company = editField(form, t("dealerCompany"), dealerApplication?.optString("companyName").orEmpty(), "")
+        company.filters = arrayOf(android.text.InputFilter.LengthFilter(120))
+        val dialog = AlertDialog.Builder(this).setTitle(t("dealerApply")).setView(form)
+            .setPositiveButton(t("dealerSend"), null).setNegativeButton(t("cancel"), null).create()
+        dialog.setOnShowListener {
+            val submit = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            submit.setOnClickListener {
+                val name = company.text.toString().trim()
+                if (name.length < 2) {
+                    company.error = t("dealerCompany")
+                    return@setOnClickListener
+                }
+                submit.isEnabled = false
+                backend.saveDealerApplication(name) { error ->
+                    submit.isEnabled = true
+                    if (error == null) {
+                        dialog.dismiss()
+                        toast(t(if (cloudUser?.isEmailVerified == true) "dealerPending" else "dealerVerificationRequired"))
+                    } else toast(t("dealerSaveError"))
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showDealerReview() {
+        backend.pendingDealers { rows, error ->
+            if (isFinishing || isDestroyed) return@pendingDealers
+            val dialog = AlertDialog.Builder(this).setTitle(t("dealerReview")).setNegativeButton(t("cancel"), null)
+            if (error != null || rows.isEmpty()) {
+                dialog.setMessage(t(if (error == null) "dealerQueueEmpty" else "dealerLoadError")).show()
+                return@pendingDealers
+            }
+            val choices = rows.map { it.optString("companyName") + "\n" + it.optString("email") }.toTypedArray()
+            dialog.setItems(choices) { _, selected ->
+                val application = rows[selected]
+                fun review(approved: Boolean) {
+                    backend.reviewDealer(application.optString("id"), approved) { saveError ->
+                        if (saveError != null) toast(t("dealerSaveError"))
+                        showDealerReview()
+                    }
+                }
+                AlertDialog.Builder(this).setTitle(application.optString("companyName"))
+                    .setMessage(application.optString("email"))
+                    .setPositiveButton(t("dealerApprove")) { _, _ -> review(true) }
+                    .setNeutralButton(t("dealerReject")) { _, _ -> review(false) }
+                    .setNegativeButton(t("cancel"), null).show()
+            }.show()
+        }
+    }
+
     private fun showFirebaseAuthForm(mode:String) {
         val layout=col().apply { setPadding(px(16),px(8),px(16),px(8)) }
         val email=editField(layout,t("email"),"","name@example.com")
@@ -1957,6 +2058,33 @@ class MainActivity : Activity() {
         password?.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         val confirm=if(mode=="register")editField(layout,t("confirmPassword"),"","")else null
         confirm?.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        val accountType = if (mode == "register") {
+            layout.addView(label(t("accountType")))
+            Spinner(this).apply {
+                background = c(paper, 11, border)
+                contentDescription = t("accountType")
+                adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
+                    listOf(t("privateSeller"), t("dealer")))
+                layout.addView(this, lp(-1, 48))
+            }
+        } else null
+        val companySection = col()
+        val company = if (accountType != null) {
+            layout.addView(companySection)
+            companySection.visibility = View.GONE
+            val field = editField(companySection, t("dealerCompany"), "", "")
+            field.filters = arrayOf(android.text.InputFilter.LengthFilter(120))
+            accountType.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    companySection.visibility = if (position == 1) View.VISIBLE else View.GONE
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    companySection.visibility = View.GONE
+                }
+            }
+            field
+        } else null
         val title=when(mode){"register"->t("register");"reset"->t("forgotPassword");else->t("login")}
         AlertDialog.Builder(this).setTitle(title).setView(layout)
             .setPositiveButton(title,null).setNegativeButton(t("cancel"),null)
@@ -1978,6 +2106,11 @@ class MainActivity : Activity() {
                         if(mode=="register" && pass != confirm?.text.toString()) {
                             toast(t("passwordsMismatch"));return@setOnClickListener
                         }
+                        val dealerName = if (accountType?.selectedItemPosition == 1) company?.text?.toString()?.trim().orEmpty() else null
+                        if (dealerName != null && dealerName.length < 2) {
+                            company?.error = t("dealerCompany")
+                            return@setOnClickListener
+                        }
                         positive.isEnabled=false
                         val done:(String?)->Unit={ error ->
                             positive.isEnabled=true
@@ -1986,7 +2119,7 @@ class MainActivity : Activity() {
                             }
                         }
                         when(mode){
-                            "register"->backend.register(address,pass,done)
+                            "register"->backend.register(address,pass,dealerName,done)
                             "reset"->backend.resetPassword(address,done)
                             else->backend.signIn(address,pass,done)
                         }
@@ -2122,9 +2255,12 @@ class MainActivity : Activity() {
                 batteryGroup.visibility = if (fuels[position] == "electric") View.VISIBLE else View.GONE
             }
         }
-        val sellerTypes=listOf("privateSeller","dealer")
+        val approvedDealer = dealerApplication?.optString("status") == "approved"
+        val sellerTypes = if (approvedDealer) listOf("privateSeller", "dealer") else listOf("privateSeller")
         val seller=spinner(t("sellerType"),sellerTypes.map { it to t(it) })
-        existing?.let {seller.setSelection(sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0))}
+        seller.setSelection(existing?.let { sellerTypes.indexOf(it.optString("sellerType")).coerceAtLeast(0) }
+            ?: if (approvedDealer) 1 else 0)
+        if (!approvedDealer && !isPreview) col.addView(text(t("dealerListingHint"), 13f, muted))
         col.addView(label(t("vehicleDescription")))
         val desc=EditText(this).apply { setTextColor(ink);minLines=3;maxLines=6;setPadding(px(13),px(10),px(13),px(10));background=c(paper,12,border) }
         desc.setText(existing?.optString("description") ?: "")
@@ -2482,6 +2618,7 @@ class MainActivity : Activity() {
         deviceNotifications?.remove()
         searchRegistrations.forEach { it.remove() }
         countryRegistration?.remove()
+        dealerRegistration?.remove()
         clearPickedPhotos()
         if (::backend.isInitialized) backend.close()
         super.onDestroy()

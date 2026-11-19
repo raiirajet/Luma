@@ -20,6 +20,8 @@ rules_version = '2';
 // users/{uid}/notifications/{notificationId}: server-owned search notifications.
 // The recipient can set the read flag to true.
 // reports/{uid_listingId}: one immutable, owner-authored report per listing.
+// dealerApplications/{uid}: private applications submitted by that account and
+// reviewed by a verified administrator with the limbaAdmin custom claim.
 // All unspecified paths are denied.
 
 service cloud.firestore {
@@ -314,6 +316,51 @@ service cloud.firestore {
         && getAfter(path).data.used == true;
     }
 
+    function isDealerAdmin() {
+      return isVerified() && request.auth.token.get('limbaAdmin', false) == true;
+    }
+
+    function hasDealerApproval(uid) {
+      let application = /databases/$(database)/documents/dealerApplications/$(uid);
+      return exists(application) && get(application).data.status == 'approved';
+    }
+
+    function canSetSellerType(data) {
+      return data.sellerType != 'dealer' || hasDealerApproval(data.uid);
+    }
+
+    function isDealerApplicant(data) {
+      return data.keys().hasOnly(['companyName', 'email', 'status', 'createdAt', 'updatedAt', 'reviewerUid'])
+        && data.email is string && data.email == request.auth.token.email
+        && data.companyName is string && data.companyName.size() >= 2 && data.companyName.size() <= 120
+        && data.companyName.matches('(?s).*[^\\s].*')
+        && data.reviewerUid == '' && data.updatedAt == request.time;
+    }
+
+    function canSubmitDealerApplication(known, data) {
+      return isVerified() && known.status in ['verificationRequired', 'rejected']
+        && isDealerApplicant(data) && data.status == 'pending'
+        && data.createdAt == known.createdAt;
+    }
+
+    function canReviewDealerApplication(known, data) {
+      return isDealerAdmin() && known.status == 'pending'
+        && data.status in ['approved', 'rejected']
+        && data.reviewerUid == request.auth.uid && data.updatedAt == request.time
+        && data.diff(known).affectedKeys().hasOnly(['status', 'reviewerUid', 'updatedAt']);
+    }
+
+    match /dealerApplications/{uid} {
+      allow get: if isOwner(uid) || isDealerAdmin();
+      allow list: if isDealerAdmin() && request.query.limit <= 50;
+      allow create: if isOwner(uid) && isDealerApplicant(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && ((isVerified() && request.resource.data.status == 'pending')
+          || (!isVerified() && request.resource.data.status == 'verificationRequired'));
+      allow update: if (isOwner(uid) && canSubmitDealerApplication(resource.data, request.resource.data))
+        || canReviewDealerApplication(resource.data, request.resource.data);
+    }
+
     match /marketplaceSecurity/enforcement {
       allow get: if true;
     }
@@ -334,6 +381,7 @@ service cloud.firestore {
       allow create: if isVerified()
         && uidUnchanged()
         && request.resource.data.status == 'active'
+        && canSetSellerType(request.resource.data)
         && request.resource.data.createdAt == request.time
         && !hasModerationHold(listingId)
         && isValidListing(request.resource.data, listingId)
@@ -346,6 +394,9 @@ service cloud.firestore {
         && request.resource.data.images == resource.data.images
         && request.resource.data.image == resource.data.image
         && (request.resource.data.status != 'active' || !hasModerationHold(listingId))
+        && (canSetSellerType(request.resource.data)
+          || (request.resource.data.status in ['paused', 'sold']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])))
         && isValidListing(request.resource.data, listingId);
       allow delete: if isVerified() && isOwner(resource.data.uid);
 

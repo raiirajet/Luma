@@ -79,6 +79,48 @@ const validSearch = {
 try {
   const listed = doc(dbA, 'listings', 'car1');
 
+  const dealerAccount = env.authenticatedContext('applicant', { email: 'applicant@example.test', email_verified: true });
+  const unconfirmedDealer = env.authenticatedContext('applicant', { email: 'applicant@example.test', email_verified: false });
+  const dealerAdmin = env.authenticatedContext('moderator', { email: 'admin@example.test', email_verified: true, limbaAdmin: true });
+  const dbDealer = dealerAccount.firestore();
+  const dbDealerUnconfirmed = unconfirmedDealer.firestore();
+  const dbDealerAdmin = dealerAdmin.firestore();
+  const dealerDoc = database => doc(database, 'dealerApplications', 'applicant');
+  const application = {
+    companyName: 'Auto Example', email: 'applicant@example.test',
+    status: 'verificationRequired', reviewerUid: '',
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  };
+  const dealerListing = doc(dbDealer, 'listings', 'dealer-car');
+  await assertFails(setDoc(dealerListing, { ...car('dealer-car', 'applicant'), sellerType: 'dealer' }));
+  await assertFails(setDoc(dealerDoc(dbDealerUnconfirmed), { ...application, status: 'pending' }));
+  await assertFails(setDoc(dealerDoc(dbDealerUnconfirmed), { ...application, email: 'other@example.test' }));
+  await assertFails(setDoc(dealerDoc(dbDealerUnconfirmed), { ...application, companyName: '  ' }));
+  await assertSucceeds(setDoc(dealerDoc(dbDealerUnconfirmed), application));
+  await assertFails(getDoc(dealerDoc(dbA)));
+  await assertFails(getDoc(dealerDoc(dbGuest)));
+  await assertFails(getDocs(query(collection(dbDealer, 'dealerApplications'), limit(50))));
+  await assertFails(updateDoc(dealerDoc(dbDealerUnconfirmed), { status: 'pending', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(dealerDoc(dbDealerAdmin), { status: 'approved', reviewerUid: 'moderator', updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(dealerDoc(dbDealer), { status: 'pending', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(dealerDoc(dbDealer), { status: 'approved', reviewerUid: 'applicant', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(dealerDoc(dbDealerAdmin), {
+    status: 'approved', companyName: 'Other Company', reviewerUid: 'moderator', updatedAt: serverTimestamp()
+  }));
+  await assertSucceeds(getDocs(query(collection(dbDealerAdmin, 'dealerApplications'), where('status', '==', 'pending'), limit(50))));
+  await assertFails(getDocs(collection(dbDealerAdmin, 'dealerApplications')));
+  await assertSucceeds(updateDoc(dealerDoc(dbDealerAdmin), { status: 'rejected', reviewerUid: 'moderator', updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(dealerDoc(dbDealer), {
+    status: 'pending', companyName: 'Auto Example AG', reviewerUid: '', updatedAt: serverTimestamp()
+  }));
+  await assertSucceeds(updateDoc(dealerDoc(dbDealerAdmin), { status: 'approved', reviewerUid: 'moderator', updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(dealerDoc(dbDealer), { status: 'pending', reviewerUid: '', updatedAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(dealerDoc(dbDealer)));
+  await assertSucceeds(setDoc(dealerListing, { ...car('dealer-car', 'applicant'), sellerType: 'dealer' }));
+  await assertSucceeds(updateDoc(dealerListing, { price: 29999 }));
+  await assertFails(updateDoc(doc(dbDealer, 'listings', 'dealer-car'), { uid: 'alice' }));
+  await assertFails(setDoc(doc(dbA, 'listings', 'unapproved-dealer'), { ...car('unapproved-dealer'), sellerType: 'dealer' }));
+
   // Positive marketplace path.
   await assertSucceeds(setDoc(listed, car('car1')));
   await assertSucceeds(getDoc(doc(dbGuest, 'listings', 'car1')));
