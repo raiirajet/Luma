@@ -46,25 +46,31 @@ PUBLIC_CONFIG_KEYS = (
 
 def apply_public_config(output_dir: Path) -> None:
     payload = os.environ.get("LIMBA_WEB_CONFIG_B64")
-    if not payload:
-        return
+    recaptcha_key = os.environ.get("LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY", "").strip()
+    config_path = output_dir / "config.js"
+    if payload:
+        try:
+            config = json.loads(base64.b64decode("".join(payload.split()), validate=True))
+        except (ValueError, UnicodeError):
+            raise SystemExit("Invalid Limba web client configuration") from None
+        if not isinstance(config, dict) or not all(
+            isinstance(config.get(key), str) and config[key].strip()
+            for key in PUBLIC_CONFIG_KEYS
+        ):
+            raise SystemExit("Invalid Limba web client configuration")
 
-    try:
-        config = json.loads(base64.b64decode("".join(payload.split()), validate=True))
-    except (ValueError, UnicodeError):
-        raise SystemExit("Invalid Limba web client configuration") from None
-    if not isinstance(config, dict) or not all(
-        isinstance(config.get(key), str) and config[key].strip()
-        for key in PUBLIC_CONFIG_KEYS
-    ):
-        raise SystemExit("Invalid Limba web client configuration")
-
-    public_config = {key: config[key] for key in PUBLIC_CONFIG_KEYS}
-    (output_dir / "config.js").write_text(
-        "window.LIMBA_FIREBASE_CONFIG = " + json.dumps(public_config) + ";\n"
-        "window.LUMA_FIREBASE_CONFIG = window.LIMBA_FIREBASE_CONFIG;\n",
-        encoding="utf-8",
-    )
+        public_config = {key: config[key] for key in PUBLIC_CONFIG_KEYS}
+        config_path.write_text(
+            "window.LIMBA_FIREBASE_CONFIG = " + json.dumps(public_config) + ";\n"
+            "window.LUMA_FIREBASE_CONFIG = window.LIMBA_FIREBASE_CONFIG;\n",
+            encoding="utf-8",
+        )
+    if recaptcha_key:
+        with config_path.open("a", encoding="utf-8") as file:
+            file.write(
+                "window.LIMBA_FIREBASE_CONFIG.recaptchaEnterpriseSiteKey = "
+                + json.dumps(recaptcha_key) + ";\n"
+            )
 
 
 def main() -> None:
@@ -86,6 +92,17 @@ def main() -> None:
         shutil.copyfile(ROOT / preview_builder.name, preview_builder)
         subprocess.run([sys.executable, str(preview_builder)], check=True, cwd=staged)
         preview_builder.unlink()
+        config = json.loads((ROOT / "firebase.json").read_text(encoding="utf-8"))
+        headers = next(entry["headers"] for entry in config["hosting"]["headers"] if entry["source"] == "**")
+        policy = next(header["value"] for header in headers if header["key"] == "Content-Security-Policy")
+        meta_policy = policy.partition("; frame-ancestors")[0]
+        index = staged / "index.html"
+        html = index.read_text(encoding="utf-8")
+        index.write_text(html.replace(
+            '<meta charset="utf-8">',
+            '<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="' + meta_policy + '">',
+            1,
+        ), encoding="utf-8")
         (staged / "_preview_combo.js").unlink(missing_ok=True)
 
         if OUTPUT_DIR.exists():

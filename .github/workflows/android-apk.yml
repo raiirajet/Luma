@@ -118,6 +118,7 @@ jobs:
         id: apk
         env:
           BUILD_MODE: ${{ inputs.mode || 'debug' }}
+          LIMBA_ANDROID_RELEASE_SHA256: ${{ vars.LIMBA_ANDROID_RELEASE_SHA256 }}
         run: |
           set -euo pipefail
           version=$(sed -nE 's/^[[:space:]]*versionName = "([0-9.]+)"$/\1/p' android/app/build.gradle.kts)
@@ -134,9 +135,14 @@ jobs:
           cp "$source_apk" "apk-output/$apk"
           cd apk-output
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk" | tee "$apk.certificates.txt"
-          if [ "$BUILD_MODE" != debug ] && grep -qi 'CN=Android Debug' "$apk.certificates.txt"; then
-            echo '::error::The release APK uses an Android debug certificate.'
-            exit 1
+          if [ "$BUILD_MODE" != debug ]; then
+            expected=$(printf '%s' "$LIMBA_ANDROID_RELEASE_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+            actual=$(sed -nE 's/^Signer #[0-9]+ certificate SHA-256 digest: ([a-fA-F0-9]+)$/\1/p' "$apk.certificates.txt" | tr '[:upper:]' '[:lower:]')
+            if ! [[ "$expected" =~ ^[a-f0-9]{64}$ ]] || [ "$actual" != "$expected" ] \
+              || grep -qi 'CN=Android Debug' "$apk.certificates.txt"; then
+              echo '::error::The APK does not match the configured Limba release certificate.'
+              exit 1
+            fi
           fi
           sha256sum "$apk" | tee "$apk.sha256"
           printf 'artifact=%s\napk=%s\nversion=%s\n' "$artifact" "$apk" "$version" >> "$GITHUB_OUTPUT"

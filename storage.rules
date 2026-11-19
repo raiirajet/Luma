@@ -1,35 +1,11 @@
 rules_version = '2';
 
-// Public vehicle photos are stored only below:
-// listings/{ownerUid}/{listingId}/{0..5}.(jpg|png|webp)
-// Writes require the verified owner, a supported content type and a size below
-// 5 MiB. All other paths are denied.
 service firebase.storage {
   match /b/{bucket}/o {
     match /listings/{userId}/{listingId}/{fileName} {
-      function isVerifiedOwner() {
-        return request.auth != null
-          && request.auth.uid == userId
-          && request.auth.token.email_verified == true;
-      }
-
-      function isValidListingId() {
-        return listingId.size() >= 1
-          && listingId.size() <= 128
-          && listingId.matches('[A-Za-z0-9_-]+');
-      }
-
-      function isValidImage() {
-        return isValidListingId()
-          && fileName.matches('[0-5]\\.(jpg|png|webp)')
-          && request.resource.size > 0
-          && request.resource.size < 5 * 1024 * 1024
-          && request.resource.contentType.matches('image/(jpeg|png|webp)');
-      }
-
-      allow read: if true;
-      allow create, update: if isVerifiedOwner() && isValidImage();
-      allow delete: if isVerifiedOwner() && isValidListingId();
+      // Only the runtime service account can write new listing photos.
+      // Keep previously published JPEG, PNG and WebP images readable.
+      allow get: if fileName.matches('(clean-)?[0-5]\\.(jpg|png|webp)');
     }
 
     match /{allPaths=**} {

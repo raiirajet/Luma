@@ -66,7 +66,7 @@ service cloud.firestore {
       let images = data.images;
       let count = images.size();
       let pattern = 'https://firebasestorage[.]googleapis[.]com/v0/b/limba-auto[.]firebasestorage[.]app/o/listings%2F'
-        + data.uid + '%2F' + listingId + '%2F[0-5][.](jpg|png|webp)[?].*';
+        + data.uid + '%2F' + listingId + '%2F(clean-)?[0-5][.](jpg|png|webp)[?].*';
       return images is list && count >= 1 && count <= 6
         && data.image == images[0]
         && isValidImageUrl(images[0], pattern)
@@ -296,6 +296,38 @@ service cloud.firestore {
     // =============================================================
     // Access rules
     // =============================================================
+    function requiresSecureWrites() {
+      let path = /databases/$(database)/documents/marketplaceSecurity/enforcement;
+      return exists(path) && get(path).data.get('requirePipeline', false) == true;
+    }
+
+    function hasModerationHold(listingId) {
+      return exists(/databases/$(database)/documents/listingModeration/$(listingId));
+    }
+
+    function hasPreparedPhotos(data, listingId) {
+      let path = /databases/$(database)/documents/listingUploads/$(listingId);
+      return exists(path) && get(path).data.used == false
+        && get(path).data.expiresAt > request.time
+        && get(path).data.uid == data.uid
+        && get(path).data.images == data.images
+        && getAfter(path).data.used == true;
+    }
+
+    match /marketplaceSecurity/enforcement {
+      allow get: if true;
+    }
+
+    // Only the verified owner can consume a prepared upload, atomically with creation.
+    match /listingUploads/{listingId} {
+      allow update: if isVerified() && isOwner(resource.data.uid)
+        && resource.data.used == false && resource.data.expiresAt > request.time
+        && request.resource.data.used == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used'])
+        && !exists(/databases/$(database)/documents/listings/$(listingId))
+        && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.uid == request.auth.uid;
+    }
+
     match /listings/{listingId} {
       // Public marketplace reads are explicitly limited to active listings.
       allow read: if canReadListing(resource.data);
@@ -303,11 +335,17 @@ service cloud.firestore {
         && uidUnchanged()
         && request.resource.data.status == 'active'
         && request.resource.data.createdAt == request.time
-        && isValidListing(request.resource.data, listingId);
+        && !hasModerationHold(listingId)
+        && isValidListing(request.resource.data, listingId)
+        && (hasPreparedPhotos(request.resource.data, listingId)
+          || (!requiresSecureWrites() && !exists(/databases/$(database)/documents/listingUploads/$(listingId))));
       allow update: if isVerified()
         && isOwner(resource.data.uid)
         && uidNotModified()
         && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.images == resource.data.images
+        && request.resource.data.image == resource.data.image
+        && (request.resource.data.status != 'active' || !hasModerationHold(listingId))
         && isValidListing(request.resource.data, listingId);
       allow delete: if isVerified() && isOwner(resource.data.uid);
 
@@ -354,6 +392,7 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       allow create: if isVerified()
+        && !requiresSecureWrites()
         && isValidReport(request.resource.data, reportId);
       // Reports are immutable and reviewed only through trusted tooling.
       allow read, update, delete: if false;

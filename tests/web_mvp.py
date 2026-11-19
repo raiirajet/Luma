@@ -1,4 +1,4 @@
-"""End-to-end offline Limba demo listing lifecycle on desktop and real mobile viewport."""
+"""End-to-end offline Limba preview listing lifecycle on desktop and real mobile viewport."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -23,7 +23,13 @@ try:
    page.locator('#carGrid .car-card').first.wait_for()
    page.locator('#loginBtn').click()
    page.locator('#accountOpenBtn').click()
-   page.locator('#demoQuick').click()
+   assert page.locator('#demoQuick').count()==0
+   page.locator('#registerCheck').check()
+   page.locator('#authEmail').fill('preview-qa')
+   page.locator('#authPassword').fill('local-test-password')
+   page.locator('#authConfirm').fill('local-test-password')
+   page.locator('#authSubmit').click()
+   page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#modal').is_hidden()
    page.locator('#fabAdd').click()
    form=page.locator('#sellForm')
@@ -41,7 +47,7 @@ try:
    form.locator('[name="engineCapacity"]').fill('1987')
    form.locator('[name="price"]').fill('14800')
    form.locator('[name="city"]').fill('Sarajevo')
-   form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
+   form.locator('[name="description"]').fill('Reliable and well maintained Toyota. <em data-fixture="note">Service history</em>.')
    form.locator('[name="serviceHistory"]').fill('Service recorded at 50000 km.')
    form.locator('[name="documentNotes"]').fill('Invoices available on request.')
    form.locator('[name="fuel"]').select_option('electric')
@@ -71,6 +77,8 @@ try:
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
    page.locator('#mineGrid .car-card').first.click()
    assert '50000' in page.locator('.limba-passport').inner_text()
+   assert page.get_by_text('<em data-fixture="note">Service history</em>', exact=False).is_visible()
+   assert page.locator('[data-fixture="note"]').count() == 0
    assert 'Scratch on the rear bumper.' in page.locator('#detailPhotoCaption').inner_text()
    assert '91,5' in page.locator('.market-battery').inner_text()
    assert page.locator('.market-battery a').get_attribute('href')=='https://example.test/report'
@@ -126,7 +134,7 @@ try:
    page.locator('#mineGrid [data-delete]').first.click()
    assert page.locator('#mineGrid [data-edit]').count()==0
    assert errors==[],errors
-   print(f'PASS MVP {width}px: demo login, create, edit, sold, reactivate, delete')
+   print(f'PASS MVP {width}px: local account, create, edit, sold, reactivate, delete')
    ctx.close()
   browser.close()
 finally:

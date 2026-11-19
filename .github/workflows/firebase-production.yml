@@ -1,0 +1,122 @@
+name: Limba Firebase production
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Choose the production change to apply
+        type: choice
+        required: true
+        default: compare-rules
+        options:
+          - compare-rules
+          - deploy-backend
+          - deploy-web
+          - lock-storage
+
+permissions:
+  contents: read
+
+concurrency:
+  group: limba-firebase-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && contains(fromJSON('["deploy-backend", "lock-storage"]'), inputs.operation)
+    uses: ./.github/workflows/firebase-rules.yml
+
+  validate-web:
+    if: github.ref == 'refs/heads/main' && inputs.operation == 'deploy-web'
+    uses: ./.github/workflows/web-qa.yml
+
+  production:
+    if: >-
+      always() && github.ref == 'refs/heads/main' &&
+      (inputs.operation == 'compare-rules' ||
+      (inputs.operation == 'deploy-web' && needs.validate-web.result == 'success') ||
+      (contains(fromJSON('["deploy-backend", "lock-storage"]'), inputs.operation) && needs.validate.result == 'success'))
+    needs: [validate, validate-web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: firebase-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Authenticate to limba-auto using GitHub OIDC
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: limba-auto
+          workload_identity_provider: ${{ vars.LIMBA_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.LIMBA_GCP_DEPLOY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 3600s
+
+      - name: Compare active Firestore and Storage rules
+        if: inputs.operation == 'compare-rules'
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: python3 scripts/compare_firebase_rules.py
+
+      - name: Record the active ruleset IDs before deployment
+        if: inputs.operation == 'deploy-backend'
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: python3 scripts/compare_firebase_rules.py --allow-drift
+
+      - name: Deploy Functions and then publish the validated rules and indexes
+        if: inputs.operation == 'deploy-backend'
+        env:
+          ENFORCE_MARKETPLACE_APP_CHECK: ${{ vars.LIMBA_ENFORCE_MARKETPLACE_APP_CHECK || 'false' }}
+        run: |
+          set -euo pipefail
+          case "$ENFORCE_MARKETPLACE_APP_CHECK" in
+            true|false) ;;
+            *) echo 'Invalid App Check configuration'; exit 1 ;;
+          esac
+          printf 'ENFORCE_MARKETPLACE_APP_CHECK=%s\n' "$ENFORCE_MARKETPLACE_APP_CHECK" > functions/.env.limba-auto
+          npm ci --prefix functions
+          npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive \
+            --only functions:startListingChat,functions:sendListingMessage,functions:setListingChatBlocked,functions:reportListingChat,functions:setSavedSearchAlert,functions:reserveListingUpload,functions:uploadListingPhoto,functions:submitListingReport,functions:cleanupListingUploads,functions:cleanupDeletedListingPhotos
+          npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive \
+            --only firestore:rules,firestore:indexes
+
+      - name: Verify the published Firestore rules match Git
+        if: inputs.operation == 'deploy-backend'
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: python3 scripts/compare_firebase_rules.py --service firestore
+
+      - name: Lock direct uploads after the marketplace switch is required
+        if: inputs.operation == 'lock-storage'
+        env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          npm ci --prefix functions
+          node functions/ops/marketplace.cjs require-mode
+          npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive --only storage
+          python3 scripts/compare_firebase_rules.py --service storage
+          node functions/ops/marketplace.cjs enable-legacy-cleanup
+
+      - name: Stage and deploy the production website
+        if: inputs.operation == 'deploy-web'
+        env:
+          LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ vars.LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY }}
+          LIMBA_WEB_CONFIG_B64: ${{ secrets.LIMBA_WEB_CONFIG_B64 }}
+        run: |
+          set -euo pipefail
+          python3 scripts/stage_web.py
+          for file in dist/web/*.js; do
+            node --input-type=module --check < "$file"
+          done
+          npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive --only hosting
