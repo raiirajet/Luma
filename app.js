@@ -147,7 +147,7 @@ function filtered(){const f=state.filters;const term=f.keyword.trim().toLocaleLo
  if(state.sort==='priceLow')items.sort((a,b)=>a.price-b.price);else if(state.sort==='priceHigh')items.sort((a,b)=>b.price-a.price);else items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));return items}
 function carCard(x){const liked=state.favorites.includes(x.id);return `<article class="car-card" data-open="${h(x.id)}" tabindex="0"><div class="car-img"><img loading="lazy" src="${h(safeURL(x.image)||'assets/limba/icons/car.png')}" alt="${h(x.title)}"/><span class="car-tag">${h(isDemo(x)?F('previewOnly'):T(x.sellerType||'privateSeller'))}</span><button class="card-heart ${liked?'active':''}" data-like="${h(x.id)}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button></div><div class="card-body"><strong class="car-price car-price-overview">${price(x.price)}</strong><h3 class="car-title">${h(x.title)}</h3><p class="car-sub">${h(T(x.fuel||'petrol'))} · ${h(T(x.transmission||'manual'))}${x.engineName?' · '+h(x.engineName):''}</p><div class="car-specs"><span>${h(String(x.year||'—'))}</span><span>${number(x.mileage)} ${h(T('kmUnit'))}</span><span>${number(x.power)} ${h(T('powerUnit'))}</span></div><div class="car-bottom"><div class="car-location">${icon('location')} ${flag(x.country)} ${h(x.city)}<br>${h(countryLabel(x.country))}</div></div></div></article>`}
 function renderAll(){const arr=filtered();$('carGrid').innerHTML=arr.map(carCard).join('');$('emptyResults').classList.toggle('hidden',arr.length!==0);$('resultCount').textContent=`${number(arr.length)} ${T('searchResultCount')}`;$('heroCount').textContent=number(arr.length);document.querySelectorAll('[data-body]').forEach(b=>b.classList.toggle('is-selected',b.dataset.body===state.filters.body));
- renderActiveFilters();renderSearchCountries();
+ renderActiveFilters();
  const fav=state.listings.filter(x=>state.favorites.includes(x.id)&&x.category==='vehicles');$('favoritesGrid').innerHTML=luxUI.garageCards(fav);
  const mine=state.listings.filter(x=>state.user&&x.uid===state.user.uid&&x.category==='vehicles');
  $('mineGrid').innerHTML=mine.length?mine.map(x=>{
@@ -175,29 +175,23 @@ function renderActiveFilters(){
  const chips=Object.entries(state.filters).filter(([,value])=>String(value).trim()).map(([key,value])=>({
   key, label:`${searchFilterTitle(key)} · ${filterOptions.includes(key)?T(value):String(value)}`
  }));
- for(const code of state.countries)chips.push({key:'country:'+code,label:countryLabel(code)});
+
  const container=$('activeFilters');
  container.setAttribute('aria-label',L('activeFilters'));
  container.classList.toggle('hidden',!chips.length);
  container.innerHTML=chips.map(({key,label})=>`<button type="button" data-filter-remove="${h(key)}"
   aria-label="${h(L('removeFilter')+': '+label)}">${h(label)}<span aria-hidden="true">×</span></button>`).join('');
 }
-function renderSearchCountries(){
- const label=state.countries.length?state.countries.map(countryLabel).join(', '):L('allCountries');
- $('searchCountryToggle').innerHTML=`<span>${h(label)}</span>`;
- $('searchCountryToggle').setAttribute('aria-label',L('filterCountry')+': '+label);
- for(const input of $('searchCountryChoices').querySelectorAll('input')){
-  input.checked=state.countries.includes(input.value);
-  input.parentElement.classList.toggle('is-active',input.checked);
-  input.nextElementSibling.textContent=flag(input.value)+' '+countryLabel(input.value);
- }
+function closeAccountMenu(){
+ $('accountMenu').classList.add('hidden');$('loginBtn').setAttribute('aria-expanded','false');
 }
-function closeSearchCountries(){
- $('searchCountryPanel').classList.add('hidden');
- $('searchCountryToggle').setAttribute('aria-expanded','false');
+function toggleAccountMenu(){
+ const opening=$('accountMenu').classList.contains('hidden');
+ $('accountMenu').classList.toggle('hidden',!opening);$('loginBtn').setAttribute('aria-expanded',String(opening));
+ if(opening)$('accountOpenBtn').focus();
 }
 function showView(view,{fromHistory=false}={}){
- closeSearchCountries();
+ closeAccountMenu();
  const views=['home','swipe','favorites','performance','mine','settings'];if(!views.includes(view))return;
  const changed=state.view!==view;
  if(changed&&!fromHistory)history.pushState({lumaView:view},'',location.pathname+location.search);
@@ -229,17 +223,26 @@ function swipeAction(dir){
  }
  renderSwipe()
 }
-let modalReturnFocus=null;
-function modal(content){marketUI.stopPanel();$('modal').querySelector('.modal-panel').classList.remove('market-detail');if($('modal').classList.contains('hidden'))modalReturnFocus=document.activeElement;$('modalContent').innerHTML=content;$('modal').classList.remove('hidden');$('modalClose').focus()}
-function closeModal({fromHistory=false}={}){
+let modalReturnFocus=null,detailModalOpening=false;
+function modal(content){
+ const wasClosed=$('modal').classList.contains('hidden');
+ marketUI.stopPanel();$('modal').querySelector('.modal-panel').classList.remove('market-detail');
+ if(wasClosed)modalReturnFocus=document.activeElement;
+ $('modalContent').innerHTML=content;$('modal').classList.remove('hidden');$('modalClose').focus();
+ if(wasClosed&&!detailModalOpening)history.pushState({lumaView:state.view,lumaModal:true},'',location.pathname+location.search);
+}
+function closeModal({fromHistory=false,replaceHistory=false}={}){
  marketUI.stopPanel();
  const wasOpen=!$('modal').classList.contains('hidden');
  $('modal').classList.add('hidden');$('modalContent').innerHTML='';sellCatalogChooser?.destroy();sellCatalogChooser=null;
  if(wasOpen){const target=modalReturnFocus?.isConnected?modalReturnFocus:(state.view==='swipe'?$('swipeCard'):null);try{target?.focus?.({preventScroll:true})}catch{}modalReturnFocus=null}
- if(wasOpen&&!fromHistory&&history.state?.lumaDetail)history.back();
+ if(wasOpen&&!fromHistory&&(history.state?.lumaDetail||history.state?.lumaModal)){
+  if(replaceHistory)history.replaceState({lumaView:state.view},'',location.pathname+location.search);
+  else history.back();
+ }
 }
 const detailPair=(name,val)=>`<div><small>${h(F(name)!==name?F(name):T(name)!==name?T(name):S(name))}</small><strong>${h(val)}</strong></div>`;
-function showDetails(id,{focusSpecs=false,fromHistory=false,listing=null}={}){const x=listing||state.listings.find(v=>v.id===id);if(!x)return;state.photoIndex=0;const returnTo=state.view==='swipe'?'swipe':'home';
+function showDetails(id,{focusSpecs=false,fromHistory=false,listing=null}={}){const x=listing||state.listings.find(v=>v.id===id);if(!x)return;state.photoIndex=0;const returnTo=state.view;
  const images=(x.images||[x.image]).map((image,index)=>({src:safeURL(image),detail:listingPhotoDetail(x,index)})).filter(image=>image.src);
  if(!images.length)images.push({src:safeURL(x.image)||'assets/limba/icons/car.png',detail:null});
  const src=images[0].src;
@@ -250,7 +253,9 @@ function showDetails(id,{focusSpecs=false,fromHistory=false,listing=null}={}){co
  <figcaption class="detail-photo-caption" id="detailPhotoCaption" aria-live="polite"></figcaption>
  ${images.length>1?`<div class="detail-thumbnails">${images.map((image,index)=>`<button type="button" data-photo-index="${index}" aria-current="${index===0}" aria-label="${h(L('photoNumber')+' '+(index+1))}">
   <img loading="lazy" src="${h(image.src)}" alt="">${image.detail?`<span>${h(marketUI.photoSummary(image.detail))}</span>`:''}</button>`).join('')}</div>`:''}</figure>`;
+ detailModalOpening=true;
  modal(`<button type="button" class="detail-back outline-btn" id="detailBack">${icon('arrow_left')} ${h(D(returnTo==='swipe'?'backToSwipe':'backToListing'))}</button><div class="detail-head"><div><span class="overline">${h(T('vehicleDetails'))}</span><h2 id="modalTitle">${h(x.title)}</h2><p>${flag(x.country)} ${h(x.city)}, ${h(countryLabel(x.country))}</p></div><div class="detail-price">${price(x.price)}</div></div>${gallery}<div class="detail-actions" id="photoControls"><button class="outline-btn" id="photoPrev" aria-label="${h(T('photoPrevious'))}">${icon('arrow_left')}</button><button class="outline-btn" id="photoNext" aria-label="${h(T('photoNext'))}">${icon('arrow_right')}</button><button class="outline-btn" id="detailLike">${icon('heart')} ${h(T('saved'))}</button></div><h3 id="specsHeading">${h(T('technicalData'))}</h3><div class="spec-table">${detailPair('make',x.make)}${detailPair('model',x.model)}${x.modelExtension?detailPair('modelExtension',x.modelExtension):''}${detailPair('firstReg',String(x.year))}${detailPair('mileage',`${number(x.mileage)} ${T('kmUnit')}`)}${detailPair('fuel',T(x.fuel))}${detailPair('transmission',T(x.transmission))}${detailPair('body',T(x.body))}${detailPair('power',`${number(x.power)} ${T('powerUnit')}`)}${x.engineName?detailPair('engineName',x.engineName):''}${x.engineCapacity!==undefined&&x.engineCapacity!==null?detailPair('engineCapacity',String(x.engineCapacity)+' cm³'):''}${detailPair('sellerType',T(x.sellerType))}${detailPair('carCondition',T(x.condition==='new'?'conditionNew':'conditionUsed'))}${detailPair('accidentHistory',F(x.accidentStatus==='yes'?'accidentYes':x.accidentStatus==='no'?'accidentNo':'accidentUnknown'))}${x.conditionNote?detailPair('conditionShort',x.conditionNote):''}${isSample(x)?`${detailPair('color',D('black'))}${detailPair('engine','VR38DETT · 3.8 l V6 Bi-Turbo')}${detailPair('drive',D('awd'))}${detailPair('seats',D('fourSeats'))}`:''}</div>${luxUI.passport(x)}${marketUI.batteryReport(x)}${luxUI.calculatorMarkup(x)}${isDemo(x)?'':`<section class="market-listing-section"><h3>${h(L('priceHistory'))}</h3><div id="listingPriceHistory"><p>${h(L('loading'))}</p></div></section>`}<h3>${h(T('vehicleDescription'))}</h3><p class="vehicle-description">${h(isSample(x)?D('description'):(x.description||'—'))}</p>${isSample(x)?`<div class="sample-note">${h(D('singleDemoNotice'))}</div><p class="photo-credit">${h(D('photoCredit'))} <a href="${h(GTR_PHOTO_PAGE)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons · Joshua Spence · CC BY-SA 4.0</a></p>`:''}${legacyEmail?`<a class="outline-btn" href="mailto:${h(encodeURIComponent(x.contactEmail))}?subject=${h(encodeURIComponent(x.title))}">${h(T('askSeller'))}</a>`:''}${contactBar}`);
+ detailModalOpening=false;
  $('modal').querySelector('.modal-panel').classList.add('market-detail');
  marketUI.loadPrices(x);
  if(!isDemo(x)){
@@ -362,7 +367,35 @@ async function mutateSearches(change){
  const nextKeys=new Set(next.map(searchIdentity));
  return before.filter(item=>!nextKeys.has(searchIdentity(item)));
 }
-async function saveCountries(){persistAccount('countries',state.countries);if(state.user&&state.fb){try{const {db,modules:m}=state.fb;await m.setDoc(m.doc(db,'users',state.user.uid,'data','preferences'),{countries:state.countries})}catch(e){console.warn(e)}}$('prefsStatus').textContent=T(state.user?'profileSync':'guestSync');toast(T('settingsSaved'));renderAll()}
+let countryWriteQueue=Promise.resolve();
+function saveCountries({notify=true}={}){
+ const countries=[...new Set(state.countries)].filter(code=>COUNTRIES.some(item=>item[0]===code));
+ persistAccount('countries',countries);renderAll();
+ const user=state.user,fb=state.fb;
+ if(!user||user.isPreview||!fb){
+  $('prefsStatus').textContent='Suchländer nur auf diesem Gerät gespeichert. Für Synchronisation anmelden.';
+  if(notify)toast($('prefsStatus').textContent);
+  return Promise.resolve(false);
+ }
+ countryWriteQueue=countryWriteQueue.catch(()=>{}).then(async()=>{
+  try{
+   const m=fb.modules;await m.setDoc(m.doc(fb.db,'users',user.uid,'data','preferences'),{countries});
+   if(state.user?.uid===user.uid){
+    $('prefsStatus').textContent='Suchländer im Benutzerkonto gespeichert und geräteübergreifend verfügbar.';
+    if(notify)toast(T('settingsSaved'));
+   }
+   return true;
+  }catch(error){
+   console.warn('country preference sync',error);
+   if(state.user?.uid===user.uid){
+    $('prefsStatus').textContent='Synchronisation fehlgeschlagen. Die Auswahl bleibt lokal gespeichert.';
+    if(notify)toast($('prefsStatus').textContent);
+   }
+   return false;
+  }
+ });
+ return countryWriteQueue;
+}
 function resetFilters(){state.filters=Object.fromEntries(Object.keys(state.filters).map(k=>[k,'']));state.sort='latest';renderInputs();renderAll()}
 async function hashPreviewPassword(password,salt){const encoded=new TextEncoder();const key=await crypto.subtle.importKey('raw',encoded.encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoded.encode(salt),iterations:120000,hash:'SHA-256'},key,256);return Array.from(new Uint8Array(bits)).map(v=>v.toString(16).padStart(2,'0')).join('')}
 function loginPreview(username){const label=username.trim().toLowerCase();switchAccount({uid:'preview-'+label,email:label,isPreview:true,emailVerified:true});persist('previewSession',{username:label});closeModal();applyTranslations();toast(F('welcomePreview'))}
@@ -422,7 +455,7 @@ async function publishCar(e){e.preventDefault();const form=e.currentTarget;const
  const extras={...(Object.keys(photoDetails).length?{photoDetails}:{}),...(batteryReport?{batteryReport}:{})};
  const make=resolveCarMake(fd.get('make'));const model=String(fd.get('model')||'').trim();const modelExtension=String(fd.get('modelExtension')||'').trim().replace(/\s+/g,' ');const fullTitle=[make,model,modelExtension].filter(Boolean).join(' ');if(!validCarMake(make)||!model||model.length>65||modelExtension.length>40||fullTitle.length>110){return $('sellNote').textContent=T('brandRequired')}const priceValue=Number(fd.get('price'));const year=Number(fd.get('year'));const mileage=Number(fd.get('mileage'));const power=Number(fd.get('power'));const engineName=String(fd.get('engineName')||'').trim();const rawCapacity=String(fd.get('engineCapacity')||'').trim();const engineCapacity=rawCapacity===''?null:Number(rawCapacity);if(engineName.length>80||(engineCapacity!==null&&(!Number.isInteger(engineCapacity)||engineCapacity<0||engineCapacity>12000)))return $('sellNote').textContent=T('invalidPrice');if(!Number.isInteger(priceValue)||priceValue<1||priceValue>999999999||!Number.isInteger(mileage)||mileage<0||mileage>1500000||!Number.isInteger(power)||power<1||power>2000||year<1950||year>new Date().getFullYear()+1)return $('sellNote').textContent=T('invalidPrice');const passportFields=Object.fromEntries(['serviceHistory','modificationNotes','documentNotes'].map(k=>[k,String(fd.get(k)||'').trim()]));const engineFields={engineName,engineCapacity};const submit=$('sellSubmit');submit.disabled=true;submit.textContent='…';let id=null;const uploadedRefs=[];try{
  if(state.user.isPreview){const photo=files[0]?await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(files[0])}):(existing?.image||'assets/limba/icons/car.png');const item={id:existing?.id||'preview-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),category:'vehicles',uid:state.user.uid,isPreview:true,isDemo:true,status:'active',createdAt:Date.now(),title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),condition:String(fd.get('condition')),contactEmail:'',image:photo,images:[photo],make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};state.listings=state.listings.filter(x=>x.id!==item.id);state.listings.unshift(item);
- persist('previewCars',state.listings.filter(x=>x.isPreview));closeModal();toast(F('previewSaved'));showView('mine');return}
+ persist('previewCars',state.listings.filter(x=>x.isPreview));closeModal({replaceHistory:true});toast(F('previewSaved'));showView('mine');return}
  const {db,storage,modules:m}=state.fb;
  const fields={title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),condition:String(fd.get('condition')),contactEmail:'',make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};
  // Existing production rules do not yet allow this optional new field.
@@ -441,10 +474,10 @@ async function publishCar(e){e.preventDefault();const form=e.currentTarget;const
   await m.updateDoc(m.doc(db,'listings',existing.id),fields);
   Object.assign(existing,{...fields,modelExtension,...passportFields,...engineFields,...extras});
   if(!extras.photoDetails)delete existing.photoDetails;
-  if(!extras.batteryReport)delete existing.batteryReport;renderAll();closeModal();toast(W('editAd'));showView('mine');return;
+  if(!extras.batteryReport)delete existing.batteryReport;renderAll();closeModal({replaceHistory:true});toast(W('editAd'));showView('mine');return;
  }
  const doc=m.doc(m.collection(db,'listings'));id=doc.id;const images=[];for(let i=0;i<files.length;i++){const file=files[i];const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';const ref=m.ref(storage,`listings/${state.user.uid}/${id}/${i}.${ext}`);await m.uploadBytes(ref,file,{contentType:file.type});uploadedRefs.push(ref);images.push(await m.getDownloadURL(ref))}
- const data={category:'vehicles',uid:state.user.uid,status:'active',createdAt:m.serverTimestamp(),...fields,image:images[0],images};await m.setDoc(doc,data);state.listings.unshift({...data,id,createdAt:Date.now()});renderAll();closeModal();toast(T('carPublished'));showView('mine')
+ const data={category:'vehicles',uid:state.user.uid,status:'active',createdAt:m.serverTimestamp(),...fields,image:images[0],images};await m.setDoc(doc,data);state.listings.unshift({...data,id,createdAt:Date.now()});renderAll();closeModal({replaceHistory:true});toast(T('carPublished'));showView('mine')
  }catch(err){console.error('post failed',err);
  if(uploadedRefs.length){await Promise.all(uploadedRefs.map(ref=>state.fb.modules.deleteObject(ref).catch(e=>console.warn('cleanup',e))))}
  if(form.isConnected)form.querySelector('#sellNote').textContent=T('uploadFailed')}finally{submit.disabled=false;submit.textContent=editing?W('editAd'):T('publish')}}
@@ -516,36 +549,14 @@ async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || wind
  },error=>{console.error('cars fetch',error);toast(T('loadFailed'))});
  }catch(e){console.error('firebase init',e);state.firebaseReady=false;toast(T('firebaseFailed'))}}
 function wireMarketplace(){
- $('inboxBtn').addEventListener('click',()=>marketUI.openInbox());
- $('searchCountryChoices').innerHTML=COUNTRIES.map(([code])=>`<label class="country-choice"><input type="checkbox" value="${code}"><span>${h(countryLabel(code))}</span></label>`).join('');
- $('searchCountryToggle').addEventListener('click',()=>{
-  const open=$('searchCountryPanel').classList.toggle('hidden')===false;
-  $('searchCountryToggle').setAttribute('aria-expanded',String(open));
- });
- $('searchCountryChoices').addEventListener('change',event=>{
-  if(!event.target.matches('input[type="checkbox"]'))return;
-  const checkbox=event.target;
-  const code=checkbox.value;
-  state.countries=checkbox.checked?[...new Set([...state.countries,code])]:state.countries.filter(value=>value!==code);
-  renderAll();
- });
- $('clearSearchCountries').addEventListener('click',()=>{state.countries=[];renderAll()});
- document.addEventListener('click',event=>{if(!event.target.closest('#searchCountryField'))closeSearchCountries()});
- $('searchCountryField').addEventListener('keydown',event=>{
-  if(event.key==='Escape'&&!$('searchCountryPanel').classList.contains('hidden')){
-   event.stopPropagation();closeSearchCountries();$('searchCountryToggle').focus();
-  }
- });
+ $('inboxBtn').addEventListener('click',()=>{closeAccountMenu();marketUI.openInbox()});
+
  $('activeFilters').addEventListener('click',event=>{
   const button=event.target.closest('[data-filter-remove]');
   if(!button)return;
   const key=button.dataset.filterRemove;
-  if(key.startsWith('country:')){
-   state.countries=state.countries.filter(code=>code!==key.slice(8));renderAll();
-  }else{
-   if($(key))$(key).value='';
+  if($(key))$(key).value='';
    setFilter(key,'');
-  }
   ($('activeFilters').firstElementChild||$('searchForm').querySelector('#keyword')).focus();
  });
  $('savedSearchesList').addEventListener('click',event=>{
@@ -555,22 +566,22 @@ function wireMarketplace(){
   if(orphan)marketUI.toggleAlert(Number(orphan.dataset.orphanAlert),true);
  });
 }
-function wire(){wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('settingsBtn').addEventListener('click',()=>showView('settings'));$('loginBtn').addEventListener('click',openAuth);$('accountSettingsBtn').addEventListener('click',openAuth);$('fabAdd').addEventListener('click',openSell);$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('sellBtn').addEventListener('click',openSell);$('mineSell').addEventListener('click',openSell);$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>{$('advancedFilters').classList.toggle('hidden');$('filterChevron').classList.toggle('rotated',!$('advancedFilters').classList.contains('hidden'));$('advancedToggle').setAttribute('aria-expanded',String(!$('advancedFilters').classList.contains('hidden')))});['clearAll','resetEmpty'].forEach(id=>$(id).addEventListener('click',resetFilters));$('sort').addEventListener('change',e=>{state.sort=e.target.value;renderAll()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
+function wire(){wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu()});$('fabAdd').addEventListener('click',openSell);$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>{$('advancedFilters').classList.toggle('hidden');$('filterChevron').classList.toggle('rotated',!$('advancedFilters').classList.contains('hidden'));$('advancedToggle').setAttribute('aria-expanded',String(!$('advancedFilters').classList.contains('hidden')))});['clearAll','resetEmpty'].forEach(id=>$(id).addEventListener('click',resetFilters));$('sort').addEventListener('change',e=>{state.sort=e.target.value;renderAll()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
  document.addEventListener('click',e=>{const heart=e.target.closest('[data-like]');if(heart){e.preventDefault();e.stopPropagation();return toggleFavorite(heart.dataset.like)}const card=e.target.closest('[data-open]');if(card)return showDetails(card.dataset.open);const edit=e.target.closest('[data-edit]');if(edit)return openSell(edit.dataset.edit);
  const status=e.target.closest('[data-status-id]');if(status)return updateListingStatus(status.dataset.statusId,status.dataset.status);
- const del=e.target.closest('[data-delete]');if(del)return removeListing(del.dataset.delete);const apply=e.target.closest('[data-apply]');if(apply){const item=state.searches[Number(apply.dataset.apply)];if(item){state.filters={...state.filters,...item.filters};state.countries=item.countries||[];persistAccount('countries',state.countries);renderInputs();showView('home');$('resultsSection').scrollIntoView({behavior:'smooth'})}return}const drop=e.target.closest('[data-drop]');if(drop){drop.disabled=true;void dropSearch(Number(drop.dataset.drop))}});
+ const del=e.target.closest('[data-delete]');if(del)return removeListing(del.dataset.delete);const apply=e.target.closest('[data-apply]');if(apply){const item=state.searches[Number(apply.dataset.apply)];if(item){state.filters={...state.filters,...item.filters};state.countries=item.countries||[];void saveCountries({notify:false});renderInputs();showView('home');$('resultsSection').scrollIntoView({behavior:'smooth'})}return}const drop=e.target.closest('[data-drop]');if(drop){drop.disabled=true;void dropSearch(Number(drop.dataset.drop))}});
  document.addEventListener('keydown',e=>{const card=e.target.closest?.('[data-open]');if(card&&(e.key==='Enter'||e.key===' ')&&!e.target.closest('button,a,input,select,textarea')){e.preventDefault();showDetails(card.dataset.open)}});
- $('countryChoices').addEventListener('change',e=>{if(e.target.matches('input[type=checkbox]')){const code=e.target.value;state.countries=e.target.checked?[...new Set([...state.countries,code])]:state.countries.filter(x=>x!==code);renderAll()}});$('allCountries').addEventListener('click',()=>{state.countries=[];renderAll()});$('saveCountries').addEventListener('click',saveCountries);
+ $('countryChoices').addEventListener('change',e=>{if(e.target.matches('input[type=checkbox]')){const code=e.target.value;state.countries=e.target.checked?[...new Set([...state.countries,code])]:state.countries.filter(x=>x!==code);void saveCountries({notify:false})}});$('allCountries').addEventListener('click',()=>{state.countries=[];void saveCountries({notify:false})});$('saveCountries').addEventListener('click',()=>{void saveCountries()});
  $('swipeHome').addEventListener('click',()=>showView('home'));$('swipeFavorite').addEventListener('click',()=>{const arr=filtered();if(arr.length)toggleFavorite(arr[state.swipeIndex].id)});$('swipeHelp').addEventListener('click',showTutorial);$('swipeDone').addEventListener('click',dismissTutorial);$('swipeTutorialBack').addEventListener('click',hideTutorial);
  let pointer=null;const swipe=$('swipeCard');swipe.addEventListener('pointerdown',e=>{if(!$('swipeTutorial').classList.contains('hidden'))return;e.preventDefault();pointer={x:e.clientX,y:e.clientY};swipe.setPointerCapture(e.pointerId)});swipe.addEventListener('pointerup',e=>{if(!pointer)return;e.preventDefault();const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.max(Math.abs(dx),Math.abs(dy))<48)return;swipeAction(Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down')});
  swipe.addEventListener('pointercancel',()=>{pointer=null});
  swipe.addEventListener('lostpointercapture',()=>{pointer=null});
- swipe.addEventListener('click',e=>{if(e.detail===0&&state.view==='swipe'&&$('swipeTutorial').classList.contains('hidden')){const arr=filtered();if(arr.length)showDetails(arr[state.swipeIndex].id)}});document.addEventListener('keydown',e=>{if(state.view==='swipe'&&$('modal').classList.contains('hidden')&&$('swipeTutorial').classList.contains('hidden')){const move={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'}[e.key];if(move){e.preventDefault();swipeAction(move)}}if(e.key==='Escape'){if(!$('modal').classList.contains('hidden'))closeModal();else if(state.view==='swipe'&&!$('swipeTutorial').classList.contains('hidden'))hideTutorial();else if(state.view==='swipe')showView('home')}});$('modalClose').addEventListener('click',closeModal);$('modal').addEventListener('click',e=>{if(e.target.dataset.close==='true')closeModal()});$('footerSafety').addEventListener('click',()=>modal(`<h2 id="modalTitle">${icon('security')} ${h(T('safeTrading'))}</h2><p>${h(T('safeCarAdvice'))}</p>`));$('footerPrivacy').addEventListener('click',()=>modal(`<h2 id="modalTitle">${icon('lock')} ${h(T('privacy'))}</h2><p>${h(T('privacyDemo'))}</p>`));
- history.replaceState({lumaView:'home'},'',location.href);
+ swipe.addEventListener('click',e=>{if(e.detail===0&&state.view==='swipe'&&$('swipeTutorial').classList.contains('hidden')){const arr=filtered();if(arr.length)showDetails(arr[state.swipeIndex].id)}});document.addEventListener('keydown',e=>{if(state.view==='swipe'&&$('modal').classList.contains('hidden')&&$('swipeTutorial').classList.contains('hidden')){const move={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'}[e.key];if(move){e.preventDefault();swipeAction(move)}}if(e.key==='Escape'){if(!$('accountMenu').classList.contains('hidden'))closeAccountMenu();else if(!$('modal').classList.contains('hidden'))closeModal();else if(state.view==='swipe'&&!$('swipeTutorial').classList.contains('hidden'))hideTutorial();else if(state.view==='swipe')showView('home')}});$('modalClose').addEventListener('click',closeModal);$('modal').addEventListener('click',e=>{if(e.target.dataset.close==='true')closeModal()});$('footerSafety').addEventListener('click',()=>modal(`<h2 id="modalTitle">${icon('security')} ${h(T('safeTrading'))}</h2><p>${h(T('safeCarAdvice'))}</p>`));$('footerPrivacy').addEventListener('click',()=>modal(`<h2 id="modalTitle">${icon('lock')} ${h(T('privacy'))}</h2><p>${h(T('privacyDemo'))}</p>`));
+ const initialAd=new URLSearchParams(location.hash.slice(1)).get('ad');history.replaceState({lumaView:'home'},'',location.pathname+location.search);
  window.addEventListener('popstate',e=>{
-  if(!$('modal').classList.contains('hidden'))closeModal({fromHistory:true});
+  closeAccountMenu();if(!$('modal').classList.contains('hidden'))closeModal({fromHistory:true});
   if(e.state?.lumaDetail){showView(e.state.lumaView||'home',{fromHistory:true});void openListing(e.state.lumaDetail,{fromHistory:true,guard:()=>history.state?.lumaDetail===e.state.lumaDetail});return}
   showView(e.state?.lumaView||'home',{fromHistory:true});
  });
- applyTranslations();const hash=new URLSearchParams(location.hash.slice(1));if(hash.has('ad'))setTimeout(()=>showDetails(hash.get('ad'),{fromHistory:true}),150)}
+ applyTranslations();if(initialAd)setTimeout(()=>void openListing(initialAd),150)}
 wire();connectFirebase();
