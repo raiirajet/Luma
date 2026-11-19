@@ -18,6 +18,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
@@ -37,13 +38,17 @@ import org.json.JSONObject
 import java.text.Normalizer
 import java.text.NumberFormat
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 import java.util.UUID
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import java.security.SecureRandom
 import java.security.MessageDigest
+import android.text.Editable
 import android.text.InputType
+import android.text.TextWatcher
 
 /**
  * Limba Auto uses native Android Views and keeps the demo listings in local storage.
@@ -130,6 +135,15 @@ class MainActivity : Activity() {
         Triple("BG", "🇧🇬", "Bulgaria"), Triple("RO", "🇷🇴", "Romania")
     )
     private val codes = listOf("de", "en", "sq", "tr", "el", "sr-Latn", "sr-Cyrl", "sl", "hr", "mk", "bs", "cnr", "bg", "ro")
+    private val importCountries by lazy { countries + Triple("CH", "🇨🇭", "Schweiz") }
+    private val importCountryCodes by lazy { importCountries.map { it.first }.toSet() }
+    private val packagedImportCatalog by lazy {
+        runCatching {
+            val data = assets.open("official-import-data.json").bufferedReader().use { it.readText() }
+            OfficialImportCatalog.parse(data, importCountryCodes)
+        }.getOrNull()
+    }
+    @Volatile private var updatedImportCatalog: OfficialImportCatalog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -168,6 +182,12 @@ class MainActivity : Activity() {
         messages = JSONObject(assets.open("i18n.json").bufferedReader().use { it.readText() })
         releaseMessages = JSONObject(assets.open("release-i18n.json").bufferedReader().use { it.readText() })
         brands = JSONObject(assets.open("brands.json").bufferedReader().use { it.readText() })
+        Thread({
+            runCatching { OfficialImportCatalog.download(importCountryCodes) }.getOrNull()?.let { catalog ->
+                val packagedDate = packagedImportCatalog?.verifiedOn
+                if (packagedDate == null || !catalog.verifiedOn.isBefore(packagedDate)) updatedImportCatalog = catalog
+            }
+        }, "limba-official-import").start()
         locale = prefs.getString("language", "de") ?: "de"
         if (locale !in codes) locale = "de"
         starred = prefs.getBoolean("favorite", false)
@@ -656,21 +676,48 @@ class MainActivity : Activity() {
         }
         parent.addView(panel,lp(-1,-2))
     }
+    private data class ImportVehicle(val title: String, val price: Double?, val country: String)
+
     private fun showBorderlessCalculator(car: JSONObject?) = showImportCalculator(
-        listOf("" to (car?.optDouble("price", 68900.0) ?: 68900.0))
+        listOf(
+            if (car == null) ImportVehicle("", 68900.0, "HR")
+            else ImportVehicle("", car.optDouble("price").takeIf(Double::isFinite), car.optString("country"))
+        )
     )
 
-    private fun showImportCalculator(vehicles: List<Pair<String, Double>>) {
-        val layout = col().apply { pad(this, 16, 8) }
-        layout.addView(text(t("importDesc"), 13f, muted))
+    private fun importCountryName(code: String): String {
+        val (_, flag, fallback) = importCountries.firstOrNull { it.first == code } ?: return code
+        val name = if (code == "XK" || code == "TR") fallback
+            else Locale("", code).getDisplayCountry(Locale.forLanguageTag(locale))
+        return "$flag ${name.ifBlank { fallback }}"
+    }
+
+    private fun importDestinationPicker(layout: LinearLayout, selected: String): Spinner {
         layout.addView(label(t("targetCountry")))
-        val destination = Spinner(this).apply {
+        val spinner = Spinner(this).apply {
             background = c(paper, 11, border)
             contentDescription = t("targetCountry")
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("—") + countries.map { "${it.second} ${it.third}" } + listOf("🇨🇭 Schweiz"))
+                listOf("—") + importCountries.map { importCountryName(it.first) })
+            setSelection((importCountries.indexOfFirst { it.first == selected } + 1).coerceAtLeast(0))
         }
-        layout.addView(destination, lp(-1, 48))
+        layout.addView(spinner, lp(-1, 48))
+        return spinner
+    }
+
+    private fun importDestinationCode(spinner: Spinner): String =
+        importCountries.getOrNull(spinner.selectedItemPosition - 1)?.first.orEmpty()
+
+    private fun showImportCalculator(vehicles: List<ImportVehicle>, selected: String = "") {
+        val catalog = updatedImportCatalog ?: packagedImportCatalog
+        if (catalog == null) showManualImportCalculator(vehicles, selected, false)
+        else showOfficialImportCalculator(vehicles, catalog, selected)
+    }
+
+    private fun showManualImportCalculator(vehicles: List<ImportVehicle>, selected: String, canSwitch: Boolean) {
+        val layout = col().apply { pad(this, 16, 8) }
+        layout.addView(text(t("importDesc"), 13f, muted))
+        val destination = importDestinationPicker(layout, selected)
         val currency = NumberFormat.getCurrencyInstance(Locale.forLanguageTag(locale)).apply {
             this.currency = java.util.Currency.getInstance("EUR")
         }
@@ -688,14 +735,18 @@ class MainActivity : Activity() {
             }
             val result = text(t("estimateMissing"), 14f, ink, true).apply { setPadding(0, px(10), 0, px(10)) }
             layout.addView(result)
-            Triple(price.coerceAtLeast(0.0), fields, result)
+            Triple(price?.coerceAtLeast(0.0) ?: 0.0, fields, result)
         }
         val comparison = col()
         if (compare) layout.addView(comparison)
         layout.addView(text(t("estimateOnly"), 12f, muted))
-        val dialog = AlertDialog.Builder(this).setTitle(t(if (vehicles.size == 2) "compareImport" else "borderless"))
+        val builder = AlertDialog.Builder(this).setTitle(t(if (vehicles.size == 2) "compareImport" else "borderless"))
             .setView(ScrollView(this).apply { addView(layout) })
-            .setPositiveButton(t("calculate"), null).setNegativeButton(t("cancel"), null).create()
+            .setPositiveButton(t("calculate"), null).setNegativeButton(t("cancel"), null)
+        if (canSwitch) builder.setNeutralButton(t("officialMode")) { _, _ ->
+            showImportCalculator(vehicles, importDestinationCode(destination))
+        }
+        val dialog = builder.create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 comparison.removeAllViews()
@@ -746,6 +797,266 @@ class MainActivity : Activity() {
         }
         dialog.show()
     }
+    private data class ImportAmountField(val group: LinearLayout, val input: EditText)
+
+    private data class OfficialVehicleForm(
+        val fields: Map<String, ImportAmountField>,
+        val vat: Spinner,
+        val circulation: CheckBox,
+        val useCustomsRate: CheckBox
+    )
+
+    private fun importAmountField(parent: LinearLayout, key: String, value: String = ""): ImportAmountField {
+        val group = col()
+        val amount = input(value, "€").apply {
+            id = View.generateViewId()
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        }
+        group.addView(label(t(key)).apply { labelFor = amount.id })
+        group.addView(amount, lp(-1, 48))
+        parent.addView(group)
+        return ImportAmountField(group, amount)
+    }
+
+    private fun createOfficialVehicleForm(parent: LinearLayout, vehicle: ImportVehicle): OfficialVehicleForm {
+        if (vehicle.title.isNotBlank()) {
+            parent.addView(space(16))
+            parent.addView(text(vehicle.title, 16f, ink, true))
+        }
+        if (vehicle.country.isNotBlank()) {
+            parent.addView(text("${t("officialLocation")} · ${importCountryName(vehicle.country)}", 13f, muted))
+        }
+        val fields = mutableMapOf(
+            "price" to importAmountField(parent, "listedPrice", vehicle.price?.let {
+                java.math.BigDecimal.valueOf(it).stripTrailingZeros().toPlainString()
+            }.orEmpty()),
+            "transport" to importAmountField(parent, "transport")
+        )
+        val circulation = CheckBox(this).apply {
+            text = t("officialEuCirculation")
+            setTextColor(ink)
+        }
+        parent.addView(circulation, lp(-1, -2))
+        fields["customs"] = importAmountField(parent, "officialCustomsAmount")
+        val useCustomsRate = CheckBox(this).apply {
+            text = t("officialUseCustomsRate")
+            setTextColor(ink)
+        }
+        parent.addView(useCustomsRate, lp(-1, -2))
+        fields["customsBasis"] = importAmountField(parent, "officialCustomsBasis")
+
+        val vat = Spinner(this).apply {
+            id = View.generateViewId()
+            background = c(paper, 11, border)
+            contentDescription = t("officialVatApplies")
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
+                listOf(t("officialUnknown"), t("officialYes"), t("officialNo")))
+        }
+        parent.addView(label(t("officialVatApplies")).apply { labelFor = vat.id })
+        parent.addView(vat, lp(-1, 48))
+        fields["vatBasis"] = importAmountField(parent, "officialVatBasis")
+        fields["vehicleTaxBasis"] = importAmountField(parent, "officialVehicleTaxBasis")
+        fields["otherCharges"] = importAmountField(parent, "officialOtherCharges")
+        fields["registration"] = importAmountField(parent, "registration")
+        return OfficialVehicleForm(fields, vat, circulation, useCustomsRate)
+    }
+
+    private fun updateOfficialForm(form: OfficialVehicleForm, destination: OfficialImportDestination?) {
+        val dutyApplies = destination != null && !destination.hasNoCustoms(form.circulation.isChecked)
+        val hasRate = dutyApplies && destination?.customsStandardRate != null
+        form.circulation.visibility = if (destination?.isEu == true) View.VISIBLE else View.GONE
+        form.useCustomsRate.visibility = if (hasRate) View.VISIBLE else View.GONE
+        form.fields.getValue("customs").group.visibility = if (dutyApplies) View.VISIBLE else View.GONE
+        form.fields.getValue("customsBasis").group.visibility =
+            if (hasRate && form.useCustomsRate.isChecked) View.VISIBLE else View.GONE
+        form.fields.getValue("vatBasis").group.visibility = if (form.vat.selectedItemPosition == 1) View.VISIBLE else View.GONE
+        form.fields.getValue("vehicleTaxBasis").group.visibility =
+            if (destination?.vehicleTaxRate != null) View.VISIBLE else View.GONE
+    }
+
+    private fun readOfficialForm(form: OfficialVehicleForm): OfficialImportInput? {
+        var invalid = false
+        fun amount(key: String): Double? {
+            val field = form.fields.getValue(key)
+            if (field.group.visibility != View.VISIBLE) return null
+            val raw = field.input.text.toString().trim().replace(',', '.')
+            if (raw.isBlank()) return null
+            val value = raw.toDoubleOrNull()?.takeIf { it.isFinite() && it in 0.0..999999999.99 }
+            if (value == null) {
+                field.input.error = t("officialInvalid")
+                invalid = true
+            }
+            return value
+        }
+        val input = OfficialImportInput(
+            price = amount("price"),
+            transport = amount("transport"),
+            customs = amount("customs"),
+            customsBasis = amount("customsBasis"),
+            useCustomsRate = form.useCustomsRate.visibility == View.VISIBLE && form.useCustomsRate.isChecked,
+            vatBasis = amount("vatBasis"),
+            vehicleTaxBasis = amount("vehicleTaxBasis"),
+            otherCharges = amount("otherCharges"),
+            registration = amount("registration"),
+            vatApplicable = when (form.vat.selectedItemPosition) { 1 -> true; 2 -> false; else -> null },
+            euCirculation = form.circulation.visibility == View.VISIBLE && form.circulation.isChecked
+        )
+        return input.takeUnless { invalid }
+    }
+
+    private fun showOfficialSources(panel: LinearLayout, destination: OfficialImportDestination, checked: LocalDate) {
+        val language = Locale.forLanguageTag(locale)
+        val num = NumberFormat.getNumberInstance(language)
+        val verifiedDate = checked.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(language))
+        panel.addView(text("${t("officialVerifiedOn")} · $verifiedDate", 12f, muted))
+        panel.addView(text("${t("officialVatRate")} · ${num.format(destination.vatRate)} %", 15f, ink, true))
+        val customsRate = if (destination.customsZero) 0.0 else destination.customsStandardRate
+        customsRate?.let {
+            panel.addView(text("${t("officialCustomsRate")} · ${num.format(it)} %", 13f, ink, true))
+        }
+        destination.vehicleTaxRate?.let {
+            panel.addView(text("${t("officialVehicleTax")} · ${num.format(it)} %", 13f, ink, true))
+        }
+        panel.addView(text("${t("officialCurrencyHelp")} · ${destination.currency}", 12f, muted))
+        val sources = listOf(
+            "officialVatSource" to destination.vatSource,
+            "officialCustomsSource" to destination.customsSource,
+            "officialVehicleTaxSource" to destination.vehicleTaxSource,
+            "officialExtraSource" to destination.extraSource,
+            "officialFxSource" to destination.fxSource
+        )
+        sources.forEach { (label, url) ->
+            if (url != null) {
+                panel.addView(btn(t(label), false) {
+                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                        .onFailure { toast(t("officialUnavailable")) }
+                })
+                panel.addView(space(4))
+            }
+        }
+    }
+
+    private fun renderOfficialImportResult(
+        panel: LinearLayout,
+        vehicles: List<ImportVehicle>,
+        estimates: List<OfficialImportEstimate>
+    ) {
+        val currency = NumberFormat.getCurrencyInstance(Locale.forLanguageTag(locale)).apply {
+            this.currency = java.util.Currency.getInstance("EUR")
+        }
+        if (vehicles.size == 2) {
+            val header = row(navy).apply { pad(this, 7, 8) }
+            header.addView(space(1), LinearLayout.LayoutParams(0, 1, 1f))
+            vehicles.forEach { vehicle ->
+                header.addView(text(vehicle.title, 11f, paper, true), LinearLayout.LayoutParams(0, -2, 1f))
+            }
+            panel.addView(header)
+        }
+        fun addRow(key: String, index: Int, values: List<Double?>, strong: Boolean = false) {
+            val line = row(if (index % 2 == 0) paper else mist).apply { pad(this, 7, 8) }
+            line.addView(text(t(key), 12f, muted, true), LinearLayout.LayoutParams(0, -2, 1f))
+            values.forEach { value ->
+                val caption = value?.let(currency::format) ?: t("officialUnknown")
+                line.addView(text(caption, 12f, ink, strong), LinearLayout.LayoutParams(0, -2, 1f))
+            }
+            panel.addView(line)
+        }
+        val keys = estimates.first().amounts.keys
+        keys.forEachIndexed { index, key -> addRow(key, index, estimates.map { it.amounts[key] }) }
+        val complete = estimates.all { it.complete }
+        addRow(if (complete) "total" else "officialSubtotal", keys.size, estimates.map { it.subtotal }, true)
+        if (!complete) panel.addView(text(t("officialNeedsInput"), 12f, muted))
+    }
+
+    private fun showOfficialImportCalculator(
+        vehicles: List<ImportVehicle>,
+        catalog: OfficialImportCatalog,
+        selected: String
+    ) {
+        val layout = col().apply { pad(this, 16, 8) }
+        layout.addView(text(t("officialMode"), 15f, ink, true))
+        layout.addView(text(t("officialStandardScope"), 13f, muted))
+        val destination = importDestinationPicker(layout, selected)
+        val sourcePanel = col()
+        layout.addView(sourcePanel)
+        val formsPanel = col()
+        layout.addView(formsPanel)
+        formsPanel.addView(text(t("officialBasisHelp"), 13f, muted))
+        val forms = vehicles.map { createOfficialVehicleForm(formsPanel, it) }
+        val result = col()
+        layout.addView(result)
+        layout.addView(text(t("estimateOnly"), 12f, muted))
+
+        fun rateRecord(): OfficialImportDestination? = catalog.destinations[importDestinationCode(destination)]
+        fun prepareForms() {
+            val record = rateRecord()
+            formsPanel.visibility = if (record != null) View.VISIBLE else View.GONE
+            sourcePanel.removeAllViews()
+            result.removeAllViews()
+            if (record != null) showOfficialSources(sourcePanel, record, catalog.verifiedOn)
+            forms.forEach { form -> updateOfficialForm(form, record) }
+        }
+        destination.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            private var lastSelection = destination.selectedItemPosition
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (position != lastSelection) {
+                    forms.forEach { form ->
+                        form.circulation.isChecked = false
+                        form.useCustomsRate.isChecked = false
+                        form.vat.setSelection(0)
+                        form.fields.filterKeys { it != "price" }.values.forEach { it.input.text.clear() }
+                    }
+                    lastSelection = position
+                }
+                prepareForms()
+            }
+        }
+        forms.forEach { form ->
+            fun changed() {
+                result.removeAllViews()
+                updateOfficialForm(form, rateRecord())
+            }
+            form.circulation.setOnCheckedChangeListener { _, _ -> changed() }
+            form.useCustomsRate.setOnCheckedChangeListener { _, _ -> changed() }
+            form.fields.values.forEach { field ->
+                field.input.addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: Editable?) { result.removeAllViews() }
+                })
+            }
+            form.vat.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = changed()
+            }
+        }
+        prepareForms()
+        val dialog = AlertDialog.Builder(this).setTitle(t(if (vehicles.size == 2) "compareImport" else "borderless"))
+            .setView(ScrollView(this).apply { addView(layout) })
+            .setPositiveButton(t("calculate"), null)
+            .setNegativeButton(t("cancel"), null)
+            .setNeutralButton(t("manualMode")) { _, _ ->
+                showManualImportCalculator(vehicles, importDestinationCode(destination), true)
+            }.create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                result.removeAllViews()
+                val record = rateRecord()
+                if (record == null) {
+                    result.addView(text(t("estimateMissing"), 13f, muted))
+                    return@setOnClickListener
+                }
+                val inputs = forms.map(::readOfficialForm)
+                if (inputs.any { it == null }) return@setOnClickListener
+                val estimates = inputs.filterNotNull().map { estimateOfficialImport(record, it) }
+                renderOfficialImportResult(result, vehicles, estimates)
+                result.post { result.requestRectangleOnScreen(android.graphics.Rect(0, 0, result.width, result.height), false) }
+            }
+        }
+        dialog.show()
+    }
+
     private fun renderPerformance() {
         val main=container();toolbar(main,t("performance"),{navigate("home")})
         val content=col().apply{setPadding(px(17),px(22),px(17),px(22))}
@@ -1200,7 +1511,8 @@ class MainActivity : Activity() {
         val scroll=ScrollView(this).apply{addView(col)}
         AlertDialog.Builder(this).setTitle(t("compare")).setView(scroll)
             .setPositiveButton(t("compareImport")) { _, _ ->
-                showImportCalculator(pair.map { vehicleDisplayName(it) to it.optDouble("price", 0.0) })
+                showImportCalculator(pair.map { ImportVehicle(vehicleDisplayName(it),
+                    it.optDouble("price").takeIf(Double::isFinite), it.optString("country")) })
             }
             .setNegativeButton(t("cancel"), null).show()
     }

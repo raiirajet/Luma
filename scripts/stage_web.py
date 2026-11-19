@@ -18,6 +18,9 @@ PUBLIC_FILES = (
     "styles.css",
     "config.js",
     "app.js",
+    "borderless-i18n.js",
+    "borderless-official.js",
+    "shared/borderless/official-import-data.json",
     "car-brands.js",
     "cars-i18n.js",
     "feature-i18n.js",
@@ -73,7 +76,9 @@ def main() -> None:
         staged = Path(temp) / "web"
         staged.mkdir()
         for filename in PUBLIC_FILES:
-            shutil.copyfile(ROOT / filename, staged / filename)
+            destination = staged / filename
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / filename, destination)
         for source in sorted((ROOT / "assets" / "limba").rglob("*.png")):
             destination = staged / source.relative_to(ROOT)
             destination.parent.mkdir(parents=True, exist_ok=True)

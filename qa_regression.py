@@ -75,6 +75,8 @@ with sync_playwright() as p:
   assert page.locator('.limba-passport').is_visible()
   assert 'nicht geprüft' in page.locator('.limba-passport').inner_text()
   assert page.locator('#importForm').is_visible()
+  assert page.locator('#importForm [name="import-mode"]').input_value()=='official'
+  page.locator('#importForm [name="import-mode"]').select_option('manual')
   page.locator('#importForm [name="destination"]').select_option('CH')
   page.locator('#importForm [name="transport"]').fill('1000')
   page.locator('#importForm [name="customs"]').fill('10')
@@ -83,6 +85,30 @@ with sync_playwright() as p:
   page.locator('#importForm button[type="submit"]').click()
   assert 'Gesamtkosten' in page.locator('#importResult').inner_text()
   assert '91.999' in page.locator('#importResult').inner_text()
+  official_form=page.locator('#importForm')
+  official_form.locator('[name="import-mode"]').select_option('official')
+  official_form.locator('[data-official-sources] time').wait_for()
+  assert official_form.locator('[data-official-sources] a[href^="https://www.bazg.admin.ch/"]').count()>=1
+  assert '8,1' in official_form.locator('[data-official-sources]').inner_text()
+  official_form.locator('button[type="submit"]').click()
+  assert page.evaluate('L("officialSubtotal")') in page.locator('#importResult').inner_text()
+  assert page.evaluate('L("officialNeedsInput")') in page.locator('#importResult').inner_text()
+  official_form.locator('[name="official-vatApplicable"]').select_option('yes')
+  for key,value in {'transport':'1000','vatBasis':'10000','vehicleTaxBasis':'10000','otherCharges':'0','registration':'0'}.items():
+   official_form.locator('[name="official-'+key+'"]').fill(value)
+  official_form.locator('button[type="submit"]').click()
+  assert 'Gesamtkosten' in page.locator('#importResult').inner_text()
+  assert '810,00' in page.locator('#importResult').inner_text()
+  assert '400,00' in page.locator('#importResult').inner_text()
+  official_form.locator('[name="destination"]').select_option('GR')
+  assert official_form.locator('[name="official-transport"]').input_value()==''
+  assert official_form.locator('[name="official-euCirculation"]').is_visible()
+  assert not official_form.locator('[name="official-euCirculation"]').is_checked()
+  assert official_form.locator('[name="official-customs"]').is_visible()
+  official_form.locator('[name="official-euCirculation"]').check()
+  assert official_form.locator('[name="official-customs"]').is_hidden()
+  official_form.locator('[name="import-mode"]').select_option('manual')
+  assert official_form.locator('[name="transport"]').input_value()=='1000'
   page.locator('#detailBack').click()
   assert page.locator('#modal').is_hidden()
   perf_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="performance"]'

@@ -37,6 +37,12 @@
         "headers": [
           { "key": "Cache-Control", "value": "no-store, max-age=0" }
         ]
+      },
+      {
+        "source": "/shared/borderless/official-import-data.json",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+        ]
       }
     ]
   },

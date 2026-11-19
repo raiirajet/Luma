@@ -349,10 +349,27 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 .saved-search-row button{min-height:44px}
 .market-import-columns fieldset{display:grid;gap:8px;margin:0}
 .market-import-columns label{display:grid;gap:3px;color:#325265;font-size:.85rem}
-.market-import-columns input,.market-import-destination select{width:100%;min-width:0;padding:8px;background:white;border:1px solid #bfcfda;border-radius:7px;font:inherit}
+.market-import-columns input,.market-import-columns select,.market-import-destination select{width:100%;min-width:0;padding:8px;background:white;border:1px solid #bfcfda;border-radius:7px;font:inherit}
 .market-import-destination{display:grid;gap:5px;margin-bottom:12px}
 .market-import-result{margin-top:12px}
 .market-import-form>.primary-btn{margin:13px 0 0}
+.borderless-inline-fields{display:contents}
+.borderless-grid .market-import-destination{margin:0}
+.borderless-official-pane,.borderless-location,.borderless-check{grid-column:1/-1;min-width:0}
+.borderless-official-pane [hidden],[data-import-fields][hidden]{display:none!important}
+.borderless-sources{padding:12px;background:#f6f9fd;border:1px solid #dce8f0;border-radius:10px;color:#31556d}
+.borderless-sources p,.borderless-help,.borderless-location{margin:0;font-size:.85rem;line-height:1.5}
+.borderless-help{margin:12px 0;color:#395667}
+.borderless-location{color:#395667}
+.borderless-sources dl{display:flex;flex-wrap:wrap;gap:8px 18px;margin:8px 0}
+.borderless-sources dl div{display:flex;align-items:baseline;gap:6px;font-size:.85rem}
+.borderless-sources dd{margin:0;font-weight:800}
+.borderless-sources ul{list-style:none;display:flex;flex-wrap:wrap;gap:1px 14px;padding:0;margin:0}
+.borderless-sources a{display:inline-flex;align-items:center;min-height:44px;font-size:.85rem;color:#15558a}
+.borderless-grid .borderless-check,.market-import-columns .borderless-check{display:flex;flex-direction:row;align-items:center;gap:8px;min-height:44px}
+.borderless-check input[type="checkbox"]{width:1.15rem;min-height:auto;margin:0;flex-shrink:0}
+.import-result strong{white-space:normal;text-align:right}
+.market-import-result .import-total small{display:block;font-weight:normal}
 .modal-panel.market-detail{width:min(900px,100%)}
 @media(max-width:760px){
  .search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -422,6 +439,124 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 <button id="fabAdd" class="fab-add" type="button" aria-label="Auto hinzufügen"><img src="assets/limba/icons/add_car.png" alt="" aria-hidden="true"><span id="fabAddLabel">Auto hinzufügen</span></button>
 <nav class="mobile-nav" aria-label="Mobile Navigation"><button data-view="home"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><small data-i18n="carsNav">Autos finden</small></button><button data-view="favorites"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/favorites.png" alt="" aria-hidden="true" draggable="false"></span><small data-lux="garage">Meine Garage</small></button><button data-view="performance"><span><img class="ui-icon limba-3d-icon" src="assets/limba/icons/car.png" alt="" aria-hidden="true" draggable="false"></span><small data-lux="performance">Performance</small></button><button data-view="swipe"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true" draggable="false"></span><small>Swipe</small></button><button data-view="settings"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/settings.png" alt="" aria-hidden="true" draggable="false"></span><small data-i18n="settings">Einstellungen</small></button></nav>
 <div id="modal" class="modal-wrap hidden" role="presentation"><div class="modal-backdrop" data-close="true"></div><div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="modalClose" class="modal-close" aria-label="Schliessen"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-close"></use></svg></button><div id="modalContent"></div></div></div>
+<script type="application/json" id="officialImportData">{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-11-19",
+  "destinations": {
+    "AL": {
+      "currency": "ALL",
+      "isEu": false,
+      "vatRate": 20,
+      "vatSource": "https://dogana.gov.al/english/d/169/182/248/245/vat",
+      "customsZero": true,
+      "customsSource": "https://dogana.gov.al/english/c/179/customs-clearance-of-vehicles",
+      "extraSource": "https://www.dpshtrr.al/mjete/importi-i-mjetit/mjetet-qe-lejohen-te-importohen-ne-republiken-e-shqiperise"
+    },
+    "TR": {
+      "currency": "TRY",
+      "isEu": false,
+      "vatRate": 20,
+      "vatSource": "https://cdn.gib.gov.tr/api/gibportal-file/file/getFileResources?objectKey=arsiv%2Fyardim-kaynaklar%2Fyararli-bilgiler%2Fkdv-oranlari.pdf",
+      "customsSource": "https://www.ticaret.gov.tr/ithalat/ithalat-mevzuati/ithalat-rejimi-karari-igv-karari-ve-ithalat-tebligleri/3-ithalat-tebligleri-2026-yili",
+      "extraSource": "https://gib.gov.tr/yardim-ve-kaynaklar/yararli-bilgiler/ozel-tuketim-vergisi-oran-ve-tutarlari/ii-sayili-listenin-yururluk-tarihi-itibariyla-guncel-oran-ve-tutarlari"
+    },
+    "GR": {
+      "currency": "EUR",
+      "isEu": true,
+      "vatRate": 24,
+      "vatSource": "https://www.aade.gr/en/services-information/useful-guides/commencement-business-activity/basic-vat-rates",
+      "customsSource": "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-customs/eu-customs-tariff-taric_en",
+      "extraSource": "https://www.aade.gr/en/customs/motor-vehicles-taxation"
+    },
+    "RS": {
+      "currency": "RSD",
+      "isEu": false,
+      "vatRate": 20,
+      "vatSource": "https://www.carina.rs/putnici/pitanja-i-odgovori/uvoz-polovnih-vozila.html",
+      "customsSource": "https://www.carina.rs/putnici/uvoz-motornih-vozila/sporazumi.html",
+      "extraSource": "https://www.carina.rs/putnici/pitanja-i-odgovori/uvoz-polovnih-vozila.html"
+    },
+    "SI": {
+      "currency": "EUR",
+      "isEu": true,
+      "vatRate": 22,
+      "vatSource": "https://www.fu.gov.si/zivljenjski_dogodki_prebivalci/uvoz_avtomobila_iz_tretjih_drzav",
+      "customsSource": "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-customs/eu-customs-tariff-taric_en",
+      "extraSource": "https://www.fu.gov.si/zivljenjski_dogodki_prebivalci/uvoz_avtomobila_iz_tretjih_drzav"
+    },
+    "XK": {
+      "currency": "EUR",
+      "isEu": false,
+      "vatRate": 18,
+      "vatSource": "https://www.atk-ks.org/en/portfolio/informata-te-pergjithshme-per-tatimet-ne-kosove/",
+      "customsSource": "https://dogana.rks-gov.net/CustomsFee",
+      "extraSource": "https://dogana.rks-gov.net/Individs/Index?individId=1079"
+    },
+    "MK": {
+      "currency": "MKD",
+      "isEu": false,
+      "vatRate": 18,
+      "vatSource": "https://customs.gov.mk/mk-MK/uvoz-na-vozila-cpp.nspx",
+      "customsStandardRate": 5,
+      "customsSource": "https://www.customs.gov.mk/en-GB/pocetna/02/uvoz-na-vozila.nspx",
+      "extraSource": "https://www.customs.gov.mk/en-GB/pocetna/biznis-zaednica/akcizno-postapuvanje/akcizni-marki/kalkulator-za-dmv.nspx"
+    },
+    "HR": {
+      "currency": "EUR",
+      "isEu": true,
+      "vatRate": 25,
+      "vatSource": "https://europa.eu/youreurope/business/finance-and-tax/vat/vat-rules-rates/index_en.htm",
+      "customsSource": "https://carina.gov.hr/najcesca-pitanja-i-odgovori-3645/motorna-vozila-3821/postupak-oporezivanja-motornih-vozila/koja-je-razlika-ako-se-motorno-vozilo-unosi-iz-drzava-clanica-eu-ili-uvozi-iz-trecih-zemalja/3827",
+      "extraSource": "https://carina.gov.hr/UserDocsImages/ostalo/PPMV_kalkulator/PPMV.html"
+    },
+    "BA": {
+      "currency": "BAM",
+      "isEu": false,
+      "vatRate": 17,
+      "vatSource": "https://www.uino.gov.ba/portal/bs/informacije-gradjanima/kupovina-auta/",
+      "customsStandardRate": 15,
+      "customsSource": "https://www.uino.gov.ba/portal/bs/informacije-gradjanima/kupovina-auta/",
+      "extraSource": "https://www.sluzbenilist.ba/page/akt/ITfV894i4zs%3D"
+    },
+    "ME": {
+      "currency": "EUR",
+      "isEu": false,
+      "vatRate": 21,
+      "vatSource": "https://www.gov.me/clanak/porez-na-dodatu-vrijednost",
+      "customsSource": "https://www.gov.me/dokumenta/c9ad2bc2-dfc4-4107-9fea-585c792b81af",
+      "extraSource": "https://www.gov.me/upravacarina/carinska-vrijednost-robe"
+    },
+    "BG": {
+      "currency": "EUR",
+      "isEu": true,
+      "vatRate": 20,
+      "vatSource": "https://europa.eu/youreurope/business/finance-and-tax/vat/vat-rules-rates/index_en.htm",
+      "customsSource": "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-customs/eu-customs-tariff-taric_en",
+      "extraSource": "https://customs.bg/wps/wcm/connect/customs.bg28892/8216cba9-36e0-4cfb-abce-00b714849c93/_abvomobili-text.pdf_.pdf?MOD=AJPERES"
+    },
+    "RO": {
+      "currency": "RON",
+      "isEu": true,
+      "vatRate": 21,
+      "vatSource": "https://static.anaf.ro/static/10/Anaf/AsistentaContribuabili_r/Cotele_de_TVA_09.2025.pdf",
+      "customsSource": "https://taxation-customs.ec.europa.eu/online-services/online-services-and-databases-customs/eu-customs-tariff-taric_en",
+      "extraSource": "https://www.customs.ro/en/calatori/intrebari-frecvente"
+    },
+    "CH": {
+      "currency": "CHF",
+      "isEu": false,
+      "vatRate": 8.1,
+      "vatSource": "https://www.bazg.admin.ch/de/fahrzeug-import-schweiz-zollanmeldung-steuern",
+      "customsZero": true,
+      "customsSource": "https://www.bazg.admin.ch/en/abolition-industrial-tariffs-january-2024",
+      "vehicleTaxRate": 4,
+      "vehicleTaxSource": "https://www.bazg.admin.ch/de/automobilsteuer-inland-abgaben",
+      "extraSource": "https://www.bazg.admin.ch/de/fahrzeug-import-schweiz-zollanmeldung-steuern",
+      "fxSource": "https://www.bazg.admin.ch/de/devisenkurse-verkauf"
+    }
+  }
+}
+</script>
 <script>
 
 /* translations-extra.js */
@@ -1447,6 +1582,98 @@ function estimateImport({price=0,transport=0,customs=0,vat=0,registration=0}={})
 }
 
 
+/* borderless-official.js */
+const officialImportPath = 'shared/borderless/official-import-data.json';
+let officialImportRequest;
+
+function isStandardRate(rate) {
+  return Number.isFinite(rate) && rate >= 0 && rate <= 100;
+}
+
+function isOfficialLink(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
+function officialDestination(data, country) {
+  if (data?.schemaVersion !== 1 || !/^\d{4}-\d{2}-\d{2}$/.test(data.verifiedOn ?? '') ||
+      !Object.hasOwn(data.destinations ?? {}, country)) return null;
+
+  const entry = data.destinations[country];
+  if (!entry || !isStandardRate(entry.vatRate) || !isOfficialLink(entry.vatSource) ||
+      !isOfficialLink(entry.customsSource) || typeof entry.isEu !== 'boolean' ||
+      !/^[A-Z]{3}$/.test(entry.currency ?? '')) return null;
+  if (entry.customsStandardRate != null && !isStandardRate(entry.customsStandardRate)) return null;
+  if (entry.vehicleTaxRate != null &&
+      (!isStandardRate(entry.vehicleTaxRate) || !isOfficialLink(entry.vehicleTaxSource))) return null;
+  if ([entry.extraSource, entry.fxSource].some(link => link != null && !isOfficialLink(link))) return null;
+  return entry;
+}
+
+function loadOfficialImportData() {
+  if (officialImportRequest) return officialImportRequest;
+  officialImportRequest = Promise.resolve().then(async () => {
+    const embedded = document.getElementById('officialImportData');
+    if (embedded) return JSON.parse(embedded.textContent);
+
+    const response = await fetch(new URL(officialImportPath, document.baseURI), {cache: 'no-cache'});
+    return response.ok ? response.json() : null;
+  }).catch(() => {
+    // A new selection can retry after a temporary network failure.
+    officialImportRequest = undefined;
+    return null;
+  }).then(data => {
+    if (!data) officialImportRequest = undefined;
+    return data;
+  });
+  return officialImportRequest;
+}
+
+function importAmount(value) {
+  if (typeof value !== 'number' && (typeof value !== 'string' || value.trim() === '')) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+}
+
+function roundImportCents(scaled) {
+  return Math.round(scaled + Number.EPSILON * scaled) / 100;
+}
+
+function importCharge(basis, rate) {
+  const amount = importAmount(basis);
+  return amount === null || !isStandardRate(rate) ? null : roundImportCents(amount * rate);
+}
+
+function estimateOfficialImport(destination, inputs) {
+  const {
+    price, transport, customsBasis, useCustomsRate, vatBasis, vatApplicable,
+    vehicleTaxBasis, otherCharges, registration, euCirculation
+  } = inputs;
+  let customs = importAmount(inputs.customs);
+  if (customs === null) {
+    if (destination.customsZero === true || (destination.isEu && euCirculation === true)) customs = 0;
+    else if (useCustomsRate === true) customs = importCharge(customsBasis, destination.customsStandardRate);
+  }
+
+  const amounts = {
+    price: importAmount(price),
+    transport: importAmount(transport),
+    customs,
+    vat: vatApplicable === true ? importCharge(vatBasis, destination.vatRate) : vatApplicable === false ? 0 : null,
+    vehicleTax: destination.vehicleTaxRate == null ? 0 : importCharge(vehicleTaxBasis, destination.vehicleTaxRate),
+    otherCharges: importAmount(otherCharges),
+    registration: importAmount(registration)
+  };
+  const values = Object.values(amounts);
+  const subtotal = roundImportCents(values.reduce((sum, amount) => sum + (amount ?? 0), 0) * 100);
+  return { ...amounts, subtotal, complete: values.every(amount => amount !== null) };
+}
+
+
 /* limba-lux-ui.js */
 const createLimbaExperiences=function createLimbaExperiences(api){
  const {el,state,filtered,carCard,price,number,flag,countryLabel,h,safeURL,T,F,X,L,isDemo,openDetails,modal,toast} = api;
@@ -1464,19 +1691,229 @@ const createLimbaExperiences=function createLimbaExperiences(api){
   ['listedPrice',value.price],['transport',value.transport],['customs',value.duty],
   ['vat',value.tax],['registration',value.registration],['total',value.total]
  ];
+ const officialInputs=[
+  ['transport',()=>X('transport')],
+  ['customs',()=>L('officialCustomsAmount')],
+  ['customsBasis',()=>L('officialCustomsBasis')],
+  ['vatBasis',()=>L('officialVatBasis')],
+  ['vehicleTaxBasis',()=>L('officialVehicleTaxBasis')],
+  ['otherCharges',()=>L('officialOtherCharges')],
+  ['registration',()=>X('registration')]
+ ];
+ const moneyInput=(name,max,placeholder='')=>`<input name="${name}" type="number" min="0" max="${max}" step="0.01" inputmode="decimal" placeholder="${placeholder}">`;
+ const importLocale=()=>state.locale==='cnr'?'sr-Latn':state.locale;
+ const officialPrice=value=>value==null?L('officialNeedsInput'):
+  new Intl.NumberFormat(importLocale(),{style:'currency',currency:'EUR'}).format(value);
+ const percentage=value=>new Intl.NumberFormat(importLocale(),{style:'percent',maximumFractionDigits:2}).format(value/100);
+ const formChoices=excluded=>`
+  <label class="market-import-destination">${h(X('targetCountry'))}
+   <select name="destination" required><option value="">—</option>${countryOptions(excluded)}</select></label>
+  <label class="market-import-destination">${h(L('officialModeLabel'))}
+   <select name="import-mode"><option value="official" selected>${h(L('officialMode'))}</option>
+    <option value="manual">${h(L('manualMode'))}</option></select></label>`;
+ const manualFields=suffix=>importInputs.map(([key,label,max])=>
+  `<label>${h(X(label))}${moneyInput(key+suffix,max,'0')}</label>`).join('');
+ const officialFields=(car,suffix)=>`
+  <p class="borderless-location">${h(L('officialLocation'))} · ${h(countryLabel(car.country)||'—')}</p>
+  <label>${h(L('officialVatApplies'))}<select name="official-vatApplicable${suffix}">
+   <option value="">${h(L('officialUnknown'))}</option>
+   <option value="yes">${h(L('officialYes'))}</option>
+   <option value="no">${h(L('officialNo'))}</option>
+  </select></label>
+  <label class="borderless-check" data-official-option="euCirculation" hidden>
+   <input type="checkbox" name="official-euCirculation${suffix}" disabled>
+   <span>${h(L('officialEuCirculation'))}</span>
+  </label>
+  <label class="borderless-check" data-official-option="useCustomsRate" hidden>
+   <input type="checkbox" name="official-useCustomsRate${suffix}" disabled>
+   <span>${h(L('officialUseCustomsRate'))}</span>
+  </label>
+  ${officialInputs.map(([key,label])=>
+   `<label data-official-option="${key}">${h(label())}${moneyInput('official-'+key+suffix,1000000000)}</label>`).join('')}`;
+ const officialPane=(cars,compare)=>`
+  <div class="borderless-official-pane" data-import-fields="official" hidden>
+   <div class="borderless-sources" data-official-sources aria-live="polite"></div>
+   <div data-official-inputs hidden>
+    <p class="borderless-help">${h(L('officialCurrencyHelp'))} ${h(L('officialBasisHelp'))}</p>
+    ${compare?`<div class="market-import-columns">${cars.map((car,index)=>
+     `<fieldset data-official-vehicle><legend>${h(car.title)}</legend>${officialFields(car,'-'+index)}</fieldset>`).join('')}</div>`:
+     `<div class="borderless-grid" data-official-vehicle>${officialFields(cars[0],'')}</div>`}
+   </div>
+  </div>`;
+ const officialLines=(value,destination)=>[
+  [X('listedPrice'),value.price],[X('transport'),value.transport],[L('officialCustomsAmount'),value.customs],
+  ...(Number.isFinite(destination.vehicleTaxRate)?[[L('officialVehicleTax'),value.vehicleTax]]:[]),
+  [L('officialVatAmount'),value.vat],[L('officialOtherCharges'),value.otherCharges],
+  [X('registration'),value.registration],[value.complete?X('total'):L('officialSubtotal'),value.subtotal]
+ ];
+ function renderOfficialSources(target,record,verifiedOn){
+  const date=verifiedOn?new Date(verifiedOn+'T00:00:00Z'):null;
+  const sourceDate=date&&!Number.isNaN(date.valueOf())?
+   `<time datetime="${h(verifiedOn)}">${h(new Intl.DateTimeFormat(importLocale(),{dateStyle:'medium',timeZone:'UTC'}).format(date))}</time>`:'';
+  const rates=[
+   [L('officialVatRate'),percentage(record.vatRate)],
+   ...(Number.isFinite(record.customsStandardRate)?[[L('officialCustomsRate'),percentage(record.customsStandardRate)]]:[]),
+   ...(record.customsZero?[[L('officialCustomsRate'),percentage(0)]]:[]),
+   ...(Number.isFinite(record.vehicleTaxRate)?[[L('officialVehicleTax'),percentage(record.vehicleTaxRate)]]:[])
+  ];
+  const sourceLinks=[
+   [L('officialVatSource'),record.vatSource],[L('officialCustomsSource'),record.customsSource],
+   [L('officialVehicleTaxSource'),record.vehicleTaxSource],[L('officialExtraSource'),record.extraSource],
+   [L('officialFxSource'),record.fxSource]
+  ].filter(([,url])=>typeof url==='string'&&url.startsWith('https:')&&safeURL(url));
+  const sources=new Map();
+  for(const [label,url] of sourceLinks){
+   sources.set(url,sources.has(url)?sources.get(url)+' · '+label:label);
+  }
+  target.innerHTML=`
+   ${sourceDate?`<p><strong>${h(L('officialVerifiedOn'))}</strong> ${sourceDate}</p>`:''}
+   <dl>${rates.map(([label,value])=>`<div><dt>${h(label)}</dt><dd>${h(value)}</dd></div>`).join('')}</dl>
+   <ul>${Array.from(sources,([url,label])=>`<li><a href="${h(safeURL(url))}" target="_blank" rel="noopener noreferrer">${h(label)}</a></li>`).join('')}</ul>`;
+ }
+ function attachImportForm(form,result,cars,compare=false){
+  const mode=form.elements.namedItem('import-mode');
+  const destination=form.elements.namedItem('destination');
+  const panes=Array.from(form.querySelectorAll('[data-import-fields]'));
+  const sources=form.querySelector('[data-official-sources]');
+  const officialControls=form.querySelector('[data-official-inputs]');
+  const description=form.previousElementSibling?.querySelector('[data-import-description]')??form.previousElementSibling;
+  const submit=form.querySelector('button[type="submit"]');
+  const suffix=index=>compare?'-'+index:'';
+  const field=(key,index)=>form.elements.namedItem('official-'+key+suffix(index));
+  let officialData=null;
+  let loading=false;
+  let failed=false;
+  let modePicked=false;
+  let previousMode=mode.value;
+  let previousDestination=destination.value;
+  function setOption(key,index,visible){
+   const input=field(key,index);
+   input.disabled=!visible;
+   input.closest('[data-official-option]').hidden=!visible;
+  }
+  function refresh(){
+   const official=mode.value==='official';
+   const record=official&&officialData?officialDestination(officialData,destination.value):null;
+   if(description)description.textContent=official?L('officialStandardScope'):X('importDesc');
+   for(const pane of panes){
+    const visible=pane.dataset.importFields===mode.value;
+    pane.hidden=!visible;
+    for(const input of pane.querySelectorAll('input,select'))input.disabled=!visible;
+   }
+   submit.disabled=official&&!record;
+   officialControls.hidden=!record;
+   if(!official)return;
+   if(!officialData&&!loading&&!failed){
+    loading=true;
+    loadOfficialImportData().then(data=>{
+     officialData=data;
+     failed=!data;
+    }).catch(()=>{failed=true;}).finally(()=>{
+     loading=false;
+     if(!form.isConnected)return;
+     if(failed&&!modePicked){
+      mode.value='manual';
+      previousMode=mode.value;
+     }
+     refresh();
+    });
+   }
+   if(!record){
+    sources.textContent=loading?L('loading'):
+     failed||(officialData&&destination.value)?L('officialUnavailable'):X('targetCountry');
+    return;
+   }
+   renderOfficialSources(sources,record,officialData.verifiedOn);
+   cars.forEach((_,index)=>{
+    const eu=record.isEu&&field('euCirculation',index).checked;
+    const enterCustoms=!eu&&!record.customsZero;
+    const useRate=enterCustoms&&Number.isFinite(record.customsStandardRate)&&!field('customs',index).value.trim();
+    setOption('euCirculation',index,record.isEu);
+    setOption('customs',index,enterCustoms);
+    setOption('useCustomsRate',index,useRate);
+    setOption('customsBasis',index,useRate&&field('useCustomsRate',index).checked);
+    setOption('vatBasis',index,field('vatApplicable',index).value==='yes');
+    setOption('vehicleTaxBasis',index,Number.isFinite(record.vehicleTaxRate));
+   });
+  }
+  function clearOfficialInputs(){
+   for(const input of officialControls.querySelectorAll('input,select')){
+    if(input.type==='checkbox')input.checked=false;
+    else input.value='';
+   }
+  }
+  form.addEventListener('change',()=>{
+   if(previousMode!==mode.value){
+    modePicked=true;
+    previousMode=mode.value;
+    failed=false;
+   }
+   if(previousDestination!==destination.value){
+    clearOfficialInputs();
+    previousDestination=destination.value;
+   }
+   refresh();
+   result.textContent=mode.value==='official'?'':compare?'':X('estimateMissing');
+  });
+  form.addEventListener('submit',event=>{
+   event.preventDefault();
+   const values=new FormData(form);
+   const official=mode.value==='official';
+   const record=official&&officialData?officialDestination(officialData,destination.value):null;
+   if(official&&!record){result.textContent=L('officialUnavailable');return;}
+   if(!official&&!compare&&!importInputs.some(([key])=>String(values.get(key)??'').trim())){
+    result.textContent=X('estimateMissing');
+    return;
+   }
+   const estimates=cars.map((car,index)=>{
+    if(!official)return estimateImport({
+     price:car.price,...Object.fromEntries(importInputs.map(([key])=>[key,values.get(key+suffix(index))]))
+    });
+    const read=key=>values.get('official-'+key+suffix(index));
+    const vatChoice=read('vatApplicable');
+    return estimateOfficialImport(record,{
+     price:car.price,...Object.fromEntries(officialInputs.map(([key])=>[key,read(key)])),
+     vatApplicable:vatChoice==='yes'?true:vatChoice==='no'?false:null,
+     euCirculation:read('euCirculation')!==null,useCustomsRate:read('useCustomsRate')!==null
+    });
+   });
+   const rows=estimates.map(value=>official?officialLines(value,record):importBreakdown(value).map(([key,amount])=>[X(key),amount]));
+   const format=official?officialPrice:price;
+   const last=rows[0].length-1;
+   if(!compare){
+    result.innerHTML=rows[0].map(([label,value],index)=>`<div class="${index===last?'import-total':''}">
+     <span>${h(label)}</span><strong>${h(format(value))}</strong></div>`).join('');
+    return;
+   }
+   result.innerHTML=`<div class="compare-table" role="table">
+    <div class="compare-row compare-names"><span>${h(countryLabel(destination.value))}</span>
+     ${cars.map(car=>`<strong>${h(car.title)}</strong>`).join('')}</div>
+    ${rows[0].map(([label],index)=>{
+     const summary=index===last;
+     const rowLabel=official&&summary&&estimates.some(value=>!value.complete)?L('officialSubtotal'):label;
+     return `<div class="compare-row ${summary?'import-total':''}"><span>${h(rowLabel)}</span>
+      ${rows.map(row=>`<strong>${h(format(row[index][1]))}
+       ${official&&summary&&row[index][0]!==rowLabel?`<small>${h(row[index][0])}</small>`:''}</strong>`).join('')}</div>`;
+    }).join('')}</div>`;
+  });
+  refresh();
+ }
  function calculatorMarkup(car){
-  const countries=countryOptions(car.country);
-  return `<section class="borderless-box"><div class="lux-heading"><span class="lux-symbol">◎</span><div><h3>${h(X('borderless'))}</h3><small>${h(X('importDesc'))}</small></div></div><form class="borderless-grid" id="importForm"><label>${h(X('targetCountry'))}<select name="destination" required><option value="">—</option>${countries}</select></label><label>${h(X('transport'))}<input name="transport" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" placeholder="0"></label><label>${h(X('customs'))}<input name="customs" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="0"></label><label>${h(X('vat'))}<input name="vat" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="0"></label><label>${h(X('registration'))}<input name="registration" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" placeholder="0"></label><button type="submit" class="primary-btn">${h(X('calculate'))}</button></form><div class="import-result" id="importResult" aria-live="polite"><p>${h(X('estimateMissing'))}</p></div><p class="lux-disclaimer">${h(X('estimateOnly'))}</p></section>`;
+  return `<section class="borderless-box">
+   <div class="lux-heading"><span class="lux-symbol">◎</span><div><h3>${h(X('borderless'))}</h3>
+    <small data-import-description>${h(X('importDesc'))}</small></div></div>
+   <form class="borderless-grid" id="importForm">
+    ${formChoices(car.country)}
+    <div class="borderless-inline-fields" data-import-fields="manual">${manualFields('')}</div>
+    ${officialPane([car],false)}
+    <button type="submit" class="primary-btn">${h(X('calculate'))}</button>
+   </form><div class="import-result" id="importResult" aria-live="polite"><p>${h(X('estimateMissing'))}</p></div>
+   <p class="lux-disclaimer">${h(X('estimateOnly'))}</p>
+  </section>`;
  }
  function attachCalculator(car){
-  const form=el('importForm');if(!form)return;
-  form.addEventListener('submit',event=>{
-   event.preventDefault();const fd=new FormData(form);
-   const keys=['transport','customs','vat','registration'];
-   if(!fd.get('destination')||!keys.some(k=>String(fd.get(k)||'').trim())){el('importResult').textContent=X('estimateMissing');return;}
-   const value=estimateImport({price:car.price,...Object.fromEntries(keys.map(k=>[k,fd.get(k)]))});
-   el('importResult').innerHTML=importBreakdown(value).map(([k,v])=>`<div class="${k==='total'?'import-total':''}"><span>${h(X(k))}</span><strong>${price(v)}</strong></div>`).join('');
-  });
+  const form=el('importForm');
+  if(form)attachImportForm(form,el('importResult'),[car]);
  }
  function garageCards(cars){
   for(const id of [...selected])if(!cars.some(car=>car.id===id))selected.delete(id);
@@ -1495,32 +1932,18 @@ const createLimbaExperiences=function createLimbaExperiences(api){
   const importMarkup=`<section class="market-listing-section">
    <h3>${h(L('compareImport'))}</h3><p>${h(X('importDesc'))}</p>
    <form class="market-import-form" id="compareImportForm">
-    <label class="market-import-destination">${h(X('targetCountry'))}
-     <select name="destination" required><option value="">—</option>${countryOptions()}</select></label>
-    <div class="market-import-columns">${pair.map((car,index)=>`<fieldset>
-     <legend>${h(car.title)}</legend>${importInputs.map(([key,label,max])=>
-      `<label>${h(X(label))}<input name="${key}-${index}" type="number" min="0" max="${max}" step="0.01" inputmode="decimal" placeholder="0"></label>`).join('')}
+    <div class="market-import-columns">${formChoices()}</div>
+    <div class="market-import-columns" data-import-fields="manual">${pair.map((car,index)=>`<fieldset>
+     <legend>${h(car.title)}</legend>${manualFields('-'+index)}
     </fieldset>`).join('')}</div>
+    ${officialPane(pair,true)}
     <button class="primary-btn" type="submit">${h(X('calculate'))}</button>
    </form><div id="compareImportResult" class="market-import-result" aria-live="polite"></div>
    <p class="lux-disclaimer">${h(X('estimateOnly'))}</p>
   </section>`;
 
   modal(`<h2 id="modalTitle">${h(X('compare'))}</h2><div class="compare-table" role="table"><div class="compare-row compare-names"><span></span>${pair.map(car=>`<strong>${h(car.title)}<br>${price(car.price)}</strong>`).join('')}</div>${data.map(([k,fn])=>`<div class="compare-row"><span>${h(X(k)!==k?X(k):T(k))}</span>${pair.map(car=>`<strong>${h(fn(car))}</strong>`).join('')}</div>`).join('')}</div><p class="lux-disclaimer">${h(X('sellerClaims'))}</p>${importMarkup}`);
-  el('compareImportForm').addEventListener('submit',event=>{
-   event.preventDefault();
-   const data=new FormData(event.currentTarget);
-   const estimates=pair.map((car,index)=>estimateImport({
-    price:car.price,...Object.fromEntries(importInputs.map(([key])=>[key,data.get(key+'-'+index)]))
-   }));
-   const rows=importBreakdown(estimates[0]);
-   const compared=importBreakdown(estimates[1]);
-   el('compareImportResult').innerHTML=`<div class="compare-table" role="table">
-    <div class="compare-row compare-names"><span>${h(countryLabel(data.get('destination')))}</span>${pair.map(car=>`<strong>${h(car.title)}</strong>`).join('')}</div>
-    ${rows.map(([key,value],index)=>`<div class="compare-row ${key==='total'?'import-total':''}">
-     <span>${h(X(key))}</span><strong>${h(price(value))}</strong>
-     <strong>${h(price(compared[index][1]))}</strong></div>`).join('')}</div>`;
-  });
+  attachImportForm(el('compareImportForm'),el('compareImportResult'),pair,true);
  }
  function render(){
   const arr=filtered(),spot=el('showroomSpotlight');
@@ -1558,7 +1981,170 @@ const SEARCH_TEXT={"de":{"mileageFrom":"Kilometer ab","powerFrom":"Leistung ab (
 const searchLabel=(key,locale='de')=>SEARCH_TEXT[locale]?.[key]||SEARCH_TEXT.de[key]||key;
 
 
+/* borderless-i18n.js */
+const borderlessKeys = [
+  'officialMode', 'manualMode', 'officialVerifiedOn', 'officialVatRate', 'officialVatSource',
+  'officialCustomsSource', 'officialExtraSource', 'officialVatApplies', 'officialVatBasis',
+  'officialVehicleTax', 'officialVehicleTaxBasis', 'officialVehicleTaxSource', 'officialOtherCharges',
+  'officialEuCirculation', 'officialUnknown', 'officialYes', 'officialNo', 'officialSubtotal',
+  'officialUnavailable', 'officialBasisHelp', 'officialNeedsInput', 'officialInvalid',
+  'officialStandardScope', 'officialCustomsAmount', 'officialLocation', 'officialModeLabel',
+  'officialCurrencyHelp', 'officialCustomsRate', 'officialCustomsBasis', 'officialUseCustomsRate',
+  'officialFxSource', 'officialVatAmount'
+];
+
+const borderlessRows = {
+  de: [
+    'Amtliche Sätze', 'Manuell', 'Datenstand', 'Regulärer MWST-Satz', 'Amtliche MWST-Quelle',
+    'Amtliche Zollquelle', 'Sonderabgaben und Importbedingungen', 'Fällt im Zielland MWST an?', 'MWST-Bemessungsgrundlage',
+    'Automobilsteuer', 'Bemessungsgrundlage der Automobilsteuer', 'Amtliche Quelle zur Automobilsteuer', 'Weitere Abgaben',
+    'Der Wagen ist im freien Verkehr der EU und wird innerhalb der EU verbracht.', 'Unklar', 'Ja', 'Nein', 'Zwischensumme',
+    'Amtliche Daten gerade nicht verfügbar.', 'Übernimm die bestätigten Bemessungsgrundlagen. In der MWST-Grundlage können Zoll, Abgaben und Transport enthalten sein.',
+    'Angabe nötig', 'Prüfe die eingegebenen Beträge.', 'Amtliche Standardsätze für reguläre Pkw-Fälle. Prüfe bei der Behörde, welche Sätze und Einfuhrbedingungen auf dein Fahrzeug zutreffen.',
+    'Zollbetrag', 'Standort im Inserat', 'Berechnungsmodus', 'Alle Beträge in EUR eingeben. Für Fremdwährungen den amtlichen Kurs prüfen.',
+    'Regelzollsatz', 'Zollwert', 'Der amtliche Regelzollsatz gilt für dieses Fahrzeug.', 'Amtliche Devisenkurse', 'Einfuhr-MWST'
+  ],
+  en: [
+    'Official rates', 'Manual', 'Data checked on', 'Standard VAT rate', 'Official VAT source',
+    'Official customs source', 'Additional taxes and import conditions', 'Does VAT apply in the destination country?', 'VAT taxable amount',
+    'Vehicle tax', 'Vehicle tax basis', 'Official vehicle tax source', 'Other charges',
+    'The car is in EU free circulation and is moving within the EU.', 'Unknown', 'Yes', 'No', 'Subtotal',
+    'Official data is currently unavailable.', 'Use the confirmed taxable amounts. The VAT basis may include duties, taxes and transport.',
+    'Input needed', 'Check the entered amounts.', 'Official standard passenger-car rates. Check with the authority which rates and import conditions apply to your vehicle.',
+    'Customs duty amount', 'Location in listing', 'Calculation mode', 'Enter all amounts in EUR. Check the official rate for foreign currencies.',
+    'Standard customs duty rate', 'Customs value', 'The official standard duty rate applies to this car.', 'Official exchange rates', 'Destination VAT amount'
+  ],
+  sq: [
+    'Normat zyrtare', 'Me dorë', 'Të dhënat kontrolluar më', 'Norma standarde e TVSH-së', 'Burimi zyrtar i TVSH-së',
+    'Burimi zyrtar doganor', 'Taksa shtesë dhe kushtet e importit', 'A zbatohet TVSH-ja në vendin e destinacionit?', 'Baza e tatueshme e TVSH-së',
+    'Tatimi për automjetin', 'Baza e tatimit për automjetin', 'Burimi zyrtar i tatimit për automjetin', 'Detyrime të tjera',
+    'Makina është në qarkullim të lirë në BE dhe transportohet brenda BE-së.', 'E paqartë', 'Po', 'Jo', 'Nëntotali',
+    'Të dhënat zyrtare për momentin nuk janë të disponueshme.', 'Përdor bazat e konfirmuara. Baza e TVSH-së mund të përfshijë doganën, taksat dhe transportin.',
+    'Kërkohet e dhëna', 'Kontrollo shumat e futura.', 'Norma standarde zyrtare për vetura. Kontrollo te autoriteti normat dhe kushtet e importit për makinën tënde.',
+    'Shuma e doganës', 'Vendndodhja në shpallje', 'Mënyra e llogaritjes', 'Shëno të gjitha shumat në EUR. Për valutë të huaj kontrollo kursin zyrtar.',
+    'Norma standarde doganore', 'Vlera doganore', 'Norma standarde zyrtare doganore për këtë veturë.', 'Kurset zyrtare të këmbimit', 'Shuma e TVSH-së'
+  ],
+  tr: [
+    'Resmî oranlar', 'Elle giriş', 'Veri kontrol tarihi', 'Standart KDV oranı', 'Resmî KDV kaynağı',
+    'Resmî gümrük kaynağı', 'Ek vergiler ve ithalat şartları', 'Varış ülkesinde KDV uygulanıyor mu?', 'KDV matrahı',
+    'Otomobil vergisi', 'Otomobil vergisi matrahı', 'Resmî otomobil vergisi kaynağı', 'Diğer ücretler',
+    'Araç AB’de serbest dolaşımda ve AB içinde taşınıyor.', 'Belirsiz', 'Evet', 'Hayır', 'Ara toplam',
+    'Resmî veriler şu anda kullanılamıyor.', 'Onaylanmış matrahları kullanın. KDV matrahı gümrük vergisi, vergiler ve taşımayı içerebilir.',
+    'Bilgi gerekli', 'Girilen tutarları kontrol edin.', 'Binek araçlar için resmî standart oranlar. Aracınıza uygulanan oran ve ithalat şartlarını yetkili kurumdan kontrol edin.',
+    'Gümrük vergisi tutarı', 'İlandaki konum', 'Hesaplama modu', 'Tüm tutarları EUR olarak girin. Yabancı para için resmî kuru kontrol edin.',
+    'Standart gümrük vergisi oranı', 'Gümrük kıymeti', 'Bu araç için resmî standart gümrük vergisi oranı geçerli.', 'Resmî döviz kurları', 'Varış ülkesindeki KDV tutarı'
+  ],
+  el: [
+    'Επίσημοι συντελεστές', 'Χειροκίνητα', 'Ημερομηνία ελέγχου δεδομένων', 'Κανονικός συντελεστής ΦΠΑ', 'Επίσημη πηγή ΦΠΑ',
+    'Επίσημη τελωνειακή πηγή', 'Πρόσθετοι φόροι και όροι εισαγωγής', 'Οφείλεται ΦΠΑ στη χώρα προορισμού;', 'Φορολογητέα αξία ΦΠΑ',
+    'Φόρος αυτοκινήτου', 'Βάση φόρου αυτοκινήτου', 'Επίσημη πηγή φόρου αυτοκινήτου', 'Λοιπές επιβαρύνσεις',
+    'Το όχημα είναι σε ελεύθερη κυκλοφορία στην ΕΕ και μεταφέρεται εντός ΕΕ.', 'Άγνωστο', 'Ναι', 'Όχι', 'Μερικό σύνολο',
+    'Τα επίσημα στοιχεία είναι προσωρινά μη διαθέσιμα.', 'Χρησιμοποιήστε τις επιβεβαιωμένες φορολογητέες αξίες. Η βάση ΦΠΑ μπορεί να περιλαμβάνει δασμούς, φόρους και μεταφορά.',
+    'Απαιτείται στοιχείο', 'Ελέγξτε τα ποσά που εισαγάγατε.', 'Επίσημοι κανονικοί συντελεστές για επιβατικά. Ελέγξτε στην αρχή τους συντελεστές και τους όρους εισαγωγής για το όχημά σας.',
+    'Ποσό δασμού', 'Τοποθεσία στην αγγελία', 'Τρόπος υπολογισμού', 'Εισαγάγετε όλα τα ποσά σε EUR. Ελέγξτε την επίσημη ισοτιμία για ξένο νόμισμα.',
+    'Κανονικός συντελεστής δασμού', 'Δασμολογητέα αξία', 'Ο επίσημος κανονικός συντελεστής δασμού ισχύει για το όχημα.', 'Επίσημες ισοτιμίες', 'Ποσό ΦΠΑ στον προορισμό'
+  ],
+  'sr-Latn': [
+    'Zvanične stope', 'Ručni unos', 'Datum provere podataka', 'Standardna stopa PDV-a', 'Zvanični izvor za PDV',
+    'Zvanični carinski izvor', 'Dodatni porezi i uslovi uvoza', 'Da li se PDV plaća u zemlji odredišta?', 'Osnovica za PDV',
+    'Porez na vozilo', 'Osnovica poreza na vozilo', 'Zvanični izvor za porez na vozilo', 'Ostale dažbine',
+    'Vozilo je u slobodnom prometu u EU i prevozi se unutar EU.', 'Nepoznato', 'Da', 'Ne', 'Međuzbir',
+    'Zvanični podaci trenutno nisu dostupni.', 'Koristite potvrđene osnovice. Osnovica za PDV može obuhvatiti carinu, dažbine i prevoz.',
+    'Potreban unos', 'Proverite unete iznose.', 'Zvanične standardne stope za putnička vozila. Kod nadležnog organa proverite stope i uslove uvoza za svoje vozilo.',
+    'Iznos carine', 'Lokacija u oglasu', 'Način obračuna', 'Unesite sve iznose u EUR. Za stranu valutu proverite zvanični kurs.',
+    'Standardna carinska stopa', 'Carinska vrednost', 'Za ovo vozilo važi zvanična standardna carinska stopa.', 'Zvanični devizni kursevi', 'Iznos PDV-a u odredištu'
+  ],
+  'sr-Cyrl': [
+    'Званичне стопе', 'Ручни унос', 'Датум провере података', 'Стандардна стопа ПДВ-а', 'Званични извор за ПДВ',
+    'Званични царински извор', 'Додатни порези и услови увоза', 'Да ли се ПДВ плаћа у земљи одредишта?', 'Основица за ПДВ',
+    'Порез на возило', 'Основица пореза на возило', 'Званични извор за порез на возило', 'Остале дажбине',
+    'Возило је у слободном промету у ЕУ и превози се унутар ЕУ.', 'Непознато', 'Да', 'Не', 'Међузбир',
+    'Званични подаци тренутно нису доступни.', 'Користите потврђене основице. Основица за ПДВ може обухватити царину, дажбине и превоз.',
+    'Потребан унос', 'Проверите унете износе.', 'Званичне стандардне стопе за путничка возила. Код надлежног органа проверите стопе и услове увоза за своје возило.',
+    'Износ царине', 'Локација у огласу', 'Начин обрачуна', 'Унесите све износе у EUR. За страну валуту проверите званични курс.',
+    'Стандардна царинска стопа', 'Царинска вредност', 'За ово возило важи званична стандардна царинска стопа.', 'Званични девизни курсеви', 'Износ ПДВ-а у одредишту'
+  ],
+  sl: [
+    'Uradne stopnje', 'Ročni vnos', 'Datum preverjanja podatkov', 'Standardna stopnja DDV', 'Uradni vir DDV',
+    'Uradni carinski vir', 'Dodatni davki in pogoji uvoza', 'Ali se v ciljni državi obračuna DDV?', 'Osnova za DDV',
+    'Davek na vozilo', 'Davčna osnova za vozilo', 'Uradni vir davka na vozilo', 'Druge dajatve',
+    'Vozilo je v prostem prometu v EU in se prevaža znotraj EU.', 'Neznano', 'Da', 'Ne', 'Vmesni seštevek',
+    'Uradni podatki trenutno niso na voljo.', 'Uporabite potrjene davčne osnove. Osnova za DDV lahko vključuje carino, dajatve in prevoz.',
+    'Potreben vnos', 'Preverite vnesene zneske.', 'Uradne standardne stopnje za osebna vozila. Pri organu preverite stopnje in pogoje uvoza za svoje vozilo.',
+    'Znesek carine', 'Lokacija v oglasu', 'Način izračuna', 'Vnesite vse zneske v EUR. Za tujo valuto preverite uradni tečaj.',
+    'Standardna carinska stopnja', 'Carinska vrednost', 'Za to vozilo velja uradna standardna carinska stopnja.', 'Uradni devizni tečaji', 'Znesek DDV v ciljni državi'
+  ],
+  hr: [
+    'Službene stope', 'Ručni unos', 'Datum provjere podataka', 'Standardna stopa PDV-a', 'Službeni izvor za PDV',
+    'Službeni carinski izvor', 'Dodatni porezi i uvjeti uvoza', 'Plaća li se PDV u zemlji odredišta?', 'Osnovica za PDV',
+    'Porez na vozilo', 'Osnovica poreza na vozilo', 'Službeni izvor za porez na vozilo', 'Ostala davanja',
+    'Vozilo je u slobodnom prometu u EU-u i prevozi se unutar EU-a.', 'Nepoznato', 'Da', 'Ne', 'Međuzbroj',
+    'Službeni podaci trenutačno nisu dostupni.', 'Upotrijebite potvrđene osnovice. Osnovica za PDV može obuhvatiti carinu, davanja i prijevoz.',
+    'Potreban unos', 'Provjerite unesene iznose.', 'Službene standardne stope za osobna vozila. Kod nadležnog tijela provjerite stope i uvjete uvoza za svoje vozilo.',
+    'Iznos carine', 'Lokacija u oglasu', 'Način izračuna', 'Unesite sve iznose u EUR. Za strane valute provjerite službeni tečaj.',
+    'Standardna carinska stopa', 'Carinska vrijednost', 'Za ovo vozilo vrijedi službena standardna carinska stopa.', 'Službeni devizni tečajevi', 'Iznos PDV-a u odredištu'
+  ],
+  mk: [
+    'Официјални стапки', 'Рачен внес', 'Датум на проверка на податоците', 'Стандардна стапка на ДДВ', 'Официјален извор за ДДВ',
+    'Официјален царински извор', 'Дополнителни даноци и услови за увоз', 'Дали се плаќа ДДВ во земјата на дестинација?', 'Даночна основа за ДДВ',
+    'Данок на возило', 'Основица за данок на возило', 'Официјален извор за данок на возило', 'Други давачки',
+    'Возилото е во слободен промет во ЕУ и се пренесува во рамките на ЕУ.', 'Непознато', 'Да', 'Не', 'Меѓузбир',
+    'Официјалните податоци моментално не се достапни.', 'Користете ги потврдените основици. Основицата за ДДВ може да вклучува царина, давачки и превоз.',
+    'Потребен е внес', 'Проверете ги внесените износи.', 'Официјални стандардни стапки за патнички возила. Проверете ги стапките и условите за увоз кај надлежниот орган.',
+    'Износ на царина', 'Локација во огласот', 'Начин на пресметка', 'Внесете ги сите суми во EUR. За странска валута проверете го официјалниот курс.',
+    'Стандардна царинска стапка', 'Царинска вредност', 'За ова возило важи официјалната стандардна царинска стапка.', 'Официјални девизни курсеви', 'Износ на ДДВ во дестинацијата'
+  ],
+  bs: [
+    'Službene stope', 'Ručni unos', 'Datum provjere podataka', 'Standardna stopa PDV-a', 'Službeni izvor za PDV',
+    'Službeni carinski izvor', 'Dodatni porezi i uslovi uvoza', 'Plaća li se PDV u zemlji odredišta?', 'Osnovica za PDV',
+    'Porez na vozilo', 'Osnovica poreza na vozilo', 'Službeni izvor za porez na vozilo', 'Ostala davanja',
+    'Vozilo je u slobodnom prometu u EU i prevozi se unutar EU.', 'Nepoznato', 'Da', 'Ne', 'Međuzbir',
+    'Službeni podaci trenutno nisu dostupni.', 'Koristite potvrđene osnovice. Osnovica za PDV može obuhvatiti carinu, davanja i prijevoz.',
+    'Potreban unos', 'Provjerite unesene iznose.', 'Službene standardne stope za putnička vozila. Kod nadležnog organa provjerite stope i uslove uvoza za svoje vozilo.',
+    'Iznos carine', 'Lokacija u oglasu', 'Način obračuna', 'Unesite sve iznose u EUR. Za stranu valutu provjerite službeni kurs.',
+    'Standardna carinska stopa', 'Carinska vrijednost', 'Za ovo vozilo važi službena standardna carinska stopa.', 'Službeni devizni kursevi', 'Iznos PDV-a u odredištu'
+  ],
+  cnr: [
+    'Zvanične stope', 'Ručni unos', 'Datum provjere podataka', 'Standardna stopa PDV-a', 'Zvanični izvor za PDV',
+    'Zvanični carinski izvor', 'Dodatni porezi i uslovi uvoza', 'Plaća li se PDV u zemlji odredišta?', 'Osnovica za PDV',
+    'Porez na vozilo', 'Osnovica poreza na vozilo', 'Zvanični izvor za porez na vozilo', 'Ostale dažbine',
+    'Vozilo je u slobodnom prometu u EU i prevozi se unutar EU.', 'Nepoznato', 'Da', 'Ne', 'Međuzbir',
+    'Zvanični podaci trenutno nisu dostupni.', 'Koristite potvrđene osnovice. Osnovica za PDV može obuhvatiti carinu, dažbine i prevoz.',
+    'Potreban unos', 'Provjerite unijete iznose.', 'Zvanične standardne stope za putnička vozila. Kod nadležnog organa provjerite stope i uslove uvoza za svoje vozilo.',
+    'Iznos carine', 'Lokacija u oglasu', 'Način obračuna', 'Unesite sve iznose u EUR. Za stranu valutu provjerite zvanični kurs.',
+    'Standardna carinska stopa', 'Carinska vrijednost', 'Za ovo vozilo važi zvanična standardna carinska stopa.', 'Zvanični devizni kursevi', 'Iznos PDV-a u odredištu'
+  ],
+  bg: [
+    'Официални ставки', 'Ръчно въвеждане', 'Дата на проверката', 'Стандартна ставка на ДДС', 'Официален източник за ДДС',
+    'Официален митнически източник', 'Допълнителни данъци и условия за внос', 'Дължи ли се ДДС в държавата на местоназначение?', 'Данъчна основа за ДДС',
+    'Данък върху автомобила', 'Данъчна основа за автомобила', 'Официален източник за данъка върху автомобила', 'Други такси',
+    'Автомобилът е в свободно обращение в ЕС и се превозва в рамките на ЕС.', 'Неизвестно', 'Да', 'Не', 'Междинна сума',
+    'В момента официалните данни не са налични.', 'Използвайте потвърдените данъчни основи. Основата за ДДС може да включва мита, такси и транспорт.',
+    'Необходима е стойност', 'Проверете въведените суми.', 'Официални стандартни ставки за леки автомобили. Проверете при компетентния орган приложимите ставки и условия за внос.',
+    'Размер на митото', 'Местоположение в обявата', 'Начин на изчисление', 'Въведете всички суми в EUR. За чуждестранна валута проверете официалния курс.',
+    'Стандартна митническа ставка', 'Митническа стойност', 'За този автомобил важи официалната стандартна митническа ставка.', 'Официални валутни курсове', 'Размер на ДДС в местоназначението'
+  ],
+  ro: [
+    'Cote oficiale', 'Manual', 'Data verificării datelor', 'Cotă standard de TVA', 'Sursa oficială pentru TVA',
+    'Sursa vamală oficială', 'Taxe suplimentare și condiții de import', 'Se datorează TVA în țara de destinație?', 'Baza de impozitare a TVA',
+    'Taxă auto', 'Baza de calcul a taxei auto', 'Sursa oficială pentru taxa auto', 'Alte taxe',
+    'Mașina se află în liberă circulație în UE și este transportată în interiorul UE.', 'Necunoscut', 'Da', 'Nu', 'Subtotal',
+    'Datele oficiale nu sunt disponibile momentan.', 'Folosește bazele de impozitare confirmate. Baza TVA poate include taxele vamale, alte taxe și transportul.',
+    'Valoare necesară', 'Verifică sumele introduse.', 'Cote oficiale standard pentru autoturisme. Verifică la autoritate cotele și condițiile de import pentru mașina ta.',
+    'Valoarea taxei vamale', 'Locația din anunț', 'Mod de calcul', 'Introdu toate sumele în EUR. Pentru valută verifică cursul oficial.',
+    'Cotă vamală standard', 'Valoare în vamă', 'Pentru acest autoturism se aplică cota vamală standard oficială.', 'Cursuri de schimb oficiale', 'Valoarea TVA în țara de destinație'
+  ]
+};
+
+const BORDERLESS_TRANSLATIONS = Object.fromEntries(
+  Object.entries(borderlessRows).map(([locale, values]) => [
+    locale, Object.fromEntries(borderlessKeys.map((key, index) => [key, values[index]]))
+  ])
+);
+
+
 /* release-i18n.js */
+
 const keys = [
   'messages', 'notifications', 'sellerMessage', 'chatEmpty', 'chatMessage', 'chatSend',
   'chatBack', 'chatAvailableQuestion', 'chatTestDriveQuestion', 'chatBlock', 'chatUnblock',
@@ -1744,7 +2330,7 @@ const translations = {
 
 const RELEASE_TRANSLATIONS = Object.fromEntries(
   Object.entries(translations).map(([locale, entries]) => [
-    locale, Object.fromEntries(keys.map((key, index) => [key, entries[index]]))
+    locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])), ...BORDERLESS_TRANSLATIONS[locale] }
   ])
 );
 

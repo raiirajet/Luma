@@ -4,7 +4,7 @@ base=Path(__file__).resolve().parent
 html=(base/'index.html').read_text(encoding='utf-8')
 css=(base/'styles.css').read_text(encoding='utf-8')
 parts=[]
-for f in ['translations-extra.js','i18n.js','cars-i18n.js','car-brands.js','icons.js','feature-i18n.js','mvp-i18n.js','limba-lux.js','limba-lux-ui.js','search-filters-i18n.js','release-i18n.js','limba-market-ui.js','app.js']:
+for f in ['translations-extra.js','i18n.js','cars-i18n.js','car-brands.js','icons.js','feature-i18n.js','mvp-i18n.js','limba-lux.js','borderless-official.js','limba-lux-ui.js','search-filters-i18n.js','borderless-i18n.js','release-i18n.js','limba-market-ui.js','app.js']:
  src=(base/f).read_text(encoding='utf-8')
  src=re.sub(r'^import [^\n]+\n','',src,flags=re.M)
  src=re.sub(r'^export \{[^\n]+\};?\n','',src,flags=re.M)
@@ -15,7 +15,10 @@ script='\n'.join(parts)
 html=html.replace('<link rel="stylesheet" href="styles.css">','<style>\n'+css+'\n</style>')
 html=html.replace('<script defer src="config.js"></script>','<script>window.LIMBA_FIREBASE_CONFIG=null;window.LUMA_FIREBASE_CONFIG=null;</script>')
 html=html.replace('<script type="module" defer src="app.js"></script>','')
-html=html.replace('</body>','<script>\n'+script.replace('</script','<\\/script')+'\n</script>\n</body>')
+official_data=(base/'shared/borderless/official-import-data.json').read_text(encoding='utf-8')
+official_data=official_data.replace('<', '\\u003c')
+embedded='<script type="application/json" id="officialImportData">'+official_data+'</script>\n'
+html=html.replace('</body>',embedded+'<script>\n'+script.replace('</script','<\\/script')+'\n</script>\n</body>')
 (base/'preview.html').write_text(html, encoding='utf-8')
 (base/'_preview_combo.js').write_text(script, encoding='utf-8')
 print(len(html),len(script))

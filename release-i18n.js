@@ -1,3 +1,5 @@
+import {BORDERLESS_TRANSLATIONS} from './borderless-i18n.js';
+
 const keys = [
   'messages', 'notifications', 'sellerMessage', 'chatEmpty', 'chatMessage', 'chatSend',
   'chatBack', 'chatAvailableQuestion', 'chatTestDriveQuestion', 'chatBlock', 'chatUnblock',
@@ -183,7 +185,7 @@ const translations = {
 
 export const RELEASE_TRANSLATIONS = Object.fromEntries(
   Object.entries(translations).map(([locale, entries]) => [
-    locale, Object.fromEntries(keys.map((key, index) => [key, entries[index]]))
+    locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])), ...BORDERLESS_TRANSLATIONS[locale] }
   ])
 );
 

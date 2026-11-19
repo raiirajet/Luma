@@ -336,10 +336,27 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 .saved-search-row button{min-height:44px}
 .market-import-columns fieldset{display:grid;gap:8px;margin:0}
 .market-import-columns label{display:grid;gap:3px;color:#325265;font-size:.85rem}
-.market-import-columns input,.market-import-destination select{width:100%;min-width:0;padding:8px;background:white;border:1px solid #bfcfda;border-radius:7px;font:inherit}
+.market-import-columns input,.market-import-columns select,.market-import-destination select{width:100%;min-width:0;padding:8px;background:white;border:1px solid #bfcfda;border-radius:7px;font:inherit}
 .market-import-destination{display:grid;gap:5px;margin-bottom:12px}
 .market-import-result{margin-top:12px}
 .market-import-form>.primary-btn{margin:13px 0 0}
+.borderless-inline-fields{display:contents}
+.borderless-grid .market-import-destination{margin:0}
+.borderless-official-pane,.borderless-location,.borderless-check{grid-column:1/-1;min-width:0}
+.borderless-official-pane [hidden],[data-import-fields][hidden]{display:none!important}
+.borderless-sources{padding:12px;background:#f6f9fd;border:1px solid #dce8f0;border-radius:10px;color:#31556d}
+.borderless-sources p,.borderless-help,.borderless-location{margin:0;font-size:.85rem;line-height:1.5}
+.borderless-help{margin:12px 0;color:#395667}
+.borderless-location{color:#395667}
+.borderless-sources dl{display:flex;flex-wrap:wrap;gap:8px 18px;margin:8px 0}
+.borderless-sources dl div{display:flex;align-items:baseline;gap:6px;font-size:.85rem}
+.borderless-sources dd{margin:0;font-weight:800}
+.borderless-sources ul{list-style:none;display:flex;flex-wrap:wrap;gap:1px 14px;padding:0;margin:0}
+.borderless-sources a{display:inline-flex;align-items:center;min-height:44px;font-size:.85rem;color:#15558a}
+.borderless-grid .borderless-check,.market-import-columns .borderless-check{display:flex;flex-direction:row;align-items:center;gap:8px;min-height:44px}
+.borderless-check input[type="checkbox"]{width:1.15rem;min-height:auto;margin:0;flex-shrink:0}
+.import-result strong{white-space:normal;text-align:right}
+.market-import-result .import-total small{display:block;font-weight:normal}
 .modal-panel.market-detail{width:min(900px,100%)}
 @media(max-width:760px){
  .search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
