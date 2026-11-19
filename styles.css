@@ -402,3 +402,10 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
  .fab-add .fab-plus{font-size:32px}
  .mobile-nav button{min-width:0;flex:1}
 }
+
+/* Suchländer: einmalige Auswahl auf der Startseite. */
+.search-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.search-country-toggle{min-height:50px;width:100%}
+.search-country-panel{z-index:110;max-height:min(430px,65dvh);overflow-y:auto;overscroll-behavior:contain}
+.search-country-panel #prefsStatus{font-size:11px;margin:8px 2px 0;line-height:1.4}
+@media(max-width:760px){.search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.search-grid>.search-main{grid-column:1/-1}.search-country-toggle{min-height:46px}.search-country-panel{width:min(440px,calc(100vw - 28px))}}

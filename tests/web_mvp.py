@@ -111,26 +111,8 @@ try:
    page.locator('[data-compare-open]').click()
    assert 'Toyota' in page.locator('#modalContent').inner_text()
    assert 'Audi' in page.locator('#modalContent').inner_text()
-   comparison=page.locator('#compareImportForm')
-   assert comparison.locator('[name="import-mode"]').input_value()=='official'
-   comparison.locator('[name="import-mode"]').select_option('manual')
-   comparison.locator('[name="destination"]').select_option('CH')
-   comparison.locator('[name="transport-0"]').fill('1000')
-   comparison.locator('[name="transport-1"]').fill('1000')
-   comparison.locator('button[type="submit"]').click()
-   totals=page.locator('#compareImportResult .import-total').inner_text()
-   assert '15.500' in totals and '98.000' in totals,totals
-   assert comparison.locator('[name="destination"] option').count()==14
-   comparison.locator('[name="import-mode"]').select_option('official')
-   comparison.locator('[data-official-sources] time').wait_for()
-   comparison.locator('[name="official-vatApplicable-0"]').select_option('yes')
-   for key,value in {'transport':'1000','vatBasis':'10000','vehicleTaxBasis':'10000','otherCharges':'0','registration':'0'}.items():
-    comparison.locator('[name="official-'+key+'-0"]').fill(value)
-   comparison.locator('button[type="submit"]').click()
-   rows=page.locator('#compareImportResult')
-   assert page.evaluate('L("officialNeedsInput")') in rows.inner_text()
-   assert page.evaluate('L("officialSubtotal")') in rows.locator('.import-total').inner_text()
-   assert 'Gesamtkosten' in rows.locator('.import-total small').inner_text()
+   assert page.locator('#compareImportForm').count()==0
+   assert page.locator('#modalContent .compare-table').count()==1
    page.locator('#modalClose').click()
    page.evaluate('showView("mine")')
    page.locator('#mineGrid .my-car-item').first.locator('[data-status="sold"]').click()

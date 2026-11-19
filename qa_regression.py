@@ -70,48 +70,16 @@ with sync_playwright() as p:
   assert page.evaluate('resolveCarMake("Skoda")')=='Škoda'
   assert page.evaluate('resolveCarMake("vw")')=='Volkswagen'
   print('START',width,'cars',page.locator('.car-card').count(),'errors',errors)
-  # Limba 1.5 Showroom / Passport / Borderless smoke coverage.
+  # Showroom and Passport remain without country-based tax estimates.
   assert page.locator('#showroomSpotlight').is_visible()
   assert 'Nissan' in page.locator('#showroomSpotlight').inner_text()
   assert page.locator('#showroomSpotlight [data-open]').count()==1
   page.locator('#showroomSpotlight [data-open]').click()
   assert page.locator('.limba-passport').is_visible()
   assert 'nicht geprüft' in page.locator('.limba-passport').inner_text()
-  assert page.locator('#importForm').is_visible()
-  assert page.locator('#importForm [name="import-mode"]').input_value()=='official'
-  page.locator('#importForm [name="import-mode"]').select_option('manual')
-  page.locator('#importForm [name="destination"]').select_option('CH')
-  page.locator('#importForm [name="transport"]').fill('1000')
-  page.locator('#importForm [name="customs"]').fill('10')
-  page.locator('#importForm [name="vat"]').fill('19')
-  page.locator('#importForm [name="registration"]').fill('500')
-  page.locator('#importForm button[type="submit"]').click()
-  assert 'Gesamtkosten' in page.locator('#importResult').inner_text()
-  assert '91.999' in page.locator('#importResult').inner_text()
-  official_form=page.locator('#importForm')
-  official_form.locator('[name="import-mode"]').select_option('official')
-  official_form.locator('[data-official-sources] time').wait_for()
-  assert official_form.locator('[data-official-sources] a[href^="https://www.bazg.admin.ch/"]').count()>=1
-  assert '8,1' in official_form.locator('[data-official-sources]').inner_text()
-  official_form.locator('button[type="submit"]').click()
-  assert page.evaluate('L("officialSubtotal")') in page.locator('#importResult').inner_text()
-  assert page.evaluate('L("officialNeedsInput")') in page.locator('#importResult').inner_text()
-  official_form.locator('[name="official-vatApplicable"]').select_option('yes')
-  for key,value in {'transport':'1000','vatBasis':'10000','vehicleTaxBasis':'10000','otherCharges':'0','registration':'0'}.items():
-   official_form.locator('[name="official-'+key+'"]').fill(value)
-  official_form.locator('button[type="submit"]').click()
-  assert 'Gesamtkosten' in page.locator('#importResult').inner_text()
-  assert '810,00' in page.locator('#importResult').inner_text()
-  assert '400,00' in page.locator('#importResult').inner_text()
-  official_form.locator('[name="destination"]').select_option('GR')
-  assert official_form.locator('[name="official-transport"]').input_value()==''
-  assert official_form.locator('[name="official-euCirculation"]').is_visible()
-  assert not official_form.locator('[name="official-euCirculation"]').is_checked()
-  assert official_form.locator('[name="official-customs"]').is_visible()
-  official_form.locator('[name="official-euCirculation"]').check()
-  assert official_form.locator('[name="official-customs"]').is_hidden()
-  official_form.locator('[name="import-mode"]').select_option('manual')
-  assert official_form.locator('[name="transport"]').input_value()=='1000'
+  assert page.locator('#importForm').count()==0
+  assert page.locator('#compareImportForm').count()==0
+  assert page.locator('.borderless-box').count()==0
   page.locator('#detailBack').click()
   assert page.locator('#modal').is_hidden()
   perf_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="performance"]'
@@ -187,21 +155,19 @@ with sync_playwright() as p:
   assert page.locator('#favoritesGrid .car-card').count()==1
   home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'
   page.locator(home_nav).click()
-  # Search countries are account preferences, not duplicated on the homepage.
-  assert page.locator('#searchCountryToggle').count()==0
-  # User country preference
-  page.locator('#loginBtn').click()
-  page.locator('#accountPreferencesBtn').click()
+  # Countries can only be selected on the homepage.
+  assert page.locator('#searchCountryToggle').is_visible()
+  assert page.locator('#settingsView #countryChoices').count()==0
+  page.locator('#searchCountryToggle').click()
   page.locator('#countryChoices input[value="TR"]').check()
-  page.locator('#saveCountries').click()
-  page.locator(home_nav).click()
   assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#allCountries').click()
+  assert page.locator('#carGrid .car-card').count()==1
   page.locator('#loginBtn').click()
   page.locator('#accountPreferencesBtn').click()
-  page.locator('#allCountries').click()
-  page.locator('#saveCountries').click()
+  assert page.locator('#settingsView').is_visible()
+  assert page.locator('#settingsView #countryChoices').count()==0
   page.locator(home_nav).click()
-  assert page.locator('#carGrid .car-card').count()==1
   # Search preservation and load
   page.locator('#keyword').fill('GT-R')
   page.locator('#saveSearchBtn').click()

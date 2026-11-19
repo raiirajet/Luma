@@ -12,7 +12,6 @@ android {
     versionCode = 11
     versionName = "1.8.0"
   }
-  sourceSets.getByName("main").assets.srcDir(rootProject.file("../shared/borderless"))
   signingConfigs {
     create("limbaRelease") {
       val path = System.getenv("LIMBA_KEYSTORE_FILE")

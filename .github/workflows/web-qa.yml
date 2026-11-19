@@ -50,12 +50,11 @@ jobs:
           for path in dist/web/*.js; do
             node --input-type=module --check < "$path"
           done
-      - name: Check catalogue, search and Borderless calculations
+      - name: Check catalogue, search and vehicle experiences
         run: |
           node --experimental-default-type=module tests/model_catalog.test.mjs
           node --experimental-default-type=module tests/lux_experiences.test.mjs
           node --experimental-default-type=module tests/search_filters.test.mjs
-          node --experimental-default-type=module tests/borderless_official.test.mjs
       - name: Validate Python source and create preview
         run: |
           python3 -m py_compile build_preview.py scripts/stage_web.py qa_regression.py test_swipe_pointer.py tests/web_mvp.py
