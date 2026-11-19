@@ -2,6 +2,15 @@
 
 Produktion ist das Firebase-Projekt `limba-auto` mit Firestore `(default)` und dem Bucket `limba-auto.firebasestorage.app` in Zürich. Web und Android verwenden neue Upload- und Meldefunktionen in `europe-west6`. Die bestehenden Chat- und Suchfunktionen bleiben in `europe-west1`.
 
+## Produktionsstand am 19. November 2026
+
+- Firestore-Regeln, Indizes und fünf Marktplatzfunktionen sind in Zürich produktiv. Der Marktplatz läuft im Pilotmodus. Die Website nutzt serverseitig geprüfte Bilder. Ältere Android-Versionen können vorläufig weiterhin den bisherigen Uploadpfad verwenden.
+- Firebase Hosting liefert die CSP. Web App Check stellt auf der Produktionsdomain Tokens aus. Die Erfassung von App-Check-Metriken ist für Firestore, Storage und Authentication aktiv. Die Erzwingung folgt nach der Abnahme der signierten Android-App.
+- Für die Registrierung gilt befristet ein Limit von 20 neuen Konten pro IP und Stunde. Die Ausnahme gilt vom 19. bis zum 26. November 2026. E-Mail und Passwort werden zusätzlich im reCAPTCHA-Audit-Modus beobachtet.
+- Firestore sichert täglich mit 14 Tagen Aufbewahrung. Point-in-Time Recovery ist aktiviert. Die siebentägige Wiederherstellung gelöschter Storage-Objekte wurde mit einer Testdatei geprüft.
+- Das bestehende Monatsbudget von CHF 10 warnt bei 50, 90 und 100 Prozent sowie bei prognostizierten 100 Prozent. Cloud Monitoring erfasst Spitzen bei Quoten und meldet Bereinigungsfehler in der Konsole.
+- Die Einrichtung der GitHub-Umgebung und der OIDC-Verbindung erfordert Repository-Administrationsrechte.
+
 ## GitHub und Google Cloud verbinden
 
 1. In GitHub die Umgebung `firebase-production` anlegen und Deployments auf `main` beschränken. Für das Repository Branch-Schutz und die Firebase- und Web-Prüfungen als erforderliche Checks konfigurieren.
@@ -41,7 +50,7 @@ Bei einem Problem während des Piloten auf `legacy` zurückschalten. Nach dem St
 
 ## App Check und Android-Signierung
 
-- In Firebase die Web-App mit reCAPTCHA Enterprise registrieren und die Hosting-Domains für Firebase Hosting und GitHub Pages erlauben. Den öffentlichen Website-Schlüssel als GitHub-Repository-Variable `LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY` hinterlegen. Beide Web-Deployments übernehmen ihn.
+- In Firebase die Web-App mit reCAPTCHA Enterprise registrieren und die Hosting-Domains für Firebase Hosting und GitHub Pages erlauben. Der öffentliche Website-Schlüssel für Limba ist in `config.js` hinterlegt. Die GitHub-Variable `LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY` kann ihn in beiden Web-Deployments überschreiben.
 - Für `ch.luma.auto` das SHA-256-Release-Zertifikat in Firebase hinterlegen und das Play-Integrity-Projekt verknüpfen. Für einen ausschliesslich ausserhalb von Google Play verteilten APK-Build `Device integrity` als Mindeststufe wählen. Firebase dokumentiert die passenden Einstellungen für kombinierte Verteilung und Google Play.
 - Den vorhandenen Release-Keystore für Update-Kompatibilität verwenden und offline sichern. In GitHub `LIMBA_RELEASE_KEYSTORE_B64`, `LIMBA_KEYSTORE_PASSWORD`, `LIMBA_KEY_ALIAS` und `LIMBA_KEY_PASSWORD` als Secrets sowie den erwarteten Fingerabdruck `LIMBA_ANDROID_RELEASE_SHA256` als Variable hinterlegen. Der Workflow vergleicht das APK-Zertifikat vor jeder Veröffentlichung.
 - Auf einem unterstützten physischen Android-Gerät die signierte APK samt Anmeldung, Fotos und Meldungen testen. Auf einem autorisierten Testgerät ohne ausreichenden Integritätsnachweis die Ablehnung in Firebase prüfen. Botschutz und normale Nutzung im Browser ebenfalls nach Aktivierung testen. Erst nach der Abnahme den Modus `publish` verwenden.

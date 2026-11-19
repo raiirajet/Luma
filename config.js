@@ -9,7 +9,8 @@ window.LIMBA_FIREBASE_CONFIG = {
   projectId: 'limba-auto',
   storageBucket: 'limba-auto.firebasestorage.app',
   messagingSenderId: '190623494655',
-  appId: '1:190623494655:web:92f21575e57de7a4a077ca'
+  appId: '1:190623494655:web:92f21575e57de7a4a077ca',
+  recaptchaEnterpriseSiteKey: '6LcOeScuAAAAAN-rVxUbQJkSAAnk3q0_qSwLDiSg'
 };
 // Older third-party integrations may still expect the historical LUMA name.
 window.LUMA_FIREBASE_CONFIG = window.LIMBA_FIREBASE_CONFIG;
