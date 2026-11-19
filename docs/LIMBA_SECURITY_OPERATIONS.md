@@ -73,4 +73,4 @@ node functions/ops/marketplace.cjs review REPORT_ID dismiss
 node functions/ops/marketplace.cjs release-hold LISTING_ID
 ```
 
-`hold` pausiert das Inserat und verhindert eine Reaktivierung durch den Verkäufer. Nach `release-hold` kann der Verkäufer es wieder aktivieren. Das CLI-Werkzeug ab einem Konto mit Firestore-IAM-Berechtigung ausführen und meldungsbezogene Daten vertraulich behandeln.
+`hold` pausiert das Inserat und verhindert eine Reaktivierung durch den Verkäufer. Nach `release-hold` kann der Verkäufer es wieder aktivieren. Das CLI-Werkzeug mit einem Konto mit Firestore-IAM-Berechtigung ausführen und meldungsbezogene Daten vertraulich behandeln.
