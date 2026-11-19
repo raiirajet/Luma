@@ -1,4 +1,4 @@
-"""End-to-end offline Limba demo listing lifecycle on desktop and real mobile viewport."""
+"""End-to-end offline Limba preview listing lifecycle on desktop and real mobile viewport."""
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -23,7 +23,13 @@ try:
    page.locator('#carGrid .car-card').first.wait_for()
    page.locator('#loginBtn').click()
    page.locator('#accountOpenBtn').click()
-   page.locator('#demoQuick').click()
+   assert page.locator('#demoQuick').count()==0
+   page.locator('#registerCheck').check()
+   page.locator('#authEmail').fill('preview-qa')
+   page.locator('#authPassword').fill('local-test-password')
+   page.locator('#authConfirm').fill('local-test-password')
+   page.locator('#authSubmit').click()
+   page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#modal').is_hidden()
    page.locator('#fabAdd').click()
    form=page.locator('#sellForm')
@@ -128,7 +134,7 @@ try:
    page.locator('#mineGrid [data-delete]').first.click()
    assert page.locator('#mineGrid [data-edit]').count()==0
    assert errors==[],errors
-   print(f'PASS MVP {width}px: demo login, create, edit, sold, reactivate, delete')
+   print(f'PASS MVP {width}px: local account, create, edit, sold, reactivate, delete')
    ctx.close()
   browser.close()
 finally:

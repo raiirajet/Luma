@@ -17,18 +17,19 @@ const COUNTRIES=[['AL','🇦🇱','Albania'],['TR','🇹🇷','Türkiye'],['GR',
 // Photo: Joshua Spence, CC BY-SA 4.0, Wikimedia Commons.
 const GTR_PHOTO='https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Nissan_GT-R_R35_Black_Edition.JPG/1280px-Nissan_GT-R_R35_Black_Edition.JPG';
 const GTR_PHOTO_PAGE='https://commons.wikimedia.org/wiki/File:Nissan_GT-R_R35_Black_Edition.JPG';
-const DEMO=[{
+const offlinePreview=window.LIMBA_OFFLINE_PREVIEW===true;
+const DEMO=offlinePreview?[{
  id:'demo-nissan-gtr',category:'vehicles',status:'active',make:'Nissan',model:'GT-R',
  title:'Nissan GT-R R35 Black Edition',year:2013,mileage:49500,fuel:'petrol',
  transmission:'automatic',body:'coupe',power:550,engineName:'3.8 V6 Bi-Turbo VR38DETT',engineCapacity:3800,price:68900,country:'HR',city:'Zagreb',
  sellerType:'privateSeller',condition:'used',accidentStatus:'unknown',conditionNote:'',color:'black',image:GTR_PHOTO,images:[GTR_PHOTO],
  description:'',uid:null,contactEmail:'',createdAt:Date.now(),isDemo:true
-}];
+}]:[];
 const key=k=>`luma_auto_${k}`;
 function restore(name,fallback){try{const raw=localStorage.getItem(key(name));if(raw!==null)return JSON.parse(raw)??fallback;const legacy={language:'locale',countries:'preferredCountries',favorites:'favorites',searches:'searches',swipeSeen:'swipeTutorialSeen'}[name];if(legacy){const previous=localStorage.getItem('luma_'+legacy);if(previous!==null)return JSON.parse(previous)??fallback}return fallback}catch{return fallback}}
 function persist(name,val){try{localStorage.setItem(key(name),JSON.stringify(val))}catch{}}
-const state={locale:restore('language','de'),view:'home',filters:{keyword:'',make:'',model:'',priceTo:'',yearFrom:'',mileageTo:'',fuel:'',transmission:'',body:'',sellerType:'',priceFrom:'',yearTo:'',mileageFrom:'',powerFrom:'',powerTo:'',engineTerm:'',capacityFrom:'',capacityTo:''},countries:restore('countries',[]),favorites:restore('favorites',[]).filter(id=>!String(id).startsWith('demo-')||id==='demo-nissan-gtr'),searches:restore('searches',[]),listings:[...restore('previewCars',[]).filter(x=>x?.isPreview&&x?.id),...DEMO],swipeIndex:0,user:null,firebaseReady:false,fb:null,photoIndex:0,swipeSeen:restore('swipeSeen',false)};
-const previewSession=restore('previewSession',null);if(previewSession?.username){const username=previewSession.username;state.user={uid:'preview-'+username,email:username,isPreview:true,emailVerified:true};state.favorites=restore('user:'+state.user.uid+':favorites',[]);state.searches=restore('user:'+state.user.uid+':searches',[]);state.countries=restore('user:'+state.user.uid+':countries',[])}
+const state={locale:restore('language','de'),view:'home',filters:{keyword:'',make:'',model:'',priceTo:'',yearFrom:'',mileageTo:'',fuel:'',transmission:'',body:'',sellerType:'',priceFrom:'',yearTo:'',mileageFrom:'',powerFrom:'',powerTo:'',engineTerm:'',capacityFrom:'',capacityTo:''},countries:restore('countries',[]),favorites:restore('favorites',[]).filter(id=>!String(id).startsWith('demo-')||(offlinePreview&&id==='demo-nissan-gtr')),searches:restore('searches',[]),listings:[...(offlinePreview?restore('previewCars',[]).filter(x=>x?.isPreview&&x?.id):[]),...DEMO],swipeIndex:0,user:null,firebaseReady:false,fb:null,photoIndex:0,swipeSeen:restore('swipeSeen',false)};
+const previewSession=offlinePreview?restore('previewSession',null):null;if(previewSession?.username&&previewSession.username!=='limba'){const username=previewSession.username;state.user={uid:'preview-'+username,email:username,isPreview:true,emailVerified:true};state.favorites=restore('user:'+state.user.uid+':favorites',[]);state.searches=restore('user:'+state.user.uid+':searches',[]);state.countries=restore('user:'+state.user.uid+':countries',[])}
 if(!LANGS.some(([c])=>c===state.locale))state.locale='de';
 const T=k=>tr(k,state.locale);
 const F=k=>ft(k,state.locale);
@@ -45,13 +46,13 @@ function switchAccount(user){
  state.user=user;
  marketUI.connectAccount(user);
  const suffix=user?.uid?'user:'+user.uid+':':'';
- state.favorites=restore(suffix+'favorites',[]).filter(x=>!String(x).startsWith('demo-')||x==='demo-nissan-gtr');
+ state.favorites=restore(suffix+'favorites',[]).filter(x=>!String(x).startsWith('demo-')||(offlinePreview&&x==='demo-nissan-gtr'));
  state.searches=restore(suffix+'searches',[]);
  state.countries=restore(suffix+'countries',[]);
 }
 let serverActive=[],serverOwned=[],unsubscribeOwned=null,unsubscribeSearches=null,accountLoad=0;
 function mergeListings(){
- const local=restore('previewCars',[]).filter(x=>x?.isPreview&&x?.id);
+ const local=offlinePreview?restore('previewCars',[]).filter(x=>x?.isPreview&&x?.id):[];
  const combined=new Map([...DEMO,...local,...serverActive,...serverOwned].map(car=>[car.id,car]));
  state.listings=Array.from(combined.values());
  renderAll();
@@ -417,18 +418,100 @@ function openAuth(){
   $('logout').addEventListener('click',async()=>{if(preview){switchAccount(null);persist('previewSession',null);closeModal();applyTranslations()}else if(state.fb){await state.fb.modules.signOut(state.fb.auth);closeModal()}});
   if(!preview&&!state.user.emailVerified){$('verification').addEventListener('click',async()=>{try{await state.fb.modules.sendEmailVerification(state.user);toast(T('checkEmail'))}catch{toast(T('authFailure'))}});$('verificationRefresh').addEventListener('click',async()=>{try{await state.user.reload();await state.user.getIdToken(true);applyTranslations();openAuth()}catch{toast(T('authFailure'))}})}return;
  }
- modal(`<h2 id="modalTitle">${icon('lock')} ${h(F('accountLogin'))}</h2><div class="sample-note">${h(F('demoAccess'))} · ${h(F('previewNotSynced'))}</div><form id="authForm" class="form-stack"><label>${h(F('usernameOrEmail'))}<input id="authEmail" type="text" required autocomplete="username" maxlength="150" placeholder="limba"></label><label>${h(T('password'))}<input id="authPassword" type="password" required autocomplete="current-password" minlength="4"></label><label id="confirmWrap" class="hidden">${h(F('confirmPassword'))}<input id="authConfirm" type="password" autocomplete="new-password"></label><label><input id="registerCheck" type="checkbox"> ${h(state.firebaseReady?T('register'):F('localRegister'))}</label><button id="authSubmit" class="primary-btn" type="submit">${h(T('login'))}</button><button type="button" id="demoQuick" class="outline-btn">${icon('user')} ${h(F('signInDemo'))}</button>${state.firebaseReady?`<button type="button" id="passwordReset" class="outline-btn">${h(T('forgotPassword'))}</button>`:''}<p id="authNote" class="helper"></p></form>${!state.firebaseReady?`<p class="helper">${h(F('previewMode'))} · ${h(T('authUnavailable'))}</p>`:''}`);
- $('registerCheck').addEventListener('change',()=>{$('confirmWrap').classList.toggle('hidden',!$('registerCheck').checked);$('authSubmit').textContent=$('registerCheck').checked?(state.firebaseReady?T('register'):F('localRegister')):T('login')});
- $('demoQuick').addEventListener('click',()=>loginPreview('limba'));
- $('authForm').addEventListener('submit',async e=>{e.preventDefault();const username=$('authEmail').value.trim().toLowerCase(),pw=$('authPassword').value,register=$('registerCheck').checked;const note=$('authNote');note.textContent='';try{
-   if(!register&&username==='limba'&&pw==='demo'){loginPreview('limba');return}
-   if(state.firebaseReady&&username.includes('@')){if(register){if(pw.length<8){note.textContent=F('minPassword');return}const c=await state.fb.modules.createUserWithEmailAndPassword(state.fb.auth,username,pw);await state.fb.modules.sendEmailVerification(c.user);toast(T('checkEmail'))}else await state.fb.modules.signInWithEmailAndPassword(state.fb.auth,username,pw);closeModal();return}
-   if(!/^[a-z0-9._-]{3,32}$/.test(username)||username==='limba'){note.textContent=F('requiredFields');return}
-   const accounts=restore('previewAccounts',{});if(register){if(pw.length<6){note.textContent=F('minPassword');return}if(pw!==$('authConfirm').value){note.textContent=F('passwordsMismatch');return}if(accounts[username]){note.textContent=F('accountExists');return}const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');accounts[username]={salt,hash:await hashPreviewPassword(pw,salt)};persist('previewAccounts',accounts);toast(F('previewRegistered'));loginPreview(username);return}
-   if(!accounts[username]||(await hashPreviewPassword(pw,accounts[username].salt))!==accounts[username].hash){note.textContent=F('loginInvalid');return}loginPreview(username);
-  }catch(err){console.warn('login failed',err);note.textContent=F('loginInvalid')}});
- $('passwordReset')?.addEventListener('click',async()=>{const email=$('authEmail').value.trim();if(!email.includes('@')){toast(T('email'));return}try{await state.fb.modules.sendPasswordResetEmail(state.fb.auth,email);toast(T('checkEmail'))}catch{$('authNote').textContent=T('authFailure')}});
+ if(offlinePreview){openPreviewAuth();return}
+ modal(`<h2 id="modalTitle">${icon('lock')} ${h(F('accountLogin'))}</h2>
+  <form id="authForm" class="form-stack">
+   <label>${h(T('email'))}<input id="authEmail" type="email" required autocomplete="username" maxlength="254"></label>
+   <label>${h(T('password'))}<input id="authPassword" type="password" required autocomplete="current-password"></label>
+   <label id="confirmWrap" class="hidden">${h(F('confirmPassword'))}<input id="authConfirm" type="password" autocomplete="new-password"></label>
+   <label><input id="registerCheck" type="checkbox"> ${h(T('register'))}</label>
+   <button id="authSubmit" class="primary-btn" type="submit">${h(T('login'))}</button>
+   <button type="button" id="passwordReset" class="outline-btn">${h(T('forgotPassword'))}</button>
+   <p id="authNote" class="helper" role="status" aria-live="polite"></p>
+  </form>`);
+ const email=$('authEmail'), password=$('authPassword'), confirm=$('authConfirm');
+ const register=$('registerCheck'), submit=$('authSubmit'), reset=$('passwordReset'), note=$('authNote');
+ register.addEventListener('change',()=>{
+  $('confirmWrap').classList.toggle('hidden',!register.checked);
+  confirm.required=register.checked;
+  password.autocomplete=register.checked?'new-password':'current-password';
+  submit.textContent=T(register.checked?'register':'login');
+ });
+ async function withAuth(action){
+  submit.disabled=reset.disabled=register.disabled=true;
+  note.textContent='';
+  try{
+   if(!(await connectFirebase())){note.textContent=T('authUnavailable');return}
+   await action(state.fb);
+  }catch(error){
+   const invalid=['auth/invalid-credential','auth/wrong-password','auth/user-not-found','auth/invalid-email'];
+   note.textContent=invalid.includes(error.code)?F('loginInvalid'):
+    error.code==='auth/email-already-in-use'?F('accountExists'):T('authFailure');
+  }finally{submit.disabled=reset.disabled=register.disabled=false}
+ }
+ $('authForm').addEventListener('submit',event=>{
+  event.preventDefault();
+  const address=email.value.trim();
+  const value=password.value;
+  if(register.checked&&value.length<8){note.textContent=F('minPassword');return}
+  if(register.checked&&confirm.value!==value){note.textContent=F('passwordsMismatch');return}
+  void withAuth(async ({auth,modules})=>{
+   if(register.checked){
+    const credential=await modules.createUserWithEmailAndPassword(auth,address,value);
+    await modules.sendEmailVerification(credential.user);
+    toast(T('checkEmail'));
+   }else await modules.signInWithEmailAndPassword(auth,address,value);
+   if(submit.isConnected)closeModal();
+  });
+ });
+ reset.addEventListener('click',()=>{
+  if(!email.reportValidity())return;
+  const address=email.value.trim();
+  void withAuth(async ({auth,modules})=>{
+   await modules.sendPasswordResetEmail(auth,address);
+   toast(T('checkEmail'));
+  });
+ });
 }
+function openPreviewAuth(){
+ modal(`<h2 id="modalTitle">${icon('lock')} ${h(F('accountLogin'))}</h2>
+  <form id="authForm" class="form-stack">
+   <label>${h(F('usernameOrEmail'))}<input id="authEmail" required autocomplete="username" maxlength="32"></label>
+   <label>${h(T('password'))}<input id="authPassword" type="password" required autocomplete="current-password"></label>
+   <label id="confirmWrap" class="hidden">${h(F('confirmPassword'))}<input id="authConfirm" type="password" autocomplete="new-password"></label>
+   <label><input id="registerCheck" type="checkbox"> ${h(F('localRegister'))}</label>
+   <button id="authSubmit" class="primary-btn" type="submit">${h(T('login'))}</button>
+   <p id="authNote" class="helper" role="status"></p>
+  </form>`);
+ const register=$('registerCheck');
+ register.addEventListener('change',()=>{
+  $('confirmWrap').classList.toggle('hidden',!register.checked);
+  $('authSubmit').textContent=register.checked?F('localRegister'):T('login');
+ });
+ $('authForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const username=$('authEmail').value.trim().toLowerCase();
+  const password=$('authPassword').value;
+  const note=$('authNote');
+  note.textContent='';
+  if(!/^[a-z0-9._-]{3,32}$/.test(username)||username==='limba'){note.textContent=F('requiredFields');return}
+  const accounts=restore('previewAccounts',{});
+  try{
+   if(register.checked){
+    if(password.length<6){note.textContent=F('minPassword');return}
+    if(password!==$('authConfirm').value){note.textContent=F('passwordsMismatch');return}
+    if(accounts[username]){note.textContent=F('accountExists');return}
+    const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');
+    accounts[username]={salt,hash:await hashPreviewPassword(password,salt)};
+    persist('previewAccounts',accounts);
+   }else if(!accounts[username]||await hashPreviewPassword(password,accounts[username].salt)!==accounts[username].hash){
+    note.textContent=F('loginInvalid');return;
+   }
+   loginPreview(username);
+  }catch{note.textContent=F('loginInvalid')}
+ });
+}
+
 let sellCatalogChooser=null;
 function openSell(id=null){if(typeof id!=='string')id=null;const existing=id?state.listings.find(x=>x.id===id&&x.uid===state.user?.uid):null;const editing=!!existing;if(id&&!editing)return;
  if(!state.user){openAuth();return}if(!state.user.isPreview&&!state.firebaseReady){openAuth();return}if(!state.user.emailVerified){toast(T('verifiedRequired'));openAuth();return}
@@ -557,19 +640,27 @@ async function callSecureMarketplace(name,data){
  if(!secureFunctions)throw new Error('Marketplace service unavailable');
  return (await modules.httpsCallable(secureFunctions,name,{timeout:130000})(data)).data;
 }
-async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window.LUMA_FIREBASE_CONFIG;if(!conf?.apiKey||!conf?.projectId)return;try{
+let firebaseConnection=null;
+function connectFirebase(){
+ if(state.firebaseReady)return Promise.resolve(true);
+ if(!firebaseConnection)firebaseConnection=startFirebase().finally(()=>{firebaseConnection=null});
+ return firebaseConnection;
+}
+async function startFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window.LUMA_FIREBASE_CONFIG;if(!conf?.apiKey||!conf?.projectId)return false;try{
  const base='https://www.gstatic.com/firebasejs/12.6.0/';
  const [app,auth,db,storage,functions]=await Promise.all([
   ...['firebase-app.js','firebase-auth.js','firebase-firestore.js','firebase-storage.js'].map(module=>import(base+module)),
   import(base+'firebase-functions.js').catch(()=>null)
  ]);
- const init=app.initializeApp(conf);
+ const init=app.getApps().length?app.getApp():app.initializeApp(conf);
  if(conf.recaptchaEnterpriseSiteKey){
-  const {initializeAppCheck,ReCaptchaEnterpriseProvider}=await import(base+'firebase-app-check.js');
-  initializeAppCheck(init,{
-   provider:new ReCaptchaEnterpriseProvider(conf.recaptchaEnterpriseSiteKey),
-   isTokenAutoRefreshEnabled:true
-  });
+  try{
+   const {initializeAppCheck,ReCaptchaEnterpriseProvider}=await import(base+'firebase-app-check.js');
+   initializeAppCheck(init,{
+    provider:new ReCaptchaEnterpriseProvider(conf.recaptchaEnterpriseSiteKey),
+    isTokenAutoRefreshEnabled:true
+   });
+  }catch(error){console.warn('Firebase App Check initialization',error.code||error.name)}
  }
  const modules={...auth,...db,...storage,...functions};
  state.fb={auth:auth.getAuth(init),db:db.getFirestore(init),storage:storage.getStorage(init),
@@ -628,7 +719,8 @@ async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || wind
   if(adHash&&$('modal').classList.contains('hidden'))
    void openListing(adHash,{fromHistory:true,guard:()=>$('modal').classList.contains('hidden')&&new URLSearchParams(location.hash.slice(1)).get('ad')===adHash});
  },error=>{console.error('cars fetch',error);toast(T('loadFailed'))});
- }catch(e){console.error('firebase init',e);state.firebaseReady=false;toast(T('firebaseFailed'))}}
+ return true;
+ }catch(e){console.error('firebase init',e);state.firebaseReady=false;toast(T('firebaseFailed'));return false}}
 function wireMarketplace(){
  $('inboxBtn').addEventListener('click',()=>{closeAccountMenu();marketUI.openInbox()});
 

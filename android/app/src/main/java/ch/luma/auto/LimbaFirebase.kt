@@ -68,8 +68,10 @@ class LimbaFirebase(private val activity: Activity) {
                 FirebaseApp.getApps(activity).firstOrNull { it.name == "limba" }
                     ?: FirebaseApp.initializeApp(activity.applicationContext, opts, "limba").also { initialized ->
                         if (!BuildConfig.DEBUG && config.optBoolean("appCheckPlayIntegrity", true)) {
-                            FirebaseAppCheck.getInstance(initialized)
-                                .installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
+                            runCatching {
+                                FirebaseAppCheck.getInstance(initialized)
+                                    .installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
+                            }.onFailure { android.util.Log.w("LimbaFirebase", "App Check initialization failed", it) }
                         }
                     }
             }.getOrNull()

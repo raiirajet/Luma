@@ -9,8 +9,8 @@ android {
     applicationId = "ch.luma.auto"
     minSdk = 26
     targetSdk = 35
-    versionCode = 12
-    versionName = "1.8.1"
+    versionCode = 13
+    versionName = "1.8.2"
   }
   signingConfigs {
     create("limbaRelease") {
@@ -40,6 +40,7 @@ android {
   packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 }
 dependencies {
+  implementation("androidx.core:core:1.13.1")
   implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
   implementation("com.google.firebase:firebase-auth")
   implementation("com.google.firebase:firebase-appcheck-playintegrity")

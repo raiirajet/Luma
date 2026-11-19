@@ -1,7 +1,6 @@
 /* Limba Auto public Firebase Web client configuration for limba-auto.
  * These CLIENT identifiers are public. Never place admin keys, service-account
- * files or server tokens in this file. The local limba/demo identity remains
- * separate from Firebase Authentication.
+ * files or server tokens in this file.
  */
 window.LIMBA_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyDPvZuTu_seOb8dK3Y5RyZBIXPqAQOL3Po',

@@ -1,8 +1,16 @@
 package ch.luma.auto
 
+import android.Manifest
 import android.app.Activity
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
@@ -10,6 +18,9 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
+import android.provider.MediaStore
+import android.provider.Settings
+import androidx.core.content.FileProvider
 import android.view.WindowInsets
 import android.content.res.ColorStateList
 import android.view.Gravity
@@ -35,6 +46,7 @@ import android.widget.Toast
 import com.google.firebase.firestore.ListenerRegistration
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.Normalizer
 import java.text.NumberFormat
 import java.time.LocalDate
@@ -49,7 +61,7 @@ import android.text.InputType
 import android.text.TextWatcher
 
 /**
- * Limba Auto uses native Android Views and keeps the demo listings in local storage.
+ * Native Limba Auto marketplace with Firebase authentication.
  */
 class MainActivity : Activity() {
     private val ink = Color.rgb(16, 43, 58)
@@ -122,6 +134,15 @@ class MainActivity : Activity() {
     private var detailPhotoIndex = 0
     private val photoKinds = listOf("exterior", "interior", "odometer", "damage", "other")
     private val pickPhotosRequest = 1414
+    private val takePhotoRequest = 1415
+    private val cameraPermissionRequest = 1416
+    private val notificationPermissionRequest = 1417
+    private val stagedCameraFiles = mutableSetOf<File>()
+    private var pendingCameraPhoto: File? = null
+    private var deviceNotifications: ListenerRegistration? = null
+    private var notificationOwner: String? = null
+    private val notificationChannelId = "limba_search_matches"
+    private val openNotificationsExtra = "ch.luma.auto.OPEN_NOTIFICATIONS"
     private var activePreviewCar: JSONObject? = null
     private var swipeIndex = 0
     private var previewStars = mutableSetOf<String>()
@@ -177,12 +198,19 @@ class MainActivity : Activity() {
         starred = prefs.getBoolean("favorite", false)
         swipeSeen = prefs.getBoolean("swipeSeen", false)
         activeCountry = (prefs.getStringSet("countries", emptySet()) ?: emptySet()).toMutableSet()
-        previewUser = prefs.getString("previewUser", "") ?: ""
-        val stored = runCatching { JSONArray(prefs.getString("previewCars", "[]")) }.getOrDefault(JSONArray())
-        for (i in 0 until stored.length()) stored.optJSONObject(i)?.let { previewCars.add(it) }
-        previewStars = (prefs.getStringSet("previewStars", emptySet()) ?: emptySet()).toMutableSet()
-        try { assets.open("gtr.jpg").use { carPhoto = BitmapFactory.decodeStream(it) } } catch (_: Exception) { }
         backend = LimbaFirebase(this)
+        if (BuildConfig.DEBUG && !backend.ready) {
+            previewUser = prefs.getString("previewUser", "").orEmpty().takeUnless { it == "limba" }.orEmpty()
+            val stored = runCatching { JSONArray(prefs.getString("previewCars", "[]")) }.getOrDefault(JSONArray())
+            for (i in 0 until stored.length()) stored.optJSONObject(i)?.let { previewCars.add(it) }
+            previewStars = prefs.getStringSet("previewStars", emptySet()).orEmpty().toMutableSet()
+            runCatching { assets.open("gtr.jpg").use { carPhoto = BitmapFactory.decodeStream(it) } }
+        } else {
+            prefs.edit().remove("previewUser").apply()
+        }
+        val oldPhotoCutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000
+        File(cacheDir, "listing-photos").listFiles()?.filter { it.lastModified() < oldPhotoCutoff }?.forEach { it.delete() }
+        if (intent.getBooleanExtra(openNotificationsExtra, false)) screen = "notifications"
         if (backend.ready) {
             backend.watchAuth { user ->
                 if (cloudUser?.uid != user?.uid) {
@@ -196,6 +224,7 @@ class MainActivity : Activity() {
                     ) ?: emptySet()).toMutableSet()
                 }
                 cloudUser = user
+                syncDeviceNotificationListener()
                 searchRegistrations.forEach { it.remove() }
                 searchRegistrations.clear()
                 cloudSearches = emptyList()
@@ -480,6 +509,7 @@ class MainActivity : Activity() {
         return frame
     }
     private fun listingAvailable(): Boolean {
+        if (!BuildConfig.DEBUG || backend.ready) return false
         if (activeCountry.isNotEmpty() && "HR" !in activeCountry) return false
         if (keyword.isNotBlank() && !"nissan gt-r r35 black edition zagreb".contains(keyword.trim().lowercase())) return false
         if (!matchesMake("Nissan") || !matchesModel("GT-R")) return false
@@ -775,31 +805,33 @@ class MainActivity : Activity() {
         form.addView(space(8));form.addView(actions)
         content.addView(form)
         val spotlight=col(navy).apply{setPadding(px(18),px(17),px(18),px(17))}
-        spotlight.addView(text(t("showroom"),13f,0xff8dccff.toInt(),true))
-        spotlight.addView(space(9))
         val featured=cloudCars.firstOrNull{matchesCar(it)} ?: previewCars.firstOrNull{matchesPreview(it)}
-        val featureImage=ImageView(this).apply{
-            scaleType=ImageView.ScaleType.CENTER_CROP
-            background=c(0xff173f53.toInt(),12)
-            clipToOutline=true
+        if (featured != null || listingAvailable()) {
+            spotlight.addView(text(t("showroom"),13f,0xff8dccff.toInt(),true))
+            spotlight.addView(space(9))
+            val featureImage=ImageView(this).apply{
+                scaleType=ImageView.ScaleType.CENTER_CROP
+                background=c(0xff173f53.toInt(),12)
+                clipToOutline=true
+            }
+            if(featured!=null && featured.optString("image").startsWith("https://"))
+                com.bumptech.glide.Glide.with(this).load(featured.optString("image")).centerCrop().into(featureImage)
+            else if(carPhoto!=null)featureImage.setImageBitmap(carPhoto)
+            spotlight.addView(featureImage,lp(-1,220));spotlight.addView(space(12))
+            if(featured!=null){
+                spotlight.addView(text(vehicleDisplayName(featured),21f,paper,true))
+                spotlight.addView(space(5));spotlight.addView(text(euro(featured.optInt("price")),22f,0xff8dccff.toInt(),true))
+                spotlight.addView(space(10))
+                spotlight.addView(btn(t("openShowroom"),false){activePreviewCar=featured;openDetails("home")})
+            }else{
+                spotlight.addView(text("Nissan GT-R R35 Black Edition",21f,paper,true))
+                spotlight.addView(space(5));spotlight.addView(text(euro(68900),22f,0xff8dccff.toInt(),true))
+                spotlight.addView(text(t("demoOnly"),11f,paper))
+                spotlight.addView(space(10))
+                spotlight.addView(btn(t("openShowroom"),false){activePreviewCar=null;openDetails("home")})
+            }
+            content.addView(space(10));content.addView(spotlight)
         }
-        if(featured!=null && featured.optString("image").startsWith("https://"))
-            com.bumptech.glide.Glide.with(this).load(featured.optString("image")).centerCrop().into(featureImage)
-        else if(carPhoto!=null)featureImage.setImageBitmap(carPhoto)
-        spotlight.addView(featureImage,lp(-1,220));spotlight.addView(space(12))
-        if(featured!=null){
-            spotlight.addView(text(vehicleDisplayName(featured),21f,paper,true))
-            spotlight.addView(space(5));spotlight.addView(text(euro(featured.optInt("price")),22f,0xff8dccff.toInt(),true))
-            spotlight.addView(space(10))
-            spotlight.addView(btn(t("openShowroom"),false){activePreviewCar=featured;openDetails("home")})
-        }else{
-            spotlight.addView(text("Nissan GT-R R35 Black Edition",21f,paper,true))
-            spotlight.addView(space(5));spotlight.addView(text(euro(68900),22f,0xff8dccff.toInt(),true))
-            spotlight.addView(text(t("demoOnly"),11f,paper))
-            spotlight.addView(space(10))
-            spotlight.addView(btn(t("openShowroom"),false){activePreviewCar=null;openDetails("home")})
-        }
-        content.addView(space(10));content.addView(spotlight)
         content.addView(iconText(R.drawable.limba_car,t("performance"),{navigate("performance")}))
         val results=col().apply{setPadding(px(17),px(22),px(17),px(20))}
         fun refreshResults(){
@@ -1168,7 +1200,7 @@ class MainActivity : Activity() {
         val cars=mutableListOf<JSONObject>()
         cars.addAll(cloudCars.filter{it.optString("id") in cloudStars})
         cars.addAll(previewCars.filter{it.optString("id") in previewStars && matchesPreview(it)})
-        if(starred)cars.add(JSONObject().put("id","demo-nissan-gtr")
+        if(starred && BuildConfig.DEBUG && !backend.ready)cars.add(JSONObject().put("id","demo-nissan-gtr")
             .put("title","Nissan GT-R R35 Black Edition").put("make","Nissan").put("model","GT-R")
             .put("price",68900).put("year",2013).put("mileage",49500).put("power",550)
             .put("fuel","petrol").put("transmission","automatic"))
@@ -1240,6 +1272,7 @@ class MainActivity : Activity() {
                             jsonStrings(item.optJSONArray("countries")), !enabled) { error ->
                             toggle.isEnabled = true
                             if (error != null) toast(t("featureUnavailable"))
+                            else if (!enabled && !prefs.getBoolean("limbaNotificationOptIn", false)) requestDeviceNotifications()
                         }
                     }
                 }
@@ -1300,6 +1333,11 @@ class MainActivity : Activity() {
         toolbar(main, t("notifications"), { navigate("home") })
         val content = col().apply { pad(this, 17, 20) }
         content.addView(text(t("notifications"), 23f, ink, true))
+        if (cloudUser != null && !deviceNotificationsAllowed()) {
+            content.addView(btn(permissionText("Gerätebenachrichtigungen aktivieren", "Enable device notifications"), false) {
+                requestDeviceNotifications()
+            })
+        }
         content.addView(space(14))
         val list = col()
         content.addView(list)
@@ -1837,7 +1875,7 @@ class MainActivity : Activity() {
         content.addView(info);body(main,content)
     }
     private fun shareWebsite() {
-        val i=Intent(Intent.ACTION_SEND).apply {type="text/plain";putExtra(Intent.EXTRA_TEXT,"Limba Auto · https://raiirajet.github.io/Luma/")}
+        val i=Intent(Intent.ACTION_SEND).apply {type="text/plain";putExtra(Intent.EXTRA_TEXT,"Limba Auto · https://limba-auto.web.app/")}
         startActivity(Intent.createChooser(i,t("shareCar")))
     }
     private fun hashPassword(password: String, salt: String): String {
@@ -1846,7 +1884,8 @@ class MainActivity : Activity() {
         return raw.joinToString("") { "%02x".format(it.toInt() and 255) }
     }
     private fun showAccount() {
-        if(previewUser.isBlank() && backend.ready){ showFirebaseAccount(); return }
+        if (backend.ready) { showFirebaseAccount(); return }
+        if (!BuildConfig.DEBUG) { showBackendInfo(); return }
         if(previewUser.isNotBlank()) {
             AlertDialog.Builder(this).setTitle(t("accountLogin")+" · "+previewUser)
                 .setMessage(t("previewMode")+"\n"+t("previewNotSynced"))
@@ -1855,9 +1894,8 @@ class MainActivity : Activity() {
             return
         }
         val body=col().apply {setPadding(px(15),px(10),px(15),px(6))}
-        body.addView(text(t("demoAccess"),14f,navy,true))
-        val username=editField(body,t("usernameOrEmail"),"","limba")
-        val password=editField(body,t("password"),"","demo")
+        val username=editField(body,t("usernameOrEmail"),"","")
+        val password=editField(body,t("password"),"","")
         password.inputType=InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         AlertDialog.Builder(this).setTitle(t("accountLogin"))
             .setMessage(t("previewNotSynced"))
@@ -1869,9 +1907,11 @@ class MainActivity : Activity() {
                 dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     val name=username.text.toString().trim().lowercase(Locale.ROOT)
                     val pass=password.text.toString()
-                    var valid=name=="limba"&&pass=="demo"
-                    if(!valid){val acc=JSONObject(prefs.getString("previewAccounts","{}")?:"{}").optJSONObject(name)
-                        if(acc!=null){val calculated=hashPassword(pass,acc.optString("salt"));valid=MessageDigest.isEqual(calculated.toByteArray(),acc.optString("hash").toByteArray())}}
+                    val account = JSONObject(prefs.getString("previewAccounts", "{}") ?: "{}").optJSONObject(name)
+                    val valid = name != "limba" && account != null && MessageDigest.isEqual(
+                        hashPassword(pass, account.optString("salt")).toByteArray(),
+                        account.optString("hash").toByteArray()
+                    )
                     if(!valid)toast(t("loginInvalid")) else {
                         previewUser=name;prefs.edit().putString("previewUser",name).apply();dlg.dismiss();render();toast(t("welcomePreview"))
                     }
@@ -1901,13 +1941,11 @@ class MainActivity : Activity() {
             return
         }
         AlertDialog.Builder(this).setTitle(t("accountLogin"))
-            .setItems(arrayOf(t("login"),t("register"),t("forgotPassword"),t("signInDemo"))) { _,which ->
+            .setItems(arrayOf(t("login"),t("register"),t("forgotPassword"))) { _,which ->
                 when(which){
                     0->showFirebaseAuthForm("login")
                     1->showFirebaseAuthForm("register")
                     2->showFirebaseAuthForm("reset")
-                    3->{previewUser="limba";prefs.edit().putString("previewUser",previewUser).apply()
-                        render();toast(t("welcomePreview"))}
                 }
             }.setNegativeButton(t("cancel"),null).show()
     }
@@ -1931,8 +1969,11 @@ class MainActivity : Activity() {
                         if(!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()) {
                             toast(t("requiredFields"));return@setOnClickListener
                         }
-                        if(mode!="reset" && pass.length<8) {
+                        if(mode=="register" && pass.length<8) {
                             toast(t("minPassword"));return@setOnClickListener
+                        }
+                        if(mode=="login" && pass.isEmpty()) {
+                            toast(t("requiredFields"));return@setOnClickListener
                         }
                         if(mode=="register" && pass != confirm?.text.toString()) {
                             toast(t("passwordsMismatch"));return@setOnClickListener
@@ -2117,19 +2158,25 @@ class MainActivity : Activity() {
             }
         }
         if(!isPreview && existing==null){
-            pickedImages.clear()
+            clearPickedPhotos()
             col.addView(space(12))
             col.addView(text(t("photoGuide"), 13f, muted))
-            col.addView(btn(t("listingPhotos"),false){
-                val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{
-                    type="image/*";addCategory(Intent.CATEGORY_OPENABLE)
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true)
-                }
-                startActivityForResult(intent,pickPhotosRequest)
+            col.addView(btn(t("choosePhoto"), false) { pickListingPhotos() })
+            col.addView(btn(permissionText("Foto aufnehmen", "Take photo"), false) { requestListingCamera() })
+            col.addView(btn(permissionText("Fotoauswahl löschen", "Clear selected photos"), false) {
+                clearPickedPhotos()
+                updatePickedPhotos()
             })
             pickedImagesLabel=text("0 / 6",12f,muted)
             col.addView(pickedImagesLabel)
-            renderPickedPhotoFields = { showPhotoFields(pickedImages.mapIndexed { index, uri -> index to uri.toString() }, null) }
+            renderPickedPhotoFields = {
+                val current = JSONObject()
+                for ((slot, fields) in photoFields) {
+                    val kind = categories[fields.first.selectedItemPosition.coerceIn(categories.indices)]
+                    current.put(slot.toString(), JSONObject().put("kind", kind).put("note", fields.second.text.toString()))
+                }
+                showPhotoFields(pickedImages.mapIndexed { index, uri -> index to uri.toString() }, current)
+            }
         } else if (!isPreview && existing != null) {
             showPhotoFields(listingPhotos(existing), existing.optJSONObject("photoDetails"))
         }
@@ -2139,7 +2186,11 @@ class MainActivity : Activity() {
             .setPositiveButton(if(isPreview)t("savePreviewCar")else if(existing!=null)t("editAd")else t("publish"),null)
             .setNegativeButton(t("cancelPreview"),null)
             .create().also{dlg->
-                dlg.setOnDismissListener { renderPickedPhotoFields = null; pickedImagesLabel = null }
+                dlg.setOnDismissListener {
+                    renderPickedPhotoFields = null
+                    pickedImagesLabel = null
+                    clearPickedPhotos()
+                }
                 dlg.setOnShowListener { dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     val mk=canonicalBrand(makeField.text.toString());val mdl=modelField.text.toString().trim()
                      val modelExtension=extension.text.toString().trim().replace(Regex("\\s+")," ")
@@ -2208,9 +2259,14 @@ class MainActivity : Activity() {
                             toast(t("listingPhotos"));return@setOnClickListener
                         }
                         val submit=dlg.getButton(AlertDialog.BUTTON_POSITIVE)
+                        val cancel = dlg.getButton(AlertDialog.BUTTON_NEGATIVE)
                         submit.isEnabled=false
+                        cancel.isEnabled=false
+                        dlg.setCancelable(false)
                         val done:(String?)->Unit={error->
                             submit.isEnabled=true
+                            cancel.isEnabled=true
+                            dlg.setCancelable(true)
                             if(error!=null)toast(error)else{
                                 pickedImages.clear();pickedImagesLabel=null
                                 dlg.dismiss();navigate("mine");toast(t("carPublished"))
@@ -2258,28 +2314,213 @@ class MainActivity : Activity() {
     }
     private fun showBackendInfo() {
         AlertDialog.Builder(this).setTitle(t("registerToSell"))
-            .setMessage(t("authUnavailable")+"\n\n"+t("demoOnly"))
+            .setMessage(t("authUnavailable"))
             .setPositiveButton("OK",null).show()
     }
+    private fun permissionText(german: String, english: String) = if (locale == "de") german else english
+
+    private fun updatePickedPhotos() {
+        pickedImagesLabel?.text = "${pickedImages.size} / 6"
+        renderPickedPhotoFields?.invoke()
+    }
+
+    private fun clearPickedPhotos() {
+        pickedImages.clear()
+        pendingCameraPhoto?.delete()
+        pendingCameraPhoto = null
+        stagedCameraFiles.forEach { it.delete() }
+        stagedCameraFiles.clear()
+    }
+
+    private fun hasPhotoSpace(): Boolean {
+        if (pickedImages.size < 6) return true
+        toast(permissionText("Du kannst bis zu sechs Fotos auswählen.", "You can select up to six photos."))
+        return false
+    }
+
+    private fun pickListingPhotos() {
+        if (!hasPhotoSpace()) return
+        val remaining = 6 - pickedImages.size
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val picker = Intent(MediaStore.ACTION_PICK_IMAGES).setType("image/*")
+            if (remaining > 1) picker.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, remaining)
+            try {
+                startActivityForResult(picker, pickPhotosRequest)
+                return
+            } catch (_: ActivityNotFoundException) {
+                // Devices without the system picker can use the document selector.
+            }
+        }
+        val documents = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "image/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, remaining > 1)
+        }
+        try {
+            startActivityForResult(documents, pickPhotosRequest)
+        } catch (_: ActivityNotFoundException) {
+            toast(t("featureUnavailable"))
+        }
+    }
+
+    private fun requestListingCamera() {
+        if (!hasPhotoSpace()) return
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            launchListingCamera()
+        } else if (prefs.getBoolean("limbaCameraPermissionRequested", false) &&
+            !shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            AlertDialog.Builder(this).setTitle(permissionText("Kamera", "Camera"))
+                .setMessage(permissionText("Erlaube den Kamerazugriff in den App-Einstellungen.", "Allow camera access in app settings."))
+                .setPositiveButton(t("settings")) { _, _ ->
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                }
+                .setNegativeButton(t("cancel"), null).show()
+        } else {
+            prefs.edit().putBoolean("limbaCameraPermissionRequested", true).apply()
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), cameraPermissionRequest)
+        }
+    }
+
+    private fun launchListingCamera() {
+        if (pickedImagesLabel == null || !hasPhotoSpace()) return
+        runCatching {
+            val directory = File(cacheDir, "listing-photos").apply { mkdirs() }
+            val photo = File.createTempFile("vehicle-", ".jpg", directory)
+            pendingCameraPhoto = photo
+            val uri = FileProvider.getUriForFile(this, "$packageName.listing-photos", photo)
+            val capture = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                clipData = ClipData.newRawUri("listing-photo", uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+            startActivityForResult(capture, takePhotoRequest)
+        }.onFailure {
+            pendingCameraPhoto?.delete()
+            pendingCameraPhoto = null
+            toast(t("featureUnavailable"))
+        }
+    }
+
+    private fun deviceNotificationsAllowed(): Boolean {
+        val manager = getSystemService(NotificationManager::class.java)
+        return prefs.getBoolean("limbaNotificationOptIn", false) && manager.areNotificationsEnabled() &&
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+    }
+
+    private fun requestDeviceNotifications() {
+        prefs.edit().putBoolean("limbaNotificationOptIn", true).apply()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED &&
+            (!prefs.getBoolean("limbaNotificationPermissionRequested", false) ||
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS))) {
+            prefs.edit().putBoolean("limbaNotificationPermissionRequested", true).apply()
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), notificationPermissionRequest)
+        } else if (!deviceNotificationsAllowed()) {
+            startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+        } else {
+            syncDeviceNotificationListener()
+            if (screen == "notifications") render()
+        }
+    }
+
+    private fun syncDeviceNotificationListener() {
+        val owner = cloudUser?.uid?.takeIf { deviceNotificationsAllowed() }
+        if (owner == notificationOwner && (owner == null || deviceNotifications != null)) return
+        deviceNotifications?.remove()
+        deviceNotifications = null
+        notificationOwner = owner
+        if (owner == null) {
+            getSystemService(NotificationManager::class.java).cancel(1)
+            return
+        }
+
+        var seen: Set<String>? = null
+        deviceNotifications = backend.watchNotifications { items, error ->
+            if (error != null || cloudUser?.uid != owner || !deviceNotificationsAllowed()) return@watchNotifications
+            val current = items.mapTo(mutableSetOf()) { it.optString("id") }
+            val previous = seen
+            seen = current
+            if (previous != null && screen != "notifications" &&
+                items.any { !it.optBoolean("read") && it.optString("id") !in previous }) {
+                postSearchNotification()
+            }
+        }
+    }
+
+    private fun postSearchNotification() {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(NotificationChannel(notificationChannelId, t("notifications"), NotificationManager.IMPORTANCE_DEFAULT))
+        val open = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(openNotificationsExtra, true)
+        }
+        val tap = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        manager.notify(1, Notification.Builder(this, notificationChannelId)
+            .setSmallIcon(R.drawable.ic_limba_notification)
+            .setContentTitle("Limba")
+            .setContentText(permissionText("Neue Treffer für deine gespeicherten Suchen", "New matches for your saved searches"))
+            .setAutoCancel(true)
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setContentIntent(tap)
+            .build())
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::backend.isInitialized) syncDeviceNotificationListener()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(openNotificationsExtra, false) && cloudUser != null) navigate("notifications")
+    }
+
     override fun onDestroy() {
         conversationDialog?.dismiss()
         screenRegistration?.remove()
+        deviceNotifications?.remove()
         searchRegistrations.forEach { it.remove() }
         countryRegistration?.remove()
+        clearPickedPhotos()
         if (::backend.isInitialized) backend.close()
         super.onDestroy()
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        when (requestCode) {
+            cameraPermissionRequest -> if (granted) launchListingCamera()
+                else toast(permissionText("Du kannst weiterhin Fotos aus der Galerie wählen.", "You can still select photos from your gallery."))
+            notificationPermissionRequest -> if (granted) {
+                syncDeviceNotificationListener()
+                if (screen == "notifications") render()
+            }
+        }
+    }
+
     @Deprecated("Activity result API retained for compatibility with Activity base class")
-    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
-        super.onActivityResult(requestCode,resultCode,data)
-        if(requestCode!=pickPhotosRequest || resultCode!=RESULT_OK || data==null)return
-        pickedImages.clear()
-        data.clipData?.let { clip ->
-            for(i in 0 until minOf(clip.itemCount,6))pickedImages.add(clip.getItemAt(i).uri)
-        } ?: data.data?.let { pickedImages.add(it) }
-        pickedImagesLabel?.text = "${pickedImages.size} / 6"
-        renderPickedPhotoFields?.invoke()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            takePhotoRequest -> {
+                val photo = pendingCameraPhoto ?: return
+                pendingCameraPhoto = null
+                if (resultCode == RESULT_OK && photo.length() > 0 && pickedImagesLabel != null && hasPhotoSpace()) {
+                    stagedCameraFiles.add(photo)
+                    pickedImages.add(FileProvider.getUriForFile(this, "$packageName.listing-photos", photo))
+                    updatePickedPhotos()
+                } else photo.delete()
+            }
+            pickPhotosRequest -> {
+                if (resultCode != RESULT_OK || data == null || pickedImagesLabel == null) return
+                val received = data.clipData?.let { clip -> (0 until clip.itemCount).map { clip.getItemAt(it).uri } }
+                    ?: listOfNotNull(data.data)
+                pickedImages.addAll(received.distinct().filterNot { it in pickedImages }.take(6 - pickedImages.size))
+                updatePickedPhotos()
+            }
+        }
     }
 
     override fun onBackPressed() { goBack() }

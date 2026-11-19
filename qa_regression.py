@@ -232,17 +232,17 @@ with sync_playwright() as p:
    page.evaluate("""code => {const el=document.querySelector('#settingsLanguage'); el.value=code;el.dispatchEvent(new Event('change',{bubbles:true}))}""",code)
    assert_header_available(page)
    assert page.locator('#searchForm h2').inner_text().strip()
-   assert page.locator('[data-i18n="singleDemoNotice"]').first.inner_text()!='singleDemoNotice'
    page.locator('#carGrid .car-card').first.click(position={'x':50,'y':160})
    assert len(page.locator('.vehicle-description').inner_text())>400,code
    page.locator('#detailBack').click()
    assert page.locator('#modal').is_hidden()
   page.evaluate("""() => {const el=document.querySelector('#settingsLanguage'); el.value='de';el.dispatchEvent(new Event('change',{bubbles:true}))}""")
-  # Guest auth is explanatory, not nonworking login form
+  # Standalone previews support local accounts without preset credentials
   page.locator('#loginBtn').click()
   page.locator('#accountOpenBtn').click()
   assert page.locator('#modal').is_visible()
-  assert 'Firebase' in page.locator('#modalContent').inner_text()
+  assert page.locator('#authForm').is_visible()
+  assert page.locator('#demoQuick').count()==0
   page.locator('#modalClose').click()
   # persistence across reload
   assert page.evaluate('localStorage.getItem("luma_auto_favorites")') is not None

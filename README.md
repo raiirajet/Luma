@@ -4,7 +4,7 @@
 
 **Produktionsprojekt:** Website und Android sind mit Firebase `limba-auto` verbunden. Authentication, Firestore und Cloud Storage sind eingerichtet; die Website wird unter [limba-auto.web.app](https://limba-auto.web.app) veröffentlicht. Der genaue Betriebsstand steht in [FIREBASE_LIMBA_SETUP.md](FIREBASE_LIMBA_SETUP.md).
 
-- **Demo ohne Firebase:** Website und APK können ohne Zugangsdaten weiterhin mit lokalen Testdaten verwendet werden; `limba/demo` bleibt ausschliesslich ein öffentlicher Demo-Zugang.
+- **Anmeldung:** Die produktive Website und die Release-APK verwenden E-Mail und Passwort über Firebase. Die herunterladbare Browser-Vorschau unterstützt eigene lokale Testkonten.
 - **Firebase mit Konfiguration:** gemeinsames Auth-System mit E-Mail-Verifizierung und Passwort-Reset; synchronisierte öffentliche Fahrzeuge und Favoriten; Eigentümeransicht für aktive, pausierte und verkaufte Inserate.
 - **Native Android-App:** echte Firebase-SDKs, Kamera-/Galerie-Auswahl über das Android-Dokument-Auswahlsystem, Upload bis 6 Bilder, Bearbeiten, Statuswechsel, Löschen und Fahrzeugmeldungen.
 - **Web:** Bearbeiten, Verkauft/Pausiert/Reaktivieren, separater Kontospeicher und Meldungen. Kontakt-E-Mails werden nicht öffentlich gespeichert.
@@ -87,13 +87,12 @@ Die Beispielaufnahme zeigt einen echten schwarzen GT-R: [Joshua Spence / Wikimed
 
 Das Markendesign verwendet die 18 vom Betreiber gelieferten transparenten 3D-PNG-Funktionsicons plus Wortmarke, Symbol und App-Icon. Text- und Bedienoberflächen tragen den Namen **Limba**. Die GitHub-Repository-URL und die Android-App-ID `ch.luma.auto` bleiben bewusst bestehen, damit die bestehende Installation / Web-URL erhalten bleiben; ohne hinterlegte Release-Signing-Secrets bleibt die APK eine debug-signierte Vorabversion.
 
-## Limba 1.3 · Demo-Konten, Floating Plus und Fahrzeug-Steckbrief
+## Floating Plus und Fahrzeug-Steckbrief
 
 - Dezent sichtbarer Floating-Plus-Button für die Fahrzeuginserierung auf Desktop/Mobilgeräten; Swipe bleibt ungestört.
-- **Demo-Zugang:** Benutzername `limba`, Passwort `demo` (ausschliesslich Testmodus; weder Firebase-Konto noch echte Verkäuferidentität). Der Zugang ist öffentlich und DARF NICHT als Admin- oder Produktionskonto verwendet werden.
-- Lokale Testkonten lassen sich in der Browser-Vorschau registrieren und mit PBKDF2-SHA256-Prüfwert wieder anmelden; die Daten bleiben **nur im Browser**. Es werden keine Klartextpasswörter gespeichert. Diese Demo-Accounts sind kein Ersatz für einen serverseitig geschützten Login.
+- Lokale Testkonten lassen sich in der Browser-Vorschau registrieren und mit PBKDF2-SHA256-Prüfwert wieder anmelden; die Daten bleiben **nur im Browser**. Es werden keine Klartextpasswörter gespeichert. Diese Konten funktionieren in der eigenständigen Browser-Vorschau.
 - Echte E-Mail-Registrierung, Verifizierungs-E-Mail, Passwort-Zurücksetzen, Inseratserstellung und Fotoupload sind produktiv mit Firebase `limba-auto` verbunden. Die öffentlichen Client-Konfigurationen sind eingecheckt; Administrator- und Signing-Schlüssel bleiben außerhalb des Repositorys.
-- Demo-Nutzer können lokale Test-Inserate erstellen und löschen; sie sind weder öffentlich noch zwischen Website und Android synchronisiert. Im Browser ist ein optionales kleines Foto möglich; bei fehlendem Bild wird ein neutrales Fahrzeugsymbol angezeigt. Testbilder/Anzeigen liegen nur im lokalen Speicher des Browsers bzw. des jeweiligen Android-Geräts.
+- Die eigenständige Browser-Vorschau kann lokale Testinserate und ein kleines Foto im Browser speichern.
 - Das Formular zeigt einen strukturierten Fahrzeug-Steckbrief mit Unfallfahrzeug (Ja/Nein/Keine Angabe), kurzer Zustandsnotiz, freier Beschreibung und technischen Daten.
 - Das vorgeschlagene Backend-Schema `firestore.rules` wurde um `accidentStatus` und `conditionNote` erweitert, die Regeln müssen **gesondert getestet und deployed** werden. Neue Datensätze nach diesen Regeln müssen beide Felder liefern; bisherige veröffentlichte Fahrzeuge bleiben lesbar.
 - Alle neuen UI-Texte sind über `feature-i18n.js` in sämtlichen 14 UI-Sprachen hinterlegt. Die Android-Version enthält dieselben übersetzten Strings in `android/app/src/main/assets/i18n.json`.

@@ -13,7 +13,7 @@ for f in ['translations-extra.js','i18n.js','cars-i18n.js','car-brands.js','icon
  parts.append('\n/* '+f+' */\n'+src)
 script='\n'.join(parts)
 html=html.replace('<link rel="stylesheet" href="styles.css">','<style>\n'+css+'\n</style>')
-html=html.replace('<script defer src="config.js"></script>','<script>window.LIMBA_FIREBASE_CONFIG=null;window.LUMA_FIREBASE_CONFIG=null;</script>')
+html=html.replace('<script defer src="config.js"></script>','<script>window.LIMBA_OFFLINE_PREVIEW=true;window.LIMBA_FIREBASE_CONFIG=null;window.LUMA_FIREBASE_CONFIG=null;</script>')
 html=html.replace('<script type="module" defer src="app.js"></script>','')
 html=html.replace('</body>','<script>\n'+script.replace('</script','<\\/script')+'\n</script>\n</body>')
 (base/'preview.html').write_text(html, encoding='utf-8')

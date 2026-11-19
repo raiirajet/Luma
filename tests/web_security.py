@@ -40,8 +40,10 @@ with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright()
         });
     """)
     page.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="domcontentloaded")
-    page.locator("#carGrid .car-card").first.click()
-    page.locator("#detailBack").wait_for()
+    page.locator("#loginBtn").click()
+    page.locator("#accountOpenBtn").click()
+    assert page.locator("#authEmail").get_attribute("type") == "email"
+    assert page.locator("#demoQuick, [data-i18n='singleDemoNotice']").count() == 0
     assert not errors, errors
     assert page.evaluate("window.violations") == []
     page.evaluate("""

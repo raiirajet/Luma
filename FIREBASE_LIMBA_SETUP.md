@@ -1,6 +1,6 @@
 # Limba Auto 1.4.1 – Firebase-Betriebsstand
 
-Website und native Android-App verwenden dasselbe Firebase-Projekt. Die Anmeldung `limba/demo` bleibt eine vollständig lokale Vorschau und ist keine produktive Identität. Firebase-App-IDs und API-Schlüssel in diesem Repository sind öffentliche Client-Konfiguration. Service-Account-Dateien, private Schlüssel und Zugangstokens dürfen niemals eingecheckt werden.
+Website und native Android-App verwenden dasselbe Firebase-Projekt. Firebase-App-IDs und API-Schlüssel in diesem Repository sind öffentliche Client-Konfiguration. Service-Account-Dateien, private Schlüssel und Zugangstokens dürfen niemals eingecheckt werden.
 
 ## Bereits eingerichtet
 
