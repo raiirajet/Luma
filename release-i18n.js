@@ -181,9 +181,46 @@ const translations = {
   ]
 };
 
+const dealerTranslations = {
+  "de": {
+    "accountType": "Kontotyp",
+    "dealerCompany": "Firmenname",
+    "dealerApply": "Händlerfreigabe beantragen",
+    "dealerSend": "Antrag absenden",
+    "dealerReview": "Freigabe Händler",
+    "dealerApprove": "Freigeben",
+    "dealerReject": "Ablehnen",
+    "dealerQueueEmpty": "Keine offenen Händleranträge.",
+    "dealerVerificationRequired": "Händlerantrag · E-Mail bestätigen",
+    "dealerPending": "Händlerantrag · In Prüfung",
+    "dealerApproved": "Händler · Freigegeben",
+    "dealerRejected": "Händlerantrag · Abgelehnt",
+    "dealerSaveError": "Der Händlerantrag konnte nicht gespeichert werden.",
+    "dealerLoadError": "Händlerfreigaben konnten nicht geladen werden.",
+    "dealerListingHint": "Als Händler kannst du nach deiner Freigabe inserieren."
+  },
+  "en": {
+    "accountType": "Account type",
+    "dealerCompany": "Company name",
+    "dealerApply": "Apply for dealer approval",
+    "dealerSend": "Submit application",
+    "dealerReview": "Dealer approvals",
+    "dealerApprove": "Approve",
+    "dealerReject": "Decline",
+    "dealerQueueEmpty": "No dealer applications to review.",
+    "dealerVerificationRequired": "Dealer application · Verify your email",
+    "dealerPending": "Dealer application · Under review",
+    "dealerApproved": "Dealer · Approved",
+    "dealerRejected": "Dealer application · Declined",
+    "dealerSaveError": "The dealer application could not be saved.",
+    "dealerLoadError": "Dealer approvals could not be loaded.",
+    "dealerListingHint": "You can publish dealer listings once approved."
+  }
+};
+
 export const RELEASE_TRANSLATIONS = Object.fromEntries(
   Object.entries(translations).map(([locale, entries]) => [
-    locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])) }
+    locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])), ...dealerTranslations.en, ...dealerTranslations[locale] }
   ])
 );
 

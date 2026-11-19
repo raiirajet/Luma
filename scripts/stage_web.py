@@ -26,6 +26,7 @@ PUBLIC_FILES = (
     "limba-lux.js",
     "limba-lux-ui.js",
     "limba-market-ui.js",
+    "limba-dealer-ui.js",
     "mvp-i18n.js",
     "release-i18n.js",
     "search-filters-i18n.js",

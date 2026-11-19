@@ -31,6 +31,12 @@ Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwa
 - Die Gestenerkennung verhindert unbeabsichtigte Browser-Scroll-Abbrüche bei vertikalen Swipes. Tastaturpfeile sind zusätzlich als Alternative verfügbar.
 - Eine angemeldete Person kann nach Bestätigung der E-Mail-Adresse im Kontodialog den Verifizierungsstatus erneut laden, damit der Inserat-Upload anschliessend möglich wird.
 
+## Privat und Händler
+
+Käufer können nach privaten Inseraten oder Händlerangeboten filtern. Wer sich als Händler registriert, gibt den Firmennamen an und bestätigt die E-Mail-Adresse. Bestehende Konten können die Händlerfreigabe im Kontomenü beantragen.
+
+Unter **Konto → Freigabe Händler** können Administratoren offene Anträge freigeben oder ablehnen. Erst freigegebene Konten erhalten beim Inserieren die Händleroption. Die Anträge selbst sind privat.
+
 ## Firebase aktivieren
 
 1. Firebase-Projekt `limba-auto`, Web-App und Android-App sind bereits angelegt; die **öffentliche** Client-Konfiguration ist eingecheckt. Keine Service-Account-Schlüssel einchecken.

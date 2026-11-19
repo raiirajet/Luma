@@ -411,3 +411,9 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 @media(max-width:760px){.search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.search-grid>.search-main{grid-column:1/-1}.search-country-toggle{min-height:46px}.search-country-panel{width:min(440px,calc(100vw - 28px))}}
 
 .swipe-empty { margin: 25vh auto; max-width: 480px; }
+
+.seller-segments { margin: 0 0 14px; }
+.seller-segments [aria-pressed="true"] { background: var(--ink, #102b3a); color: #fff; }
+#dealerAccountPanel { margin-top: 16px; }
+.dealer-queue-item { padding: 12px 0; border-bottom: 1px solid #dae6ea; }
+.dealer-queue-item p { overflow-wrap: anywhere; }

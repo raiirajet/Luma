@@ -1,8 +1,8 @@
-# Limba Android 1.8.2
+# Limba Android 1.8.3
 
-- Paketname `ch.luma.auto`, Buildnummer 13.
+- Paketname `ch.luma.auto`, Buildnummer 14.
 - Dieselbe Firebase-Produktionskonfiguration wie die Website (`limba-auto`).
-- E-Mail-/Passwort-Anmeldung, Registrierung, E-Mail-Verifizierung und Passwort-Reset.
+- E-Mail-/Passwort-Anmeldung, Registrierung, E-Mail-Verifizierung und Passwort-Reset. Bei der Registrierung stehen Privat und Händler zur Auswahl. Nach der E-Mail-Bestätigung prüft die Administration Händleranträge unter **Konto → Freigabe Händler**.
 - Synchronisierte Inserate, Favoriten, Eigentümeransicht, Meldungen und Statuswechsel.
 - Auswahl, Komprimierung und produktiver Upload von 1 bis 6 Bildern über Cloud Storage in `europe-west6` (Zürich).
 - Galerieauswahl über den Android-Fotowähler. Die App fragt Kamerazugriff erst beim Aufnehmen eines Inseratsfotos ab.
