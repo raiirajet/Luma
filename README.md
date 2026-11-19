@@ -39,14 +39,7 @@ Luma wurde von einem allgemeinen Kleinanzeigenmarkt in einen **reinen Personenwa
 4. **Wichtig:** Firestore-Regeln schränken neue Anzeigen auf Kategorie `vehicles` und Fahrzeugdaten ein. Bestehende Nicht-Auto-Anzeigen aus älteren Luma-Versionen werden in der neuen Oberfläche ausgefiltert. Daten werden nicht gelöscht.
 5. Erst nach Moderation, Rechts- und Datenschutzprüfung sowie Schutz gegen Betrug öffentlich zum Handel freigeben.
 
-**CLI zum späteren Aktivieren der Sicherheitsregeln:**
-
-```bash
-npx -y firebase-tools@latest login:list
-npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes --project limba-auto
-```
-
-Mit GitHub Actions ist das statische Frontend für GitHub Pages konfiguriert (`.github/workflows/pages.yml`). Ein Push nach `main` löst die Veröffentlichung aus.
+Der [Limba-Betriebsleitfaden](docs/LIMBA_SECURITY_OPERATIONS.md) beschreibt Regelvergleich, App Check und die Reihenfolge für Firebase-Deployments. Die separate GitHub-Pages-Veröffentlichung wird durch einen Push nach `main` ausgelöst.
 
 ## Lokal starten
 

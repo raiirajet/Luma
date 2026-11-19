@@ -3,10 +3,13 @@ package ch.luma.auto
 import android.app.Activity
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.Timestamp
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
@@ -15,14 +18,17 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Source
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.HttpsCallableResult
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.time.LocalDate
+import java.util.concurrent.TimeUnit
 
 /**
  * Shared Limba production backend, opt-in by supplying assets/firebase-config.json.
@@ -34,6 +40,7 @@ class LimbaFirebase(private val activity: Activity) {
     private val db: FirebaseFirestore?
     private val storage: FirebaseStorage?
     private val functions: FirebaseFunctions?
+    private val secureFunctions: FirebaseFunctions?
     private var publicListener: ListenerRegistration? = null
     private var ownListener: ListenerRegistration? = null
     private var favoritesListener: ListenerRegistration? = null
@@ -59,13 +66,19 @@ class LimbaFirebase(private val activity: Activity) {
                         }
                     }.build()
                 FirebaseApp.getApps(activity).firstOrNull { it.name == "limba" }
-                    ?: FirebaseApp.initializeApp(activity.applicationContext, opts, "limba")
+                    ?: FirebaseApp.initializeApp(activity.applicationContext, opts, "limba").also { initialized ->
+                        if (!BuildConfig.DEBUG && config.optBoolean("appCheckPlayIntegrity", true)) {
+                            FirebaseAppCheck.getInstance(initialized)
+                                .installAppCheckProviderFactory(PlayIntegrityAppCheckProviderFactory.getInstance())
+                        }
+                    }
             }.getOrNull()
         } else null
         auth = app?.let { FirebaseAuth.getInstance(it) }
         db = app?.let { FirebaseFirestore.getInstance(it) }
         storage = app?.let { FirebaseStorage.getInstance(it) }
         functions = app?.let { FirebaseFunctions.getInstance(it, "europe-west1") }
+        secureFunctions = app?.let { FirebaseFunctions.getInstance(it, "europe-west6") }
     }
 
     fun watchAuth(onChanged: (FirebaseUser?) -> Unit) {
@@ -495,6 +508,25 @@ class LimbaFirebase(private val activity: Activity) {
         return out.toByteArray().also { require(it.size in 1 until 5*1024*1024) }
     }
 
+    private fun withMarketplaceMode(
+        done: (String?) -> Unit,
+        action: (Boolean) -> Unit
+    ) {
+        val config = db?.collection("marketplaceSecurity")?.document("enforcement")
+            ?: return done("Firestore unavailable")
+        config.get(Source.SERVER).addOnSuccessListener {
+            action(it.getBoolean("pipelineEnabled") == true || it.getBoolean("requirePipeline") == true)
+        }.addOnFailureListener {
+            // A client can update before the corresponding rules are deployed.
+            if (it is FirebaseFirestoreException && it.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                action(false)
+            } else done(it.localizedMessage ?: "Marketplace unavailable")
+        }
+    }
+
+    private fun callMarketplace(name: String, data: Map<String, Any>): Task<HttpsCallableResult>? =
+        secureFunctions?.getHttpsCallable(name)?.withTimeout(130, TimeUnit.SECONDS)?.call(data)
+
     fun publish(car: JSONObject, selected: List<Uri>, done: (String?) -> Unit) {
         val user = auth?.currentUser ?: return done("Sign in required")
         if (!user.isEmailVerified) return done("Verify your email first")
@@ -503,45 +535,90 @@ class LimbaFirebase(private val activity: Activity) {
         val store = storage ?: return done("Storage unavailable")
         val fields = runCatching { data(car, editing = false, photoCount = selected.size) }
             .getOrElse { return done(it.localizedMessage ?: "Invalid vehicle data") }
-        val document = service.collection("listings").document()
-        val uploaded = mutableListOf<com.google.firebase.storage.StorageReference>()
-        val urls = mutableListOf<String>()
-        fun failure(message: String) {
-            uploaded.forEach { it.delete() } // Best-effort rollback; monitor orphan files separately.
-            done(message)
-        }
-        fun uploadAt(index: Int) {
-            if (index == selected.size) {
+
+        fun uploadPhotos(id: String, secure: Boolean) {
+            val document = service.collection("listings").document(id)
+            val uploaded = mutableListOf<com.google.firebase.storage.StorageReference>()
+            val legacyUrls = mutableListOf<String>()
+
+            fun failure(message: String) {
+                if (!secure) uploaded.forEach { it.delete() }
+                done(message)
+            }
+
+            fun writeListing(urls: List<String>) {
                 fields["uid"] = user.uid
                 fields["status"] = "active"
                 fields["createdAt"] = FieldValue.serverTimestamp()
-                fields["images"] = urls.toList()
+                fields["images"] = urls
                 fields["image"] = urls.first()
-                document.set(fields).addOnSuccessListener { done(null) }
+                val write = if (secure) {
+                    service.batch().set(document, fields)
+                        .update(service.collection("listingUploads").document(id), "used", true).commit()
+                } else document.set(fields)
+                write.addOnSuccessListener { done(null) }
                     .addOnFailureListener { failure(it.localizedMessage ?: "Firestore write failed") }
-                return
             }
-            Thread {
-                val photo = runCatching { compress(selected[index]) }
-                activity.runOnUiThread {
-                    if (photo.isFailure) {
-                        failure(photo.exceptionOrNull()?.localizedMessage ?: "Invalid photo")
-                    } else {
-                        val ref = store.reference.child("listings/${user.uid}/${document.id}/${index}.jpg")
-                        ref.putBytes(photo.getOrThrow(),
-                            com.google.firebase.storage.StorageMetadata.Builder()
-                                .setContentType("image/jpeg").build())
-                            .addOnSuccessListener {
-                                uploaded.add(ref)
-                                ref.downloadUrl.addOnSuccessListener { uri ->
-                                    urls.add(uri.toString()); uploadAt(index+1)
-                                }.addOnFailureListener { failure(it.localizedMessage ?: "URL unavailable") }
-                            }.addOnFailureListener { failure(it.localizedMessage ?: "Upload failed") }
+
+            fun uploadAt(index: Int) {
+                if (auth?.currentUser?.uid != user.uid) return failure("Sign in required")
+                Thread {
+                    val photo = runCatching { compress(selected[index]) }
+                    activity.runOnUiThread {
+                        if (photo.isFailure) {
+                            failure(photo.exceptionOrNull()?.localizedMessage ?: "Invalid photo")
+                        } else if (secure) {
+                            val task = callMarketplace("uploadListingPhoto", mapOf(
+                                "listingId" to id,
+                                "slot" to index,
+                                "mimeType" to "image/jpeg",
+                                "base64" to Base64.encodeToString(photo.getOrThrow(), Base64.NO_WRAP)
+                            ))
+                            if (task == null) {
+                                failure("Marketplace unavailable")
+                            } else {
+                                task.addOnSuccessListener { result ->
+                                    if (index + 1 < selected.size) {
+                                        uploadAt(index + 1)
+                                    } else {
+                                        val urls = ((result.data as? Map<*, *>)?.get("images") as? List<*>)
+                                            ?.filterIsInstance<String>()
+                                        if (urls?.size == selected.size) writeListing(urls) else failure("Photos unavailable")
+                                    }
+                                }.addOnFailureListener { failure(it.localizedMessage ?: "Photo validation failed") }
+                            }
+                        } else {
+                            val ref = store.reference.child("listings/${user.uid}/$id/$index.jpg")
+                            ref.putBytes(photo.getOrThrow(),
+                                com.google.firebase.storage.StorageMetadata.Builder()
+                                    .setContentType("image/jpeg").build())
+                                .addOnSuccessListener {
+                                    uploaded.add(ref)
+                                    ref.downloadUrl.addOnSuccessListener { uri ->
+                                        legacyUrls.add(uri.toString())
+                                        if (index + 1 == selected.size) writeListing(legacyUrls.toList())
+                                        else uploadAt(index + 1)
+                                    }.addOnFailureListener { failure(it.localizedMessage ?: "URL unavailable") }
+                                }.addOnFailureListener { failure(it.localizedMessage ?: "Upload failed") }
+                        }
                     }
-                }
-            }.start()
+                }.start()
+            }
+            uploadAt(0)
         }
-        uploadAt(0)
+
+        withMarketplaceMode(done) { secure ->
+            if (!secure) {
+                uploadPhotos(service.collection("listings").document().id, false)
+            } else {
+                val task = callMarketplace("reserveListingUpload", mapOf("count" to selected.size))
+                    ?: return@withMarketplaceMode done("Marketplace unavailable")
+                task.addOnSuccessListener {
+                    val id = (it.data as? Map<*, *>)?.get("listingId") as? String
+                    if (id != null && isDocumentId(id)) uploadPhotos(id, true) else done("Upload unavailable")
+                }.addOnFailureListener { done(it.localizedMessage ?: "Upload unavailable") }
+            }
+        }
     }
 
     fun update(car: JSONObject, done: (String?) -> Unit) {
@@ -583,14 +660,22 @@ class LimbaFirebase(private val activity: Activity) {
     fun report(listingId: String, reason: String, done: (String?) -> Unit) {
         val user = auth?.currentUser ?: return done("Sign in required")
         if (!user.isEmailVerified) return done("Verify your email first")
-        val reportId = "${user.uid}_$listingId"
-        db?.collection("reports")?.document(reportId)?.set(mapOf(
-            "listingId" to listingId,
-            "reporterUid" to user.uid,
-            "reason" to reason,
-            "createdAt" to FieldValue.serverTimestamp()))
-            ?.addOnSuccessListener { done(null) }
-            ?.addOnFailureListener { done(it.localizedMessage) } ?: done("Firestore unavailable")
+        withMarketplaceMode(done) { secure ->
+            if (secure) {
+                val task = callMarketplace("submitListingReport", mapOf("listingId" to listingId, "reason" to reason))
+                    ?: return@withMarketplaceMode done("Marketplace unavailable")
+                finish(task, done)
+            } else {
+                val reportId = "${user.uid}_$listingId"
+                val task = db?.collection("reports")?.document(reportId)?.set(mapOf(
+                    "listingId" to listingId,
+                    "reporterUid" to user.uid,
+                    "reason" to reason,
+                    "createdAt" to FieldValue.serverTimestamp()))
+                    ?: return@withMarketplaceMode done("Firestore unavailable")
+                finish(task, done)
+            }
+        }
     }
 
     fun close() {

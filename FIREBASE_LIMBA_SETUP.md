@@ -34,20 +34,14 @@ Erfolgreich geprüft wurden:
 - freigegebene Inseratsbilder sind öffentlich lesbar;
 - Testdateien und temporäre Testkonten wurden nach der Prüfung vollständig entfernt.
 
-Ein späteres gezieltes Storage-Regel-Deployment erfolgt mit:
+Die Sicherheitsumstellung und der Abgleich mit den aktiven Regeln stehen im [Betriebshandbuch](docs/LIMBA_SECURITY_OPERATIONS.md). Der Schritt `lock-storage` sperrt Client-Schreibzugriffe und erfolgt nach dem Wechsel auf die serverseitige Fotoverarbeitung.
+
+## Regeln lokal prüfen
 
 ```bash
-npx -y firebase-tools@latest deploy --only storage --project limba-auto
-```
-
-## Regeln prüfen und deployen
-
-```bash
-npx -y firebase-tools@latest login:list
+npm ci --prefix functions
 npm install --no-save firebase@12.6.0 @firebase/rules-unit-testing@5.0.0
-npx -y firebase-tools@latest emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs"
-npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes --dry-run --project limba-auto
-npx -y firebase-tools@latest deploy --only storage --dry-run --project limba-auto
+npx -y firebase-tools@15.37.0 emulators:exec --project demo-limba --only firestore,storage "node tests/firebase_rules.test.mjs && npm test --prefix functions"
 ```
 
 Die Regeln erzwingen unter anderem:

@@ -9,8 +9,8 @@ android {
     applicationId = "ch.luma.auto"
     minSdk = 26
     targetSdk = 35
-    versionCode = 11
-    versionName = "1.8.0"
+    versionCode = 12
+    versionName = "1.8.1"
   }
   signingConfigs {
     create("limbaRelease") {
@@ -31,6 +31,7 @@ android {
         signingConfig = signingConfigs.getByName("limbaRelease")
     }
   }
+  buildFeatures { buildConfig = true }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -41,6 +42,7 @@ android {
 dependencies {
   implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
   implementation("com.google.firebase:firebase-auth")
+  implementation("com.google.firebase:firebase-appcheck-playintegrity")
   implementation("com.google.firebase:firebase-firestore")
   implementation("com.google.firebase:firebase-storage")
   implementation("com.google.firebase:firebase-functions")

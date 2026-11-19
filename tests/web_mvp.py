@@ -41,7 +41,7 @@ try:
    form.locator('[name="engineCapacity"]').fill('1987')
    form.locator('[name="price"]').fill('14800')
    form.locator('[name="city"]').fill('Sarajevo')
-   form.locator('[name="description"]').fill('Reliable and well maintained Toyota with a full service history.')
+   form.locator('[name="description"]').fill('Reliable and well maintained Toyota. <em data-fixture="note">Service history</em>.')
    form.locator('[name="serviceHistory"]').fill('Service recorded at 50000 km.')
    form.locator('[name="documentNotes"]').fill('Invoices available on request.')
    form.locator('[name="fuel"]').select_option('electric')
@@ -71,6 +71,8 @@ try:
    assert page.locator('#mineGrid .car-card').first.inner_text().find('Toyota')>=0
    page.locator('#mineGrid .car-card').first.click()
    assert '50000' in page.locator('.limba-passport').inner_text()
+   assert page.get_by_text('<em data-fixture="note">Service history</em>', exact=False).is_visible()
+   assert page.locator('[data-fixture="note"]').count() == 0
    assert 'Scratch on the rear bumper.' in page.locator('#detailPhotoCaption').inner_text()
    assert '91,5' in page.locator('.market-battery').inner_text()
    assert page.locator('.market-battery a').get_attribute('href')=='https://example.test/report'

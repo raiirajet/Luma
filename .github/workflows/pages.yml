@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Stage public web files and generate offline preview
         env:
+          LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY: ${{ vars.LIMBA_RECAPTCHA_ENTERPRISE_SITE_KEY }}
           LIMBA_WEB_CONFIG_B64: ${{ secrets.LIMBA_WEB_CONFIG_B64 }}
         run: python3 scripts/stage_web.py
       - name: Configure Pages
@@ -37,15 +38,3 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Deploy production Firebase Hosting when authorized
-        env:
-          LIMBA_FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.LIMBA_FIREBASE_SERVICE_ACCOUNT_B64 }}
-        run: |
-          if [ -z "$LIMBA_FIREBASE_SERVICE_ACCOUNT_B64" ]; then
-            echo "::warning::Firebase Hosting NOT deployed: set LIMBA_FIREBASE_SERVICE_ACCOUNT_B64; GitHub Pages remains available."
-            exit 0
-          fi
-          printf '%s' "$LIMBA_FIREBASE_SERVICE_ACCOUNT_B64" | base64 -d > "$RUNNER_TEMP/limba-hosting-account.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/limba-hosting-account.json"
-          npx -y firebase-tools@latest deploy --project limba-auto --only hosting --non-interactive

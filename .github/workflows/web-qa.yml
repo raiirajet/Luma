@@ -8,6 +8,8 @@ on:
       - '*.py'
       - '*.html'
       - 'styles.css'
+      - 'firebase.json'
+      - 'tests/web_security.py'
       - 'assets/**'
       - 'shared/borderless/**'
       - 'android/app/src/main/assets/release-i18n.json'
@@ -23,6 +25,8 @@ on:
       - '*.py'
       - '*.html'
       - 'styles.css'
+      - 'firebase.json'
+      - 'tests/web_security.py'
       - 'assets/**'
       - 'shared/borderless/**'
       - 'android/app/src/main/assets/release-i18n.json'
@@ -31,6 +35,7 @@ on:
       - 'tests/web_mvp.py'
       - 'tests/*.test.mjs'
       - 'android/app/src/main/assets/brands.json'
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -68,3 +73,4 @@ jobs:
           python3 qa_regression.py
           python3 test_swipe_pointer.py
           python3 tests/web_mvp.py
+          python3 tests/web_security.py

@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import {
   collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query,
-  serverTimestamp, setDoc, updateDoc, where
+  serverTimestamp, setDoc, updateDoc, where, writeBatch
 } from 'firebase/firestore';
-import { ref, uploadBytes } from 'firebase/storage';
+import { getBytes, ref, uploadBytes } from 'firebase/storage';
 
 const projectId = process.env.GCLOUD_PROJECT?.startsWith('demo-') ? process.env.GCLOUD_PROJECT : 'demo-limba';
 const host = '127.0.0.1';
@@ -256,15 +256,87 @@ try {
 
   // Storage path, verification, content type and file-slot enforcement.
   const storeAlice = alice.storage('gs://limba-auto.firebasestorage.app');
+  const storeGuest = publicUser.storage('gs://limba-auto.firebasestorage.app');
   const storeBob = bob.storage('gs://limba-auto.firebasestorage.app');
   const storeU = unverified.storage('gs://limba-auto.firebasestorage.app');
   const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
-  await assertSucceeds(uploadBytes(ref(storeAlice, 'listings/alice/car1/0.jpg'), bytes, { contentType: 'image/jpeg' }));
+  await env.withSecurityRulesDisabled(async context => {
+    const storage = context.storage('gs://limba-auto.firebasestorage.app');
+    await uploadBytes(ref(storage, 'listings/alice/car1/0.jpg'), bytes, { contentType: 'image/jpeg' });
+    await uploadBytes(ref(storage, 'listings/alice/car1/clean-1.jpg'), bytes, { contentType: 'image/jpeg' });
+  });
+  await assertSucceeds(getBytes(ref(storeGuest, 'listings/alice/car1/0.jpg')));
+  await assertSucceeds(getBytes(ref(storeGuest, 'listings/alice/car1/clean-1.jpg')));
+  await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/car1/0.jpg'), bytes, { contentType: 'image/jpeg' }));
   await assertFails(uploadBytes(ref(storeBob, 'listings/alice/car1/1.jpg'), bytes, { contentType: 'image/jpeg' }));
   await assertFails(uploadBytes(ref(storeU, 'listings/unverified/car1/1.jpg'), bytes, { contentType: 'image/jpeg' }));
   await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/car1/6.jpg'), bytes, { contentType: 'image/jpeg' }));
   await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/car1/1.html'), bytes, { contentType: 'text/html' }));
   await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/invalid id/1.jpg'), bytes, { contentType: 'image/jpeg' }));
+
+  const config = doc(dbA, 'marketplaceSecurity', 'enforcement');
+  const secureId = 'sanitized';
+  const secureListing = doc(dbA, 'listings', secureId);
+  const grant = doc(dbA, 'listingUploads', secureId);
+  const cleanUrl = photoUrl(secureId, 'alice', 'clean-0.jpg');
+  const secureCar = { ...car(secureId), images: [cleanUrl], image: cleanUrl };
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, config.path), { pipelineEnabled: true, requirePipeline: true });
+    await setDoc(doc(db, grant.path), {
+      uid: 'alice', used: false, images: [cleanUrl], expiresAt: new Date(Date.now() + 120_000)
+    });
+  });
+  await assertSucceeds(getDoc(doc(dbGuest, config.path)));
+  await assertFails(setDoc(config, { requirePipeline: false }));
+  await assertFails(getDoc(grant));
+  await assertFails(setDoc(secureListing, secureCar));
+  await assertFails(updateDoc(grant, { used: true }));
+  await assertFails(setDoc(doc(dbA, 'listings', 'without-grant'), car('without-grant')));
+  const listingBatch = (db, data) => {
+    const batch = writeBatch(db);
+    batch.set(doc(db, secureListing.path), data);
+    batch.update(doc(db, grant.path), { used: true });
+    return batch.commit();
+  };
+  await assertFails(listingBatch(dbA, car(secureId)));
+  await assertFails(listingBatch(dbB, { ...secureCar, uid: 'bob' }));
+  await assertSucceeds(listingBatch(dbA, secureCar));
+  const fullSecure = 'sanitized-with-six-photos';
+  const secureImages = Array.from({ length: 6 }, (_, slot) => photoUrl(fullSecure, 'alice', `clean-${slot}.jpg`));
+  await env.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), 'listingUploads', fullSecure), {
+      uid: 'alice', used: false, images: secureImages, expiresAt: new Date(Date.now() + 120_000)
+    });
+  });
+  const fullBatch = writeBatch(dbA);
+  fullBatch.set(doc(dbA, 'listings', fullSecure), {
+    ...car(fullSecure), fuel: 'electric', image: secureImages[0], images: secureImages,
+    photoDetails: allPhotoDetails, batteryReport, modelExtension: 'Special', title: 'Nissan GT-R Special',
+    serviceHistory: 'Service details', modificationNotes: 'Modification details', documentNotes: 'Documents on request',
+    engineName: 'Electric', engineCapacity: 0
+  });
+  fullBatch.update(doc(dbA, 'listingUploads', fullSecure), { used: true });
+  await assertSucceeds(fullBatch.commit());
+  await assertSucceeds(getDoc(doc(dbGuest, secureListing.path)));
+  await assertFails(updateDoc(secureListing, {
+    image: photoUrl(secureId), images: [photoUrl(secureId)]
+  }));
+  await assertFails(setDoc(doc(dbB, 'reports', 'bob_car1'), { ...reportData, reporterUid: 'bob' }));
+  await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/car1/1.jpg'), bytes, { contentType: 'image/jpeg' }));
+  await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/sanitized/clean-0.jpg'), bytes, { contentType: 'image/jpeg' }));
+
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore();
+    await setDoc(doc(db, 'listingModeration', secureId), { state: 'hold' });
+    await updateDoc(doc(db, secureListing.path), { status: 'paused' });
+  });
+  await assertFails(getDoc(doc(dbGuest, secureListing.path)));
+  await assertFails(updateDoc(secureListing, { status: 'active' }));
+  await assertSucceeds(updateDoc(secureListing, { price: 26000 }));
+  await assertSucceeds(deleteDoc(secureListing));
+  await assertFails(listingBatch(dbA, secureCar));
 
   await assertSucceeds(deleteDoc(listed));
   await assertFails(getDoc(priceEvent(dbA)));

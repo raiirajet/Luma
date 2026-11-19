@@ -216,7 +216,7 @@ function showView(view,{fromHistory=false}={}){
 function showTutorial(){$('swipeTutorial').classList.remove('hidden')}
 function dismissTutorial(){$('swipeTutorial').classList.add('hidden');state.swipeSeen=true;persist('swipeSeen',true)}
 function hideTutorial(){$('swipeTutorial').classList.add('hidden')}
-function renderSwipe(){const arr=filtered();if(!arr.length){$('swipeCard').innerHTML=`<div class="empty-panel" style="margin:25vh auto;max-width:480px"><h3>${h(T('emptyCars'))}</h3></div>`;$('swipeFavorite').classList.remove('active');return}state.swipeIndex=((state.swipeIndex%arr.length)+arr.length)%arr.length;const x=arr[state.swipeIndex];$('swipeCard').innerHTML=`<img src="${h(safeURL(x.image))}" alt="${h(x.title)}" draggable="false"><div class="swipe-shade"></div><div class="swipe-details"><span class="swipe-demo-badge">${h(isDemo(x)?F('previewOnly'):T('carsNav'))} · ${state.swipeIndex+1}/${arr.length}</span><h2>${h(x.title)}</h2><strong>${price(x.price)}</strong><p>${flag(x.country)} ${h(x.city)} · ${number(x.mileage)} ${h(T('kmUnit'))} · ${h(String(x.year))}</p></div>`;$('swipeFavorite').innerHTML=icon('heart');$('swipeFavorite').classList.toggle('active',state.favorites.includes(x.id))}
+function renderSwipe(){const arr=filtered();if(!arr.length){$('swipeCard').innerHTML=`<div class="empty-panel swipe-empty"><h3>${h(T('emptyCars'))}</h3></div>`;$('swipeFavorite').classList.remove('active');return}state.swipeIndex=((state.swipeIndex%arr.length)+arr.length)%arr.length;const x=arr[state.swipeIndex];$('swipeCard').innerHTML=`<img src="${h(safeURL(x.image))}" alt="${h(x.title)}" draggable="false"><div class="swipe-shade"></div><div class="swipe-details"><span class="swipe-demo-badge">${h(isDemo(x)?F('previewOnly'):T('carsNav'))} · ${state.swipeIndex+1}/${arr.length}</span><h2>${h(x.title)}</h2><strong>${price(x.price)}</strong><p>${flag(x.country)} ${h(x.city)} · ${number(x.mileage)} ${h(T('kmUnit'))} · ${h(String(x.year))}</p></div>`;$('swipeFavorite').innerHTML=icon('heart');$('swipeFavorite').classList.toggle('active',state.favorites.includes(x.id))}
 function swipeAction(dir){
  const arr=filtered();if(!arr.length)return;
  const x=arr[state.swipeIndex];
@@ -284,8 +284,12 @@ function showDetails(id,{focusSpecs=false,fromHistory=false,listing=null}={}){co
    button.disabled=true;
    try{
     const m=state.fb.modules;
-    const reportId=`${state.user.uid}_${x.id}`;
-    await m.setDoc(m.doc(state.fb.db,'reports',reportId),{listingId:x.id,reporterUid:state.user.uid,reason:select.value,createdAt:m.serverTimestamp()});
+    if(await useSecureMarketplace()){
+     await callSecureMarketplace('submitListingReport',{listingId:x.id,reason:select.value});
+    }else{
+     const reportId=`${state.user.uid}_${x.id}`;
+     await m.setDoc(m.doc(state.fb.db,'reports',reportId),{listingId:x.id,reporterUid:state.user.uid,reason:select.value,createdAt:m.serverTimestamp()});
+    }
     toast(W('reportSent'));
    }catch(e){console.error('report failed',e);toast(T('uploadFailed'))}
    finally{button.disabled=false}
@@ -462,7 +466,7 @@ async function publishCar(e){e.preventDefault();const form=e.currentTarget;const
  const batteryReport=listingBatteryFromForm(fd);
  if(batteryReport===false)return $('sellNote').textContent=L('batteryInvalid');
  const extras={...(Object.keys(photoDetails).length?{photoDetails}:{}),...(batteryReport?{batteryReport}:{})};
- const make=resolveCarMake(fd.get('make'));const model=String(fd.get('model')||'').trim();const modelExtension=String(fd.get('modelExtension')||'').trim().replace(/\s+/g,' ');const fullTitle=[make,model,modelExtension].filter(Boolean).join(' ');if(!validCarMake(make)||!model||model.length>65||modelExtension.length>40||fullTitle.length>110){return $('sellNote').textContent=T('brandRequired')}const priceValue=Number(fd.get('price'));const year=Number(fd.get('year'));const mileage=Number(fd.get('mileage'));const power=Number(fd.get('power'));const engineName=String(fd.get('engineName')||'').trim();const rawCapacity=String(fd.get('engineCapacity')||'').trim();const engineCapacity=rawCapacity===''?null:Number(rawCapacity);if(engineName.length>80||(engineCapacity!==null&&(!Number.isInteger(engineCapacity)||engineCapacity<0||engineCapacity>12000)))return $('sellNote').textContent=T('invalidPrice');if(!Number.isInteger(priceValue)||priceValue<1||priceValue>999999999||!Number.isInteger(mileage)||mileage<0||mileage>1500000||!Number.isInteger(power)||power<1||power>2000||year<1950||year>new Date().getFullYear()+1)return $('sellNote').textContent=T('invalidPrice');const passportFields=Object.fromEntries(['serviceHistory','modificationNotes','documentNotes'].map(k=>[k,String(fd.get(k)||'').trim()]));const engineFields={engineName,engineCapacity};const submit=$('sellSubmit');submit.disabled=true;submit.textContent='…';let id=null;const uploadedRefs=[];try{
+ const make=resolveCarMake(fd.get('make'));const model=String(fd.get('model')||'').trim();const modelExtension=String(fd.get('modelExtension')||'').trim().replace(/\s+/g,' ');const fullTitle=[make,model,modelExtension].filter(Boolean).join(' ');if(!validCarMake(make)||!model||model.length>65||modelExtension.length>40||fullTitle.length>110){return $('sellNote').textContent=T('brandRequired')}const priceValue=Number(fd.get('price'));const year=Number(fd.get('year'));const mileage=Number(fd.get('mileage'));const power=Number(fd.get('power'));const engineName=String(fd.get('engineName')||'').trim();const rawCapacity=String(fd.get('engineCapacity')||'').trim();const engineCapacity=rawCapacity===''?null:Number(rawCapacity);if(engineName.length>80||(engineCapacity!==null&&(!Number.isInteger(engineCapacity)||engineCapacity<0||engineCapacity>12000)))return $('sellNote').textContent=T('invalidPrice');if(!Number.isInteger(priceValue)||priceValue<1||priceValue>999999999||!Number.isInteger(mileage)||mileage<0||mileage>1500000||!Number.isInteger(power)||power<1||power>2000||year<1950||year>new Date().getFullYear()+1)return $('sellNote').textContent=T('invalidPrice');const passportFields=Object.fromEntries(['serviceHistory','modificationNotes','documentNotes'].map(k=>[k,String(fd.get(k)||'').trim()]));const engineFields={engineName,engineCapacity};const submit=$('sellSubmit');submit.disabled=true;submit.textContent='…';const uploadedRefs=[];try{
  if(state.user.isPreview){const photo=files[0]?await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(files[0])}):(existing?.image||'assets/limba/icons/car.png');const item={id:existing?.id||'preview-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),category:'vehicles',uid:state.user.uid,isPreview:true,isDemo:true,status:'active',createdAt:Date.now(),title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),condition:String(fd.get('condition')),contactEmail:'',image:photo,images:[photo],make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};state.listings=state.listings.filter(x=>x.id!==item.id);state.listings.unshift(item);
  persist('previewCars',state.listings.filter(x=>x.isPreview));closeModal({replaceHistory:true});toast(F('previewSaved'));showView('mine');return}
  const {db,storage,modules:m}=state.fb;
@@ -485,8 +489,43 @@ async function publishCar(e){e.preventDefault();const form=e.currentTarget;const
   if(!extras.photoDetails)delete existing.photoDetails;
   if(!extras.batteryReport)delete existing.batteryReport;renderAll();closeModal({replaceHistory:true});toast(W('editAd'));showView('mine');return;
  }
- const doc=m.doc(m.collection(db,'listings'));id=doc.id;const images=[];for(let i=0;i<files.length;i++){const file=files[i];const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';const ref=m.ref(storage,`listings/${state.user.uid}/${id}/${i}.${ext}`);await m.uploadBytes(ref,file,{contentType:file.type});uploadedRefs.push(ref);images.push(await m.getDownloadURL(ref))}
- const data={category:'vehicles',uid:state.user.uid,status:'active',createdAt:m.serverTimestamp(),...fields,image:images[0],images};await m.setDoc(doc,data);state.listings.unshift({...data,id,createdAt:Date.now()});renderAll();closeModal({replaceHistory:true});toast(T('carPublished'));showView('mine')
+ const uid=state.user.uid;
+ const secure=await useSecureMarketplace();
+ let document, images;
+ if(secure){
+  const {listingId}=await callSecureMarketplace('reserveListingUpload',{count:files.length});
+  document=m.doc(db,'listings',listingId);
+  for(const [slot,file] of files.entries()){
+   const base64=await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+   });
+   ({images}=await callSecureMarketplace('uploadListingPhoto',{listingId,slot,mimeType:file.type,base64}));
+  }
+  if(!Array.isArray(images)||images.length!==files.length)throw new Error('Photo validation incomplete');
+ }else{
+  document=m.doc(m.collection(db,'listings'));
+  images=[];
+  for(const [slot,file] of files.entries()){
+   const extension=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+   const ref=m.ref(storage,`listings/${uid}/${document.id}/${slot}.${extension}`);
+   await m.uploadBytes(ref,file,{contentType:file.type});
+   uploadedRefs.push(ref);
+   images.push(await m.getDownloadURL(ref));
+  }
+ }
+ const data={category:'vehicles',uid,status:'active',createdAt:m.serverTimestamp(),...fields,image:images[0],images};
+ if(secure){
+  const batch=m.writeBatch(db);
+  batch.set(document,data);
+  batch.update(m.doc(db,'listingUploads',document.id),{used:true});
+  await batch.commit();
+ }else await m.setDoc(document,data);
+ state.listings.unshift({...data,id:document.id,createdAt:Date.now()});
+ renderAll();closeModal({replaceHistory:true});toast(T('carPublished'));showView('mine')
+
  }catch(err){console.error('post failed',err);
  if(uploadedRefs.length){await Promise.all(uploadedRefs.map(ref=>state.fb.modules.deleteObject(ref).catch(e=>console.warn('cleanup',e))))}
  if(form.isConnected)form.querySelector('#sellNote').textContent=T('uploadFailed')}finally{submit.disabled=false;submit.textContent=editing?W('editAd'):T('publish')}}
@@ -500,7 +539,24 @@ async function updateListingStatus(id,status){
  try{await state.fb.modules.updateDoc(state.fb.modules.doc(state.fb.db,'listings',id),{status});item.status=status;renderAll()}
  catch(e){console.error(e);toast(T('uploadFailed'))}
 }
-async function removeListing(id){const x=state.listings.find(y=>y.id===id);if(!x||!state.user||x.uid!==state.user.uid)return;if(!window.confirm(T('removeConfirm')))return;if(x.isPreview){state.listings=state.listings.filter(y=>y.id!==id);persist('previewCars',state.listings.filter(y=>y.isPreview));renderAll();toast(T('removedMessage'));return}if(!state.fb)return;try{const {db,storage,modules:m}=state.fb;await m.deleteDoc(m.doc(db,'listings',id));state.listings=state.listings.filter(y=>y.id!==id);renderAll();toast(T('removedMessage'));for(const u of (x.images||[])){try{await m.deleteObject(m.ref(storage,u))}catch(e){console.warn('image cleanup',e)}}}catch(e){toast(T('uploadFailed'))}}
+async function removeListing(id){const x=state.listings.find(y=>y.id===id);if(!x||!state.user||x.uid!==state.user.uid)return;if(!window.confirm(T('removeConfirm')))return;if(x.isPreview){state.listings=state.listings.filter(y=>y.id!==id);persist('previewCars',state.listings.filter(y=>y.isPreview));renderAll();toast(T('removedMessage'));return}if(!state.fb)return;try{const {db,storage,modules:m}=state.fb;await m.deleteDoc(m.doc(db,'listings',id));state.listings=state.listings.filter(y=>y.id!==id);renderAll();toast(T('removedMessage'));for(const u of (x.images||[])){try{await m.deleteObject(m.ref(storage,u))}catch(e){if(e.code!=='storage/unauthorized')console.warn('image cleanup',e)}}}catch(e){toast(T('uploadFailed'))}}
+async function useSecureMarketplace(){
+ const {db,modules}=state.fb;
+ try{
+  const snapshot=await modules.getDocFromServer(modules.doc(db,'marketplaceSecurity','enforcement'));
+  const config=snapshot.data();
+  return config?.pipelineEnabled===true||config?.requirePipeline===true;
+ }catch(error){
+  // GitHub Pages can update before the production rules expose this rollout document.
+  if(error.code==='permission-denied')return false;
+  throw error;
+ }
+}
+async function callSecureMarketplace(name,data){
+ const {secureFunctions,modules}=state.fb;
+ if(!secureFunctions)throw new Error('Marketplace service unavailable');
+ return (await modules.httpsCallable(secureFunctions,name,{timeout:130000})(data)).data;
+}
 async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window.LUMA_FIREBASE_CONFIG;if(!conf?.apiKey||!conf?.projectId)return;try{
  const base='https://www.gstatic.com/firebasejs/12.6.0/';
  const [app,auth,db,storage,functions]=await Promise.all([
@@ -508,9 +564,17 @@ async function connectFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || wind
   import(base+'firebase-functions.js').catch(()=>null)
  ]);
  const init=app.initializeApp(conf);
+ if(conf.recaptchaEnterpriseSiteKey){
+  const {initializeAppCheck,ReCaptchaEnterpriseProvider}=await import(base+'firebase-app-check.js');
+  initializeAppCheck(init,{
+   provider:new ReCaptchaEnterpriseProvider(conf.recaptchaEnterpriseSiteKey),
+   isTokenAutoRefreshEnabled:true
+  });
+ }
  const modules={...auth,...db,...storage,...functions};
  state.fb={auth:auth.getAuth(init),db:db.getFirestore(init),storage:storage.getStorage(init),
-  functions:functions?.getFunctions(init,'europe-west1')||null,modules};
+  functions:functions?.getFunctions(init,'europe-west1')||null,
+  secureFunctions:functions?.getFunctions(init,'europe-west6')||null,modules};
  state.firebaseReady=true;
  auth.onAuthStateChanged(state.fb.auth,async user=>{
   if(!user&&state.user?.isPreview)return;
