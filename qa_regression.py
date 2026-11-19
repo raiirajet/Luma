@@ -15,7 +15,7 @@ base=f'http://127.0.0.1:{server.server_port}/preview.html'
 def assert_header_available(page):
  widths=page.evaluate("""() => {
   const row=document.querySelector('.head-row').getBoundingClientRect();
-  const actions=['brandBtn','inboxBtn','language','settingsBtn','loginBtn','sellBtn'];
+  const actions=['brandBtn','loginBtn'];
   const clipped=actions.filter(id=>{
    const bounds=document.getElementById(id).getBoundingClientRect();
    return bounds.width>0 && (bounds.left<row.left-1 || bounds.right>row.right+1);
@@ -24,8 +24,10 @@ def assert_header_available(page):
  }""")
  assert not widths['clipped'], widths
  assert widths['document']<=widths['viewport']+2, widths
- assert page.locator('#sellBtn').is_visible()
- assert page.locator('#sellBtn').get_attribute('aria-label')
+ assert page.locator('#fabAdd').is_visible()
+ assert page.locator('#fabAdd').get_attribute('aria-label')
+ assert not page.locator('#settingsBtn').count()
+ assert not page.locator('#sellBtn').count()
 
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
@@ -39,22 +41,23 @@ with sync_playwright() as p:
   # A real HTTP origin is required for accurate mobile viewport, touch events
   # and ES-module loading. about:blank set_content distorts mobile hit-testing.
   page.goto(base,wait_until='domcontentloaded')
-  page.locator('#carGrid .car-card').first.wait_for()
+  page.locator('#carGrid .car-card').first.wait_for(timeout=7000)
+  assert not errors, f'Bootstrap errors: {errors}'
   assert page.locator('#carGrid .car-card').count()==1,'expected exactly one demo car'
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
 
-  # The four primary controls stay visible, while every advanced filter remains available.
+  # Main make, model and price controls remain visible; advanced fields remain available.
   for field in ['yearFrom', 'mileageTo', 'fuel', 'transmission']:
    assert page.locator(f'#advancedFilters #{field}').count()==1
    assert page.locator(f'#advancedFilters #{field}').is_hidden()
-  for field in ['make', 'model', 'priceTo', 'searchCountryToggle']:
+  for field in ['make', 'model', 'priceTo']:
    assert page.locator(f'#searchForm #{field}').is_visible()
   if width < 500:
    positions=page.evaluate("""() => {
-     const fields=['make','model','priceTo','searchCountryToggle'];
+     const fields=['make','model'];
      return Object.fromEntries(fields.map(k=>{const r=document.getElementById(k).getBoundingClientRect();return[k,{x:r.x,y:r.y,w:r.width,right:r.right}]}));
    }""")
-   for left,right in [('make','model'),('priceTo','searchCountryToggle')]:
+   for left,right in [('make','model')]:
     assert abs(positions[left]['y']-positions[right]['y'])<4, (left,right,positions)
     assert positions[left]['right']<=positions[right]['x']+2, (left,right,positions)
     assert positions[left]['w']>=125 and positions[right]['w']>=125, positions
@@ -184,19 +187,17 @@ with sync_playwright() as p:
   assert page.locator('#favoritesGrid .car-card').count()==1
   home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'
   page.locator(home_nav).click()
-  # Temporary country filters are visible and removable without leaving search.
-  page.locator('#searchCountryToggle').click()
-  page.locator('#searchCountryChoices input[value="TR"]').check()
-  assert page.locator('#carGrid .car-card').count()==0
-  page.locator('[data-filter-remove="country:TR"]').click()
-  assert page.locator('#carGrid .car-card').count()==1
+  # Search countries are account preferences, not duplicated on the homepage.
+  assert page.locator('#searchCountryToggle').count()==0
   # User country preference
-  page.locator('#settingsBtn').click()
+  page.locator('#loginBtn').click()
+  page.locator('#accountPreferencesBtn').click()
   page.locator('#countryChoices input[value="TR"]').check()
   page.locator('#saveCountries').click()
   page.locator(home_nav).click()
   assert page.locator('#carGrid .car-card').count()==0
-  page.locator('#settingsBtn').click()
+  page.locator('#loginBtn').click()
+  page.locator('#accountPreferencesBtn').click()
   page.locator('#allCountries').click()
   page.locator('#saveCountries').click()
   page.locator(home_nav).click()
@@ -206,7 +207,8 @@ with sync_playwright() as p:
   page.locator('#saveSearchBtn').click()
   page.locator('#keyword').fill('nonexistent')
   assert page.locator('#carGrid .car-card').count()==0
-  page.locator('#settingsBtn').click()
+  page.locator('#loginBtn').click()
+  page.locator('#accountPreferencesBtn').click()
   assert page.locator('#savedSearchesList [data-apply]').count()>=1
   page.locator('#savedSearchesList [data-apply]').first.click()
   assert page.locator('#carGrid .car-card').count()==1
@@ -261,17 +263,18 @@ with sync_playwright() as p:
   locales=[x.get_attribute('value') for x in page.locator('#language option').all()]
   assert len(locales)==14,locales
   for code in locales:
-   page.locator('#language').select_option(code)
+   page.evaluate("""code => {const el=document.querySelector('#settingsLanguage'); el.value=code;el.dispatchEvent(new Event('change',{bubbles:true}))}""",code)
    assert_header_available(page)
-   assert page.locator('h1').inner_text().strip()
+   assert page.locator('#searchForm h2').inner_text().strip()
    assert page.locator('[data-i18n="singleDemoNotice"]').first.inner_text()!='singleDemoNotice'
    page.locator('#carGrid .car-card').first.click(position={'x':50,'y':160})
    assert len(page.locator('.vehicle-description').inner_text())>400,code
    page.locator('#detailBack').click()
    assert page.locator('#modal').is_hidden()
-  page.locator('#language').select_option('de')
+  page.evaluate("""() => {const el=document.querySelector('#settingsLanguage'); el.value='de';el.dispatchEvent(new Event('change',{bubbles:true}))}""")
   # Guest auth is explanatory, not nonworking login form
   page.locator('#loginBtn').click()
+  page.locator('#accountOpenBtn').click()
   assert page.locator('#modal').is_visible()
   assert 'Firebase' in page.locator('#modalContent').inner_text()
   page.locator('#modalClose').click()
@@ -285,10 +288,11 @@ with sync_playwright() as p:
    for responsive_width in [1181,1024,768,600,360,320]:
     page.set_viewport_size({'width':responsive_width,'height':844})
     assert_header_available(page)
-   page.locator('#sellBtn').click()
+   page.locator('#fabAdd').click()
    assert page.locator('#modal').is_visible()
    page.locator('#modalClose').click()
-   page.locator('#settingsBtn').click()
+   page.locator('#loginBtn').click()
+  page.locator('#accountPreferencesBtn').click()
    assert page.locator('#settingsLanguage').is_visible()
   context.close()
  browser.close()

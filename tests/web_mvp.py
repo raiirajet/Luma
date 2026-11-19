@@ -22,6 +22,7 @@ try:
    page.goto(f'http://127.0.0.1:{server.server_port}/preview.html',wait_until='domcontentloaded')
    page.locator('#carGrid .car-card').first.wait_for()
    page.locator('#loginBtn').click()
+   page.locator('#accountOpenBtn').click()
    page.locator('#demoQuick').click()
    assert page.locator('#modal').is_hidden()
    page.locator('#fabAdd').click()

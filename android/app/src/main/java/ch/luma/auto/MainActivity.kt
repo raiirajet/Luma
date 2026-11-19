@@ -2172,7 +2172,7 @@ class MainActivity : Activity() {
             })
         }
         content.addView(space(15))
-        content.addView(btn(t("backToListing"),true){activePreviewCar=null;navigate(backFromDetail)})
+        content.addView(btn(t("backToListing"),true){activePreviewCar=null;goBack()})
         body(main,content)
         if (live && car.optString("status", "active") == "active" && cloudUser?.uid != car.optString("uid")) {
             val actions = col(paper).apply { pad(this, 16, 8) }
@@ -2231,7 +2231,7 @@ class MainActivity : Activity() {
             startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://commons.wikimedia.org/wiki/File:Nissan_GT-R_R35_Black_Edition.JPG")))
         })
         info.addView(space(10))
-        info.addView(btn(if(backFromDetail=="swipe")t("backToSwipe")else t("backToListing"),true){navigate(backFromDetail)})
+        info.addView(btn(if(backFromDetail=="swipe")t("backToSwipe")else t("backToListing"),true){goBack()})
         content.addView(info);body(main,content)
     }
     private fun shareWebsite() {
