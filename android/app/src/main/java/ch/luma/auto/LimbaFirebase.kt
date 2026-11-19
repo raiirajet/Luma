@@ -252,6 +252,40 @@ class LimbaFirebase(private val activity: Activity) {
         }
     }
 
+    /** Account-wide search countries, shared with the Limba website. */
+    fun watchCountries(uid: String, done: (Set<String>, Boolean, String?) -> Unit): ListenerRegistration? {
+        if (auth?.currentUser?.uid != uid) {
+            done(emptySet(), false, "Sign in required")
+            return null
+        }
+        val reference = db?.collection("users")?.document(uid)?.collection("data")?.document("preferences")
+        if (reference == null) {
+            done(emptySet(), false, "Firestore unavailable")
+            return null
+        }
+        return reference.addSnapshotListener { snapshot, error ->
+            if (auth?.currentUser?.uid != uid) return@addSnapshotListener
+            if (error != null) {
+                done(emptySet(), false, error.localizedMessage ?: "Could not load preferences")
+                return@addSnapshotListener
+            }
+            val allowed = setOf("AL","TR","GR","RS","SI","XK","MK","HR","BA","ME","BG","RO")
+            val selected = (snapshot?.get("countries") as? List<*>).orEmpty()
+                .filterIsInstance<String>().filter { it in allowed }.toSet()
+            done(selected, snapshot?.exists() == true, null)
+        }
+    }
+
+    fun saveCountries(countries: Set<String>, done: (String?) -> Unit) {
+        val uid = auth?.currentUser?.uid ?: return done("Sign in required")
+        val allowed = setOf("AL","TR","GR","RS","SI","XK","MK","HR","BA","ME","BG","RO")
+        val reference = db?.collection("users")?.document(uid)?.collection("data")?.document("preferences")
+            ?: return done("Firestore unavailable")
+        val values = countries.filter { it in allowed }.sorted()
+        reference.set(mapOf("countries" to values)).addOnSuccessListener { done(null) }
+            .addOnFailureListener { done(it.localizedMessage ?: "Could not save preferences") }
+    }
+
     private data class SavedSearchKey(val name: String, val filters: Map<String, String>, val countries: Set<String>)
 
     private fun savedSearchKey(item: Map<*, *>): SavedSearchKey {

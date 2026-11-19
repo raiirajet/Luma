@@ -78,6 +78,7 @@ class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("luma_native_v1", MODE_PRIVATE) }
     private var locale = "de"
     private var screen = "home"
+    private val navigationHistory = java.util.ArrayDeque<String>()
     private var backFromDetail = "home"
     private var starred = false
     private val compareVehicleIds = linkedSetOf<String>()
@@ -107,6 +108,7 @@ class MainActivity : Activity() {
     private val ownCars = mutableListOf<JSONObject>()
     private var cloudStars = mutableSetOf<String>()
     private var cloudUser: com.google.firebase.auth.FirebaseUser? = null
+    private var countryRegistration: ListenerRegistration? = null
     private var cloudSearches = emptyList<JSONObject>()
     private var searchAlerts = emptyList<JSONObject>()
     private var searchAlertsLoaded = false
@@ -204,6 +206,12 @@ class MainActivity : Activity() {
                 if (cloudUser?.uid != user?.uid) {
                     openingSellerChat = false
                     conversationDialog?.dismiss()
+                    countryRegistration?.remove()
+                    countryRegistration = null
+                    activeCountry = (prefs.getStringSet(
+                        if (user == null) "countries" else "countries:" + user.uid,
+                        emptySet()
+                    ) ?: emptySet()).toMutableSet()
                 }
                 cloudUser = user
                 searchRegistrations.forEach { it.remove() }
@@ -213,6 +221,23 @@ class MainActivity : Activity() {
                 searchAlertsLoaded = false
                 searchAlertsLoadFailed = false
                 user?.let {
+                    countryRegistration = backend.watchCountries(it.uid) { selected, exists, error ->
+                        if (cloudUser?.uid != it.uid || error != null) return@watchCountries
+                        if (exists) {
+                            activeCountry = selected.toMutableSet()
+                            prefs.edit().putStringSet("countries:" + it.uid, selected).apply()
+                        } else {
+                            val legacy = prefs.getStringSet("countries", emptySet()).orEmpty()
+                            if (legacy.isNotEmpty() && prefs.getString("legacyCountryOwner", null) == null) {
+                                prefs.edit().putString("legacyCountryOwner", it.uid).apply()
+                                activeCountry = legacy.toMutableSet()
+                                backend.saveCountries(activeCountry) { saveError ->
+                                    if (saveError != null) toast(saveError)
+                                }
+                            }
+                        }
+                        if (screen == "home" || screen == "settings") render()
+                    }
                     backend.watchSavedSearches(it.uid) { searches, _ ->
                         cloudSearches = searches
                         if (screen == "searches") renderSavedSearches()
@@ -337,7 +362,21 @@ class MainActivity : Activity() {
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
     private fun euro(n: Int) = NumberFormat.getNumberInstance(Locale.GERMANY).format(n) + " €"
     private fun number(n: Int) = NumberFormat.getIntegerInstance(Locale.GERMANY).format(n)
-    private fun navigate(next: String) { screen = next; render() }
+    private fun navigate(next: String) {
+        if (next != screen) navigationHistory.addLast(screen)
+        screen = next
+        render()
+    }
+    private fun goBack() {
+        if (navigationHistory.isNotEmpty()) {
+            if (screen == "details") activePreviewCar = null
+            screen = navigationHistory.removeLast()
+            render()
+        } else if (screen != "home") {
+            screen = "home"
+            render()
+        } else super.onBackPressed()
+    }
     private fun container(): LinearLayout {
         screenRegistration?.remove()
         screenRegistration = null
@@ -347,51 +386,62 @@ class MainActivity : Activity() {
         main.setBackgroundColor(mist)
         root.addView(main, fp())
         if (screen !in listOf("details", "messages", "notifications")) {
-            val fab = row().apply {
-                setPadding(px(12), px(9), px(17), px(9));gravity = Gravity.CENTER_VERTICAL
-                background = c(orange, 30)
-                elevation = px(12).toFloat()
-                minimumHeight = px(58)
+            val fab = FrameLayout(this).apply {
+                background = c(orange, 28)
+                elevation = px(11).toFloat()
+                minimumWidth = px(52); minimumHeight = px(52)
                 isClickable = true; isFocusable = true
                 contentDescription = t("addVehicle")
-                addView(drawableIcon(R.drawable.limba_add_car, paper, 37),lp(37,37))
-                addView(spaceHorizontal(7))
-                addView(text(t("addVehicle"),13f,paper,true))
+                addView(text("+", 33f, paper, true).apply { gravity = Gravity.CENTER },
+                    fp(52, 52, Gravity.CENTER))
                 setOnClickListener { showCarForm() }
             }
-            val pos = fp(-2, -2, Gravity.BOTTOM or Gravity.END)
-            pos.setMargins(px(9),px(9),px(14),px(84))
-            root.addView(fab,pos)
+            val pos = fp(52, 52, Gravity.BOTTOM or Gravity.END)
+            pos.setMargins(px(9), px(9), px(16), px(84))
+            root.addView(fab, pos)
         }
         return main
     }
 
     private fun toolbar(main: LinearLayout, section: String, back: (() -> Unit)? = null) {
         val line = row(paper)
-        line.setPadding(px(14), px(7), px(14), px(7))
-        val left = iconButton(if (back != null) R.drawable.limba_back else R.drawable.ic_luma,
-            if (back != null) t("backToMarket") else "Limba Auto", if (back != null) ink else orange,
-            paper) { if (back != null) back() else navigate("home") }
-        left.background = null
-        line.addView(left, lp(48, 48))
+        line.setPadding(px(12), px(7), px(12), px(7))
+        if (back != null) {
+            val backButton = iconButton(R.drawable.limba_back, t("backToMarket")) { goBack() }
+            backButton.background = null
+            line.addView(backButton, lp(42, 48))
+        }
         val headline = col()
         headline.addView(drawableIcon(R.drawable.limba_logo_wordmark, ink, 135), lp(135, 38))
         headline.addView(text(section, 10f, muted, true))
         line.addView(headline, LinearLayout.LayoutParams(0, -2, 1f))
-        line.addView(iconButton(R.drawable.limba_profile,t("accountLogin")) { showAccount() },lp(48,48))
-        if (section != t("settings")) {
-            line.addView(iconButton(R.drawable.limba_settings, t("settings")) { navigate("settings") }, lp(48, 48))
-        }
+        line.addView(iconButton(R.drawable.limba_profile, t("accountLogin")) { showAccountMenu() }, lp(48,48))
         main.addView(line, lp(-1, 65))
     }
+
+    private fun showAccountMenu() {
+        val actions = arrayOf(t("accountLogin"), t("settings"), t("myAds"),
+            t("yourSavedSearch"), t("messages"), t("notifications"))
+        AlertDialog.Builder(this).setTitle(t("accountLogin"))
+            .setItems(actions) { _, choice ->
+                when(choice) {
+                    0 -> showAccount()
+                    1 -> navigate("settings")
+                    2 -> navigate("mine")
+                    3 -> navigate("searches")
+                    4 -> if (requireOnlineAccount() != null) navigate("messages") else Unit
+                    5 -> if (requireOnlineAccount() != null) navigate("notifications") else Unit
+                }
+            }.show()
+    }
+
     private fun navigation(main: LinearLayout) {
         val nav = row(paper).apply { gravity = Gravity.CENTER }
         val routes = listOf(
             Triple("home", R.drawable.limba_search, t("carsNav")),
             Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
             Triple("favorites", R.drawable.limba_favorites, t("garage")),
-            Triple("performance", R.drawable.limba_car, t("performance")),
-            Triple("settings", R.drawable.limba_settings, t("settings"))
+            Triple("performance", R.drawable.limba_car, t("performance"))
         )
         routes.forEach { (route, icon, name) ->
             val selected = screen == route
@@ -1075,14 +1125,8 @@ class MainActivity : Activity() {
         val main = container()
         toolbar(main, t("carsNav"))
         val content = col()
-        val hero = col(navy).apply { setPadding(px(20), px(18), px(20), px(19)) }
-        hero.addView(text(t("heroTitle1"), 25f, paper, true))
-        hero.addView(text(t("heroTitle2"), 24f, 0xff9ed1ff.toInt(), true))
-        hero.addView(space(7))
-        hero.addView(text(t("heroDescription"), 12f, 0xffcbdce3.toInt()))
-        content.addView(hero)
         val form = col(paper).apply { setPadding(px(16), px(15), px(16), px(16)) }
-        form.addView(text(t("findCar"), 18f, ink, true))
+        form.addView(text(t("carsNav"), 18f, ink, true))
         form.addView(space(7))
         val makes = brands.optJSONArray("makes")
         val makeItems = mutableListOf<String>()
@@ -1106,13 +1150,9 @@ class MainActivity : Activity() {
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
         val priceField = input(maxPrice, "€", true)
-        val selectedCountries = countries.filter { it.first in activeCountry }.joinToString(" · ") { it.second }
         lateinit var captureFields: () -> Unit
-        val countryField = btn(selectedCountries.ifBlank { t("allCountries") }, false) { captureFields(); showSearchCountries() }.apply {
-            setSingleLine(true)
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        }
-        compactSearchPair(form, t("priceTo"), priceField, t("filterCountry"), countryField)
+        form.addView(label(t("priceTo")))
+        form.addView(priceField, lp(-1,48))
         val keywordField = editField(form, t("searchTerms"), keyword, t("keywordExample"))
         captureFields = {
             keyword = keywordField.text.toString().trim(); make = makeField.text.toString().trim()
@@ -1176,7 +1216,6 @@ class MainActivity : Activity() {
             results.addView(space(16))
             results.addView(btn(t("yourSavedSearch"),false){navigate("searches")})
             results.addView(space(9))
-            results.addView(btn(t("addVehicle"),false){showCarForm()})
         }
         refreshResults()
         content.addView(results)
@@ -1202,20 +1241,6 @@ class MainActivity : Activity() {
                 override fun afterTextChanged(s:android.text.Editable?){}
             })
         }
-    }
-
-    private fun showSearchCountries() {
-        val selected = countries.map { it.first in activeCountry }.toBooleanArray()
-        AlertDialog.Builder(this).setTitle(t("filterCountry"))
-            .setMultiChoiceItems(countries.map { "${it.second} ${it.third}" }.toTypedArray(), selected) { _, index, checked ->
-                selected[index] = checked
-            }
-            .setPositiveButton(t("showResults")) { _, _ ->
-                activeCountry = countries.mapIndexedNotNull { index, country -> country.first.takeIf { selected[index] } }.toMutableSet()
-                renderHome()
-            }
-            .setNeutralButton(t("allCountries")) { _, _ -> activeCountry.clear(); renderHome() }
-            .setNegativeButton(t("cancel"), null).show()
     }
 
     private fun showFilterChips(parent: LinearLayout) {
@@ -1246,9 +1271,6 @@ class MainActivity : Activity() {
         chip(t("transmission"), t(transmission)) { transmission = "" }
         chip(t("body"), t(body)) { body = "" }
         chip(t("sellerType"), t(sellerFilter)) { sellerFilter = "" }
-        countries.filter { it.first in activeCountry }.forEach { (code, flag, name) ->
-            chip(t("filterCountry"), "$flag $name") { activeCountry.remove(code) }
-        }
         if (chips.childCount == 0) return
         parent.addView(HorizontalScrollView(this).apply {
             contentDescription = t("activeFilters")
@@ -1475,6 +1497,7 @@ class MainActivity : Activity() {
         minPower = filters.optString("powerFrom"); maxPower = filters.optString("powerTo"); engineQuery = filters.optString("engineTerm")
         minCapacity = filters.optString("capacityFrom"); maxCapacity = filters.optString("capacityTo"); sellerFilter = filters.optString("sellerType")
         activeCountry = jsonStrings(item.optJSONArray("countries")).toMutableSet()
+        persistSearchCountries()
         navigate("home")
     }
     private fun setFavorite(value: Boolean) { starred = value; prefs.edit().putBoolean("favorite", value).apply() }
@@ -1912,6 +1935,17 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
+    private fun persistSearchCountries() {
+        val valid = countries.map { it.first }.toSet()
+        val selected = activeCountry.filter { it in valid }.toSet()
+        val user = cloudUser?.takeIf { previewUser.isBlank() }
+        val storageKey = if (user == null) "countries" else "countries:" + user.uid
+        prefs.edit().putStringSet(storageKey, selected).apply()
+        if (user != null) backend.saveCountries(selected) { error ->
+            if (error != null) toast(error)
+        }
+    }
+
     private fun renderSettings() {
         val main=container();toolbar(main,t("settings"),{navigate("home")})
         val content=col().apply { setPadding(px(18),px(19),px(18),px(30)) }
@@ -1942,7 +1976,7 @@ class MainActivity : Activity() {
         }
         content.addView(space(9))
         content.addView(btn(t("saveSettings"),true) {
-            prefs.edit().putStringSet("countries",activeCountry.toSet()).apply();navigate("home")
+            persistSearchCountries();goBack()
         });content.addView(space(19))
         content.addView(iconText(R.drawable.limba_notifications, t("yourSavedSearch"), {navigate("searches")}))
         content.addView(space(12))
@@ -2617,7 +2651,6 @@ class MainActivity : Activity() {
                     .setNegativeButton(t("cancelPreview"),null).show()
             });content.addView(space(16))
         }
-        content.addView(iconText(R.drawable.limba_add_car,t("addVehicle"),{showCarForm()},true))
         if(previewUser.isNotBlank()){content.addView(space(10));content.addView(text(t("previewNotSynced"),12f,muted))}
         body(main,content);navigation(main)
     }
@@ -2630,6 +2663,7 @@ class MainActivity : Activity() {
         conversationDialog?.dismiss()
         screenRegistration?.remove()
         searchRegistrations.forEach { it.remove() }
+        countryRegistration?.remove()
         if (::backend.isInitialized) backend.close()
         super.onDestroy()
     }
@@ -2646,13 +2680,7 @@ class MainActivity : Activity() {
         renderPickedPhotoFields?.invoke()
     }
 
-    override fun onBackPressed() {
-        when(screen){
-            "details"->{activePreviewCar=null;navigate(backFromDetail)}
-            "home"->super.onBackPressed()
-            else->navigate("home")
-        }
-    }
+    override fun onBackPressed() { goBack() }
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean {
         if(screen=="swipe"){
             when(keyCode){

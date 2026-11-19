@@ -32,3 +32,15 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Deploy production Firebase Hosting when authorized
+        env:
+          LIMBA_FIREBASE_SERVICE_ACCOUNT_B64: ${{ secrets.LIMBA_FIREBASE_SERVICE_ACCOUNT_B64 }}
+        run: |
+          if [ -z "$LIMBA_FIREBASE_SERVICE_ACCOUNT_B64" ]; then
+            echo "::warning::Firebase Hosting NOT deployed: set LIMBA_FIREBASE_SERVICE_ACCOUNT_B64; GitHub Pages remains available."
+            exit 0
+          fi
+          printf '%s' "$LIMBA_FIREBASE_SERVICE_ACCOUNT_B64" | base64 -d > "$RUNNER_TEMP/limba-hosting-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/limba-hosting-account.json"
+          npx -y firebase-tools@latest deploy --project limba-auto --only hosting --non-interactive
