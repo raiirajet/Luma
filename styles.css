@@ -418,81 +418,353 @@ body:has(#swipeView:not(.hidden)) .mobile-nav{display:none}
 .dealer-queue-item { padding: 12px 0; border-bottom: 1px solid #dae6ea; }
 .dealer-queue-item p { overflow-wrap: anywhere; }
 
-/* Limba 2026: immediate search, country discovery and accessible native-feeling Drive controls. */
-.limba-hero-copy{background:linear-gradient(110deg,#102c40 0%,#164d72 68%,#0a283c 100%);border-radius:20px 20px 0 0;color:#fff;padding:28px clamp(20px,3vw,40px) 34px;margin-bottom:-15px;position:relative;overflow:hidden}
-.limba-hero-copy:after{content:"";position:absolute;right:-35px;top:-75px;width:220px;height:220px;border:1px solid #ffffff19;border-radius:50%;box-shadow:0 0 0 45px #ffffff07;pointer-events:none}
-.limba-hero-copy .overline{color:#8fceff}
-.limba-hero-copy h1{font-size:clamp(22px,3vw,36px);line-height:1.14;color:#fff;letter-spacing:-.7px;margin:9px 0}
-.limba-hero-copy p{font-size:13px;color:#ddedf8;margin:0;line-height:1.5;max-width:550px}
-.search-wrap .search-panel{position:relative;z-index:1;border:1px solid #dce9f0}
-.country-quickbar{border:1px solid #dfe9ed;border-radius:15px;background:#fff;padding:12px 14px;margin:12px 0 16px}
-.country-quickbar-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:#183749;margin-bottom:9px}
-.country-quickbar-header .link-btn{min-height:40px;font-size:12px}
-.country-quickchips{display:flex;gap:7px;flex-wrap:wrap}
-.country-quickchip{border:1px solid #d4e2ea;border-radius:100px;padding:7px 12px;min-height:44px;background:#f6f9fb;color:#1a465c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.country-quickchip:hover{border-color:#2f80d8}
-.country-quickchip.selected{background:#0d4f7d;color:#fff;border-color:#0d4f7d}
-.country-quickchip:focus-visible,.swipe-action-bar button:focus-visible,.empty-shortcuts button:focus-visible{outline:3px solid #318ee9;outline-offset:3px}
-.result-ops{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
-.currency-switch{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#345567}
-.currency-switch select{background:#fff;border:1px solid #ccdbe3;border-radius:9px;min-height:44px;padding:7px 8px;color:#143547}
-.fx-status{font-size:10px;color:#6b8291;max-width:205px;line-height:1.4}
-.car-customs{display:block;font-size:11px;color:#466b7b;margin-top:6px}
-.tuning-badges{display:flex;flex-wrap:wrap;gap:5px;margin:0 14px 14px}
-.tuning-badges span{font-size:10px;font-weight:800;border-radius:30px;background:#152f42;color:#f0c06a;padding:5px 9px;border:1px solid #38516a}
-.empty-shortcuts{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:15px}
-.empty-shortcuts button{border:1px solid #cbdfeb;border-radius:10px;min-height:44px;padding:9px 13px;background:#f2f8fc;color:#124969;font-weight:800;font-size:12px;cursor:pointer}
-.empty-shortcuts button:hover{background:#dceefb}
-.car-skeleton{background:#fff;border:1px solid #e0e9ef;border-radius:15px;overflow:hidden;padding-bottom:20px}
-.skeleton-photo,.skeleton-line{background:linear-gradient(95deg,#e5ebf0 20%,#f6f9fb 40%,#e5ebf0 62%);background-size:240% 100%;animation:limba-skeleton 1.3s ease-in-out infinite}
-.skeleton-photo{height:208px;margin-bottom:19px}
-.skeleton-line{height:16px;border-radius:8px;margin:12px 17px;width:64%}
-.skeleton-line.wide{height:24px;width:43%}
-.skeleton-line.short{width:35%}
-@keyframes limba-skeleton{0%{background-position:100% 0}100%{background-position:-100% 0}}
-#performanceView{background:radial-gradient(circle at top right,#304456,#101922 72%);border-radius:24px;margin-top:28px;margin-bottom:25px;padding:33px}
-#performanceView .section-intro h2{color:#f4f7fa}
-#performanceView .section-intro .muted-copy{color:#c4d0d9}
-#performanceView .dark-overline{color:#ffbb56}
-#performanceGrid .car-card{background:#1c2934;border-color:#40515f;box-shadow:0 10px 28px #0004}
-#performanceGrid .car-card h3,#performanceGrid .car-card .car-price{color:#fff}
-#performanceGrid .car-card .car-sub,#performanceGrid .car-card .car-specs,#performanceGrid .car-card .car-location,#performanceGrid .car-card .car-customs{color:#cfdae1}
-#performanceGrid .tuning-badges span{background:#523817;color:#ffe7bd;border-color:#bd8242}
-#performanceGrid .empty-panel{background:#223542;border:1px solid #4e6977;color:#fff}
-#performanceGrid .empty-panel h3,#performanceGrid .empty-panel p{color:#f1f4f6}
-.swipe-action-bar{position:absolute;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:15px;z-index:4;padding:9px 13px;border:1px solid #ffffff4a;border-radius:45px;background:#0d253cb3;backdrop-filter:blur(8px)}
-.swipe-action-bar button{width:54px;height:54px;border:1px solid #ffffff5b;border-radius:50%;color:#fff;font-size:25px;font-weight:850;background:#1c4c68;cursor:pointer;transition:transform .18s,background .18s}
-.swipe-action-bar button:hover{transform:translateY(-3px);background:#337fb7}
-.swipe-action-bar [data-swipe-action="left"]{background:#7b3543}
-.swipe-action-bar [data-swipe-action="favorite"]{background:#ad4670}
-.swipe-action-bar [data-swipe-action="down"]{background:#a46d1f}
-.swipe-photo .swipe-details{bottom:max(103px,calc(env(safe-area-inset-bottom) + 102px));right:25px}
-#swipeFavorite{display:none}
-#swipeTutorial{background:#001b2988;backdrop-filter:blur(2px);z-index:6}
-#swipeTutorial .swipe-instruction{background:#f8fcfff0;border:1px solid #fff;padding:24px;width:min(460px,95%)}
-#swipeTutorial .gesture-grid>div{animation:limba-gesture-hint 1.7s ease-in-out 2}
-#swipeTutorial .gesture-grid>div:nth-child(2){animation-delay:.2s}
-#swipeTutorial .gesture-grid>div:nth-child(3){animation-delay:.4s}
-#swipeTutorial .gesture-grid>div:nth-child(4){animation-delay:.6s}
-@keyframes limba-gesture-hint{0%,100%{transform:translate(0,0)}50%{transform:translate(0,-7px)}}
-@media(max-width:760px){
- .limba-hero-copy{padding:20px 18px 24px;margin-bottom:-10px}
- .limba-hero-copy h1{font-size:24px}
- .country-quickchips{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:5px}
- .country-quickchip{flex:none;scroll-snap-align:start}
- .currency-switch{gap:5px}
- .fx-status{flex-basis:100%;max-width:none}
- #performanceView{padding:20px 14px;margin-top:15px;border-radius:16px}
- .swipe-action-bar{gap:9px;padding:8px}
- .swipe-action-bar button{width:49px;height:49px}
- .swipe-photo .swipe-details{left:20px;right:18px;bottom:max(103px,calc(env(safe-area-inset-bottom) + 110px))}
- .swipe-photo .swipe-details h2{font-size:clamp(21px,5vw,34px)}
- .swipe-photo .swipe-details strong{font-size:24px}
- #swipeTutorial .swipe-instruction{padding:18px}
- #swipeTutorial .swipe-instruction h2{font-size:19px}
- #swipeTutorial .gesture-grid{margin:10px 0;gap:6px}
- #swipeTutorial .gesture-grid>div{padding:6px}
- .mobile-nav [data-mobile-account]{font-weight:700}
- #accountMenu{position:fixed;top:auto;bottom:max(72px,calc(env(safe-area-inset-bottom) + 73px));right:12px;z-index:120;max-height:65dvh;overflow:auto}
+.listing-wizard { min-width:0; }
+.listing-wizard [hidden] { display:none!important; }
+.listing-wizard-steps {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4px;
+  list-style:none;
+  margin:0 0 20px;
+  padding:4px;
+  border:1px solid var(--border);
+  border-radius:13px;
+  background:var(--soft);
 }
-@media(prefers-reduced-motion:reduce){.skeleton-photo,.skeleton-line,#swipeTutorial .gesture-grid>div{animation:none}}
+.listing-wizard-steps li {
+  display:grid;
+  place-items:center;
+  min-height:42px;
+  padding:6px;
+  border-radius:9px;
+  color:var(--muted);
+  font-size:.78rem;
+  font-weight:700;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+.listing-wizard-steps li[aria-current="step"] { background:var(--ink); color:var(--paper); }
+.listing-wizard-heading { margin:0 0 4px; font-size:1.18rem; }
+.listing-wizard-pane { margin:0; }
+.listing-wizard-pane .helper { margin:0; }
+.listing-wizard-actions, .listing-draft-tools, .listing-draft-conflict {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+.listing-wizard-actions { justify-content:space-between; margin-top:16px; }
+.listing-wizard-actions :is(button[data-wizard-action="next"], #sellSubmit) { margin-inline-start:auto; }
+.listing-wizard-actions button { min-height:44px; }
+.listing-wizard-actions #sellSubmit { width:auto; }
+.listing-draft-tools { margin-top:16px; }
+.listing-draft-tools .helper { flex:1 1 200px; margin:0; }
+.listing-wizard .helper:empty { display:none; }
+.listing-draft-conflict {
+  flex:1 0 100%;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  background:var(--soft);
+}
+.listing-draft-conflict p { flex:1 0 100%; margin:0; color:var(--ink); }
+.listing-draft-preview {
+  display:grid;
+  gap:8px;
+  overflow:hidden;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:var(--soft);
+  color:var(--ink);
+}
+.listing-draft-preview img { width:100%; max-height:250px; object-fit:cover; border-radius:9px; }
+.listing-draft-preview h4, .listing-draft-preview p { margin:0; overflow-wrap:anywhere; }
+.listing-draft-preview h4 { font-size:1.15rem; }
+.listing-draft-preview strong { font-size:1.2rem; }
+.listing-draft-preview p { white-space:pre-wrap; }
+@media(max-width:540px) {
+  .listing-wizard-pane { grid-template-columns:minmax(0,1fr); }
+  .listing-wizard-pane>* { grid-column:1; }
+  .listing-wizard-steps { margin-bottom:14px; }
+  .listing-wizard-steps li { padding:5px 3px; }
+}
+
+:root {
+  --on-accent:#fff;
+  --accent-ink:#135bab;
+  --input-surface:#f7fafc;
+  --selection:#e8f1fa;
+  --raised:#fff;
+  --focus:#1859ad;
+  --header-height:78px;
+  --wordmark-filter:none;
+}
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --ink:#e8f0f7;
+  --paper:#111d28;
+  --soft:#0d1620;
+  --raised:#182735;
+  --border:#344c60;
+  --muted:#acc0d0;
+  --accent:#3e8ae2;
+  --accent2:#2e72bf;
+  --on-accent:#071927;
+  --accent-ink:#8bc1ff;
+  --input-surface:#14212c;
+  --selection:#213950;
+  --focus:#8bc1ff;
+  --shadow:0 18px 50px #0005;
+  --wordmark-filter:brightness(0) invert(1);
+}
+@media(prefers-color-scheme:dark) {
+  :root:not([data-theme]) {
+    color-scheme:dark;
+    --ink:#e8f0f7;
+    --paper:#111d28;
+    --soft:#0d1620;
+    --raised:#182735;
+    --border:#344c60;
+    --muted:#acc0d0;
+    --accent:#3e8ae2;
+    --accent2:#2e72bf;
+    --on-accent:#071927;
+    --accent-ink:#8bc1ff;
+    --input-surface:#14212c;
+    --selection:#213950;
+    --focus:#8bc1ff;
+    --shadow:0 18px 50px #0005;
+    --wordmark-filter:brightness(0) invert(1);
+  }
+}
+body { overflow-x:clip; }
+:is(button,a,input,select,textarea,.car-card):focus-visible {
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+}
+:is(.site-header,.mobile-nav,.account-toggle,.account-menu,.search-panel,.search-country-panel,.car-card,.settings-card,
+    .outline-btn,.modal-panel,.detail-contact-bar,.detail-thumbnails button,.catalog-option,.catalog-options,
+    .garage-toolbar,.garage-pick,.limba-passport,.market-message,.swipe-instruction,.market-list-row,.empty-panel) {
+  background-color:var(--paper);
+  border-color:var(--border);
+  color:var(--ink);
+}
+.site-header,.mobile-nav { border-block-end:1px solid var(--border); }
+.site-header .limba-wordmark { filter:var(--wordmark-filter); }
+.site-footer a { color:#a4ceff; }
+.mobile-nav { border-block:start 1px solid var(--border); }
+:is(.detail-gallery .details-image,.search-panel .search-field :is(input,select),.search-country-toggle,
+    .settings-language-select,.language-select,.sort-select,.listing-report select,.sell-catalog-label input,
+    .form-grid :is(input,textarea,select),.form-stack :is(input,textarea,select),.market-compose textarea,
+    .market-report-form textarea,.catalog-trigger,.country-choice,.detail-pairs>div,.quick-card) {
+  background-color:var(--input-surface);
+  border-color:var(--border);
+  color:var(--ink);
+}
+:is(.search-panel .search-field :is(input,select),.form-grid :is(input,textarea,select),.form-stack :is(input,textarea,select)):focus {
+  background-color:var(--paper);
+  border-color:var(--focus);
+}
+:is(.account-menu button:hover,.account-menu button:focus-visible,.outline-btn:hover,.country-choice.is-active,
+    .quick-card.is-selected,.catalog-option[aria-selected="true"],.market-message.mine) {
+  background-color:var(--selection);
+  border-color:var(--border);
+  color:var(--ink);
+}
+:is(.search-panel .filter-ext,.listing-report,.market-listing-section,.market-photo-slot,.dealer-queue-item) { border-color:var(--border); }
+:is(.main-nav .nav-link,.mobile-nav button,.brand-limba,.account-menu button,.search-country-toggle::after,
+    .link-btn,.section-intro h2,.modal-panel h2,.modal-panel h3,.car-title,.empty-panel h3) { color:var(--ink); }
+:is(.car-sub,.car-location,.search-field label,.search-panel .search-field span,.search-field>label,
+    .form-stack label,.form-grid label,.sell-catalog-label>label,.muted-copy,.helper,.result-count,
+    .market-photo-slot small,.market-battery dt,.swipe-instruction p) { color:var(--muted); }
+:is(.car-price-overview,.detail-price,.overline.dark-overline,.dealer-badge,.modal-panel a:not(.outline-btn),.settings-card a) { color:var(--accent-ink); }
+.primary-btn { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+:is(.car-specs span,.active-filters button,.status-pill,.sample-note,.seller-segments [aria-pressed="true"],
+    .market-notification-unread,.saved-search-row button,.gesture-grid>div) {
+  background:var(--selection);
+  border-color:var(--border);
+  color:var(--ink);
+}
+.seller-segments [aria-pressed="true"] { border-color:var(--accent-ink); box-shadow:inset 0 0 0 1px var(--accent-ink); }
+.modal-close { background:var(--raised); color:var(--ink); border-color:var(--border); }
+.modal-panel .spec-table>div { background:var(--input-surface); border-color:var(--border); }
+.modal-panel .spec-table :is(small,p) { color:var(--muted); }
+.modal-panel .spec-table strong,.account-actions a,.vehicle-description,.card-body { color:var(--ink); }
+.market-result-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:12px;
+  padding:8px;
+  background:var(--paper);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.market-result-toolbar .result-count { flex:1; min-width:0; font-size:.83rem; }
+.market-result-toolbar :is(button,select) { min-height:44px; }
+.search-more { display:flex; justify-content:center; margin-top:16px; }
+.search-more:has(button.hidden) { display:none; }
+.search-progress { color:var(--muted); text-align:center; padding:12px; }
+.radius-controls { display:grid; grid-template-columns:minmax(0,2fr) minmax(100px,1fr); gap:10px; margin-top:14px; }
+.radius-controls .helper { margin:0; grid-column:1/-1; }
+:is(.radius-controls .search-field,.sell-place) { position:relative; min-width:0; }
+.sell-place label { display:block; margin-bottom:7px; }
+.sell-place input { width:100%; }
+.sell-place p:empty,.radius-controls p:empty,.listing-dealer:empty { display:none; }
+.place-results {
+  position:absolute;
+  z-index:115;
+  top:100%;
+  left:0;
+  width:min(370px,calc(100vw - 60px));
+  max-height:min(310px,50dvh);
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:5px;
+  background:var(--paper);
+  box-shadow:var(--shadow);
+}
+.place-results button {
+  display:block;
+  width:100%;
+  min-height:44px;
+  padding:8px;
+  text-align:start;
+  background:var(--paper);
+  color:var(--ink);
+  border:0;
+  border-radius:6px;
+  overflow-wrap:anywhere;
+}
+.place-results button:is(:hover,:focus-visible) { background:var(--selection); }
+.account-actions,.settings-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.settings-layout { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.settings-card { border:1px solid var(--border); border-radius:14px; padding:20px; min-width:0; }
+.settings-card h3 { margin:0 0 10px; color:var(--ink); }
+.settings-card .settings-inline-label { color:var(--ink); }
+.settings-card select { margin-bottom:3px; }
+.listing-dealer { margin:12px 0; }
+.listing-dealer button { text-align:start; overflow-wrap:anywhere; }
+.dealer-badge { font-weight:800; }
+.dealer-stock-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.dealer-stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.dealer-stats>div { padding:14px; border:1px solid var(--border); border-radius:10px; }
+.dealer-stats dd { margin:4px 0 0; font-size:1.5rem; font-weight:800; }
+#dealerProfileForm .checkbox-label { display:flex; align-items:center; gap:8px; }
+#dealerProfileForm input[type="checkbox"] { flex:none; width:20px; height:20px; }
+@media(max-width:760px) {
+  :root { --header-height:67px; }
+  #fabAdd,.header-right #sellBtn { display:none; }
+  .mobile-nav { min-height:calc(66px + env(safe-area-inset-bottom)); height:auto; padding-inline:env(safe-area-inset-left) env(safe-area-inset-right); }
+  .mobile-nav button { min-height:65px; padding:5px 2px; justify-content:center; gap:5px; }
+  .mobile-nav small { max-width:100%; font-size:.67rem; line-height:1.1; overflow-wrap:anywhere; text-align:center; }
+  .mobile-nav button[aria-current="page"] { color:var(--accent-ink); background:var(--selection); }
+  .mobile-nav .market-inbox-count { top:3px; right:8px; }
+  .market-result-toolbar { position:sticky; top:var(--header-height); z-index:19; }
+  .settings-layout { grid-template-columns:minmax(0,1fr); }
+  .market-detail .detail-contact-bar { position:sticky; bottom:-1px; z-index:1; border-top:1px solid var(--border); }
+}
+@media(max-width:450px) {
+  .car-grid,.dealer-stock-grid { grid-template-columns:minmax(0,1fr); }
+  .car-card .card-body { padding:13px 15px; }
+  .car-card .car-title { min-height:0; font-size:1rem; }
+  .car-card .car-specs span { font-size:.72rem; }
+}
+
+/* Marketplace entry, regional filters and card hierarchy */
+.market-hero {
+  padding: clamp(25px, 4.5vw, 62px) 0 clamp(20px, 3vw, 38px);
+  background: linear-gradient(120deg, #0d2e3b 3%, #153d50 64%, #20586c);
+  color: #f5fbff;
+}
+.market-hero-heading h1 {margin: 0; font-size: clamp(29px, 4.2vw, 58px); letter-spacing: -.04em; line-height: 1.07}
+.market-hero-heading p {margin: 9px 0 0; color: #d4e7ef; font-size: clamp(14px, 1.6vw, 17px)}
+.market-hero .search-wrap {margin: clamp(16px, 2.8vw, 26px) auto 0; color: var(--ink)}
+.market-hero .search-panel {margin: 0; padding: clamp(14px, 2.4vw, 23px)}
+.market-hero .search-top h2 {font-size: clamp(17px, 2vw, 22px)}
+.marketplace-sell {min-height: 44px; white-space: nowrap}
+.header-right .marketplace-sell span:first-child {font-size: 1.3em}
+.country-bar {display: grid; gap: 7px; margin: 15px 0 10px}
+.country-bar h3 {margin: 0; font-size: 15px}
+.country-quick {display: flex; gap: 8px; overflow-x: auto; padding: 3px 3px 9px; scrollbar-width: thin}
+.country-quick button {
+  color: var(--ink); background: var(--paper); border: 1px solid var(--border);
+  border-radius: 999px; flex: none; min-height: 44px; padding: 0 14px; font-weight: 700;
+}
+.country-quick button[aria-pressed="true"] {background: var(--accent2); border-color: var(--accent2); color: #fff}
+.price-toolbar {display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; margin: 6px 0 13px}
+.price-toolbar label {display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 750}
+.price-toolbar select {min-height: 44px; padding: 5px 10px; color: var(--ink); background: var(--paper); border: 1px solid var(--border); border-radius: 9px}
+.price-toolbar small {color: var(--muted)}
+.card-badges {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px}
+.customs-badge, .tuning-badge {border-radius: 6px; padding: 4px 7px; background: var(--soft); color: var(--ink); font-size: 12px; font-weight: 650}
+.car-card .car-location {margin-top: 10px}
+.empty-actions, .empty-suggestions {display: flex; flex-wrap: wrap; justify-content: center; gap: 9px}
+#emptyResults > .empty-actions {margin-top: 17px}
+#retryListings, #loadMorePerformance {margin: 12px 0}
+.car-skeleton {border-radius: var(--radius); overflow: hidden; min-height: 290px; background: var(--paper); border: 1px solid var(--border); animation: cards-loading 1.5s ease-in-out infinite alternate}
+.car-skeleton > div {height: clamp(135px, 21vw, 224px); background: var(--border)}
+.car-skeleton > span {display: block; margin: 13px 14px; height: 12px; width: 49%; border-radius: 8px; background: var(--border)}
+.car-skeleton > span:nth-child(2) {height: 21px; width: 37%; margin-top: 19px}
+.car-skeleton > span:nth-child(3) {width: 71%}
+@keyframes cards-loading {from {opacity: 1} to {opacity: .46}}
+@media (min-width: 900px) {.country-quick {flex-wrap: wrap}}
+@media (max-width: 760px) {
+  .marketplace-sell {display: none}
+  .mobile-nav #navSell {background: var(--selection); color: var(--accent-ink)}
+  .market-hero .search-top {margin-bottom: 8px}
+  .market-hero .search-grid {gap: 9px}
+  .market-hero .search-top .compact-btn {max-width: 50%; min-height: 44px}
+  .mobile-nav small {overflow-wrap: anywhere}
+}
+
+/* Limba Drive stages the photograph, controls and first-use hints together. */
+.swipe-full {display: grid; place-items: center; padding: 64px 16px max(16px, env(safe-area-inset-bottom)); grid-template-rows: minmax(0, 1fr) auto; row-gap: 12px}
+.swipe-photo {position: relative; inset: auto; width: min(100%, 880px); height: 100%; border-radius: 24px; background: #102835}
+.swipe-details {bottom: 14px; left: clamp(13px, 3vw, 36px); right: 13px}
+.swipe-details h2 {font-size: clamp(23px, 4vw, 45px); line-height: 1.08; margin: 7px 0}
+.swipe-details p {margin: 7px 0}
+.swipe-actions {display: flex; align-items: center; gap: clamp(11px, 4vw, 24px)}
+.swipe-action {
+  display: grid; place-items: center; width: clamp(50px, 12vw, 62px); aspect-ratio: 1;
+  border: 1px solid #517085; border-radius: 50%; background: #16384a; color: #f2faff; font-size: 30px;
+}
+.swipe-action:hover {background: #23546c}
+.swipe-action:focus-visible {outline: 3px solid #ffbe68; outline-offset: 3px}
+.swipe-skip {color: #ffb3a8}
+.swipe-save {color: #9deacb}
+.swipe-save.active {color: #182f2b; background: #9deacb}
+.swipe-similar {color: #ffd083}
+.swipe-status {display: grid; place-items: center; height: 100%; color: #fff; padding: 20px}
+.swipe-tutorial {inset: 64px 16px calc(77px + env(safe-area-inset-bottom)); margin: 0 auto; width: min(calc(100% - 32px), 880px); border-radius: 24px; background: #06182350; backdrop-filter: blur(2px); overflow: auto}
+.swipe-instruction {width: min(560px, 100%); padding: 17px; background: #0d2735e8; border: 1px solid #c7e4fa45; color: #f2faff}
+.swipe-instruction h2 {margin: 6px 0 12px; font-size: clamp(19px, 3vw, 26px)}
+.swipe-instruction .gesture-grid {display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; margin: 0 0 12px}
+.gesture-grid button {min-height: 50px; padding: 5px 2px; display: grid; gap: 3px; justify-items: center; align-content: center; border-radius: 9px; border: 1px solid #9cc7de60; background: #12384fc9; color: #fff; font-size: 12px; overflow-wrap: anywhere}
+.gesture-grid button b {display: block; background: transparent; width: auto; height: auto; color: #a8d4fa; font-size: 23px; animation: gesture-hint 1.8s ease-in-out infinite}
+.gesture-grid [data-gesture="left"] {--gesture-x: -7px}
+.gesture-grid [data-gesture="right"] {--gesture-x: 7px}
+.gesture-grid [data-gesture="up"] {--gesture-y: -6px}
+.gesture-grid [data-gesture="down"] {--gesture-y: 6px}
+@keyframes gesture-hint {40%,65% {transform: translate(var(--gesture-x,0),var(--gesture-y,0))}}
+.swipe-instruction .swipe-tutorial-back {color: #f2faff; border-color: #91a9b7}
+@media (max-height: 540px) {
+  .swipe-tutorial {inset-block: 55px 66px; place-items: start center; padding: 7px}
+  .swipe-full {padding-top: 55px}
+  .swipe-details {bottom: 5px}
+}
+@media (prefers-reduced-motion: reduce) {.car-skeleton, .gesture-grid button b {animation: none}}
+
+/* Performance needs its own atmosphere regardless of the site appearance. */
+#performanceView {
+  --ink: #f4f4f6; --paper: #23262c; --soft: #343942; --border: #474c55; --muted: #c0c3ca;
+  background: linear-gradient(145deg, #12151b, #25272b); color: var(--ink); border-radius: 24px;
+  margin-top: 26px; margin-bottom: 32px; padding: clamp(15px, 4vw, 35px);
+}
+#performanceView :is(.section-intro h2, .car-title, .car-location, .car-specs, .empty-panel h3) {color: var(--ink)}
+#performanceView :is(.dark-overline, .car-price, .car-price-overview) {color: #ffbe68}
+#performanceView :is(.outline-btn,.empty-panel) {color: var(--ink); background: #32363e; border-color: var(--border)}
+#performanceView .tuning-badge {color: #ffdd9b; background: #4b3719}

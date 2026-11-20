@@ -92,7 +92,13 @@ try {
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   };
   const dealerListing = doc(dbDealer, 'listings', 'dealer-car');
+  const dealerProfile = database => doc(database, 'dealerProfiles', 'applicant');
+  const business = {
+    companyName: 'Auto Example AG', city: 'Tirana', country: 'AL',
+    website: 'https://dealer.example/angebote', published: false, updatedAt: serverTimestamp()
+  };
   await assertFails(setDoc(dealerListing, { ...car('dealer-car', 'applicant'), sellerType: 'dealer' }));
+  await assertFails(setDoc(dealerProfile(dbDealer), business));
   await assertFails(setDoc(dealerDoc(dbDealerUnconfirmed), { ...application, status: 'pending' }));
   await assertFails(setDoc(dealerDoc(dbDealerUnconfirmed), { ...application, email: 'other@example.test' }));
   await assertFails(setDoc(dealerDoc(dbDealerUnconfirmed), { ...application, companyName: '  ' }));
@@ -116,6 +122,18 @@ try {
   await assertSucceeds(updateDoc(dealerDoc(dbDealerAdmin), { status: 'approved', reviewerUid: 'moderator', updatedAt: serverTimestamp() }));
   await assertFails(updateDoc(dealerDoc(dbDealer), { status: 'pending', reviewerUid: '', updatedAt: serverTimestamp() }));
   await assertSucceeds(getDoc(dealerDoc(dbDealer)));
+  await assertFails(setDoc(dealerProfile(dbDealer), { ...business, companyName: 'Another name' }));
+  await assertFails(setDoc(dealerProfile(dbDealer), { ...business, email: 'private@example.test' }));
+  await assertFails(setDoc(dealerProfile(dbDealer), { ...business, website: 'javascript:alert(1)' }));
+  await assertFails(setDoc(dealerProfile(dbA), business));
+  await assertSucceeds(setDoc(dealerProfile(dbDealer), business));
+  await assertSucceeds(getDoc(dealerProfile(dbDealer)));
+  await assertFails(getDoc(dealerProfile(dbGuest)));
+  await assertSucceeds(updateDoc(dealerProfile(dbDealer), { published: true, updatedAt: serverTimestamp() }));
+  await assertSucceeds(getDoc(dealerProfile(dbGuest)));
+  await assertFails(getDocs(collection(dbGuest, 'dealerProfiles')));
+  await assertSucceeds(updateDoc(dealerProfile(dbDealer), { published: false, updatedAt: serverTimestamp() }));
+  await assertFails(getDoc(dealerProfile(dbGuest)));
   await assertSucceeds(setDoc(dealerListing, { ...car('dealer-car', 'applicant'), sellerType: 'dealer' }));
   await assertSucceeds(updateDoc(dealerListing, { price: 29999 }));
   await assertFails(updateDoc(doc(dbDealer, 'listings', 'dealer-car'), { uid: 'alice' }));
@@ -123,6 +141,13 @@ try {
 
   // Positive marketplace path.
   await assertSucceeds(setDoc(listed, car('car1')));
+  await assertFails(updateDoc(listed, { customsStatus: 'cleared' }));
+  await assertFails(updateDoc(listed, { customsStatus: 'certified', customsCountry: 'AL' }));
+  await assertFails(updateDoc(listed, { customsStatus: 'cleared', customsCountry: 'CH' }));
+  await assertSucceeds(updateDoc(listed, { customsStatus: 'cleared', customsCountry: 'AL' }));
+  await assertFails(updateDoc(doc(dbB, listed.path), { customsStatus: 'unknown' }));
+  await assertSucceeds(updateDoc(listed, { placeId: 'gn-3183875' }));
+  await assertFails(updateDoc(listed, { placeId: 'coordinates' }));
   await assertSucceeds(getDoc(doc(dbGuest, 'listings', 'car1')));
   const tuned = doc(dbA, 'listings', 'tuned');
   await assertSucceeds(setDoc(tuned, {...car('tuned'),modelExtension:'MTM',title:'Nissan GT-R MTM'}));
@@ -317,6 +342,24 @@ try {
   await assertFails(uploadBytes(ref(storeAlice, 'listings/alice/invalid id/1.jpg'), bytes, { contentType: 'image/jpeg' }));
 
   const config = doc(dbA, 'marketplaceSecurity', 'enforcement');
+  const rollout = doc(dbA, 'marketplaceRelease', 'v1_9');
+  await assertSucceeds(getDoc(doc(dbGuest, rollout.path)));
+  await assertFails(setDoc(rollout, { searchEnabled: true }));
+  const draft = doc(dbA, 'users/alice/listingDrafts/current');
+  const initialDraft = {
+    draftId: 'test-generation-01', revision: 1, state: 'open', updatedAt: serverTimestamp(),
+    fields: { make: 'Nissan', price: '28000', placeId: 'gn-3183875' }
+  };
+  await assertFails(setDoc(doc(dbB, draft.path), initialDraft));
+  await assertFails(setDoc(doc(dbU, 'users/unverified/listingDrafts/current'), initialDraft));
+  await assertFails(setDoc(draft, { ...initialDraft, fields: { photos: ['test.jpg'] } }));
+  await assertFails(setDoc(draft, { ...initialDraft, fields: { description: 'a'.repeat(3001) } }));
+  await assertSucceeds(setDoc(draft, initialDraft));
+  await assertSucceeds(getDoc(draft));
+  await assertFails(getDoc(doc(dbGuest, draft.path)));
+  await assertFails(getDoc(doc(dbB, draft.path)));
+  await assertFails(setDoc(draft, { ...initialDraft, revision: 3 }));
+  await assertSucceeds(setDoc(draft, { ...initialDraft, revision: 2 }));
   const secureId = 'sanitized';
   const secureListing = doc(dbA, 'listings', secureId);
   const grant = doc(dbA, 'listingUploads', secureId);
@@ -336,15 +379,25 @@ try {
   await assertFails(setDoc(secureListing, secureCar));
   await assertFails(updateDoc(grant, { used: true }));
   await assertFails(setDoc(doc(dbA, 'listings', 'without-grant'), car('without-grant')));
+  const publishedDraft = {
+    draftId: initialDraft.draftId, revision: 3, state: 'published', listingId: secureId, updatedAt: serverTimestamp()
+  };
+  await assertFails(setDoc(draft, publishedDraft));
   const listingBatch = (db, data) => {
     const batch = writeBatch(db);
     batch.set(doc(db, secureListing.path), data);
     batch.update(doc(db, grant.path), { used: true });
+    batch.set(doc(db, draft.path), publishedDraft);
     return batch.commit();
   };
   await assertFails(listingBatch(dbA, car(secureId)));
   await assertFails(listingBatch(dbB, { ...secureCar, uid: 'bob' }));
   await assertSucceeds(listingBatch(dbA, secureCar));
+  await assertFails(setDoc(draft, { ...initialDraft, revision: 4 }));
+  await assertSucceeds(setDoc(draft, { ...initialDraft, draftId: 'test-generation-02' }));
+  await assertSucceeds(setDoc(draft, {
+    draftId: 'test-generation-02', revision: 2, state: 'discarded', updatedAt: serverTimestamp()
+  }));
   const fullSecure = 'sanitized-with-six-photos';
   const secureImages = Array.from({ length: 6 }, (_, slot) => photoUrl(fullSecure, 'alice', `clean-${slot}.jpg`));
   await env.withSecurityRulesDisabled(async context => {
@@ -354,7 +407,7 @@ try {
   });
   const fullBatch = writeBatch(dbA);
   fullBatch.set(doc(dbA, 'listings', fullSecure), {
-    ...car(fullSecure), fuel: 'electric', image: secureImages[0], images: secureImages,
+    ...car(fullSecure), customsStatus: 'cleared', customsCountry: 'AL', fuel: 'electric', image: secureImages[0], images: secureImages,
     photoDetails: allPhotoDetails, batteryReport, modelExtension: 'Special', title: 'Nissan GT-R Special',
     serviceHistory: 'Service details', modificationNotes: 'Modification details', documentNotes: 'Documents on request',
     engineName: 'Electric', engineCapacity: 0

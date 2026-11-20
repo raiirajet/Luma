@@ -49,11 +49,13 @@ export function listingBatteryFromForm(form) {
 export function savedSearchKey(item, keys) {
  const filters = keys.map(key => String(item.filters?.[key] ?? '').trim());
  const countries = [...new Set(item.countries || [])].sort();
- return JSON.stringify([String(item.name || '').trim(), filters, countries]);
+ const key = [String(item.name || '').trim(), filters, countries];
+ if (item.radius?.placeId && item.radius?.km) key.push([item.radius.placeId, item.radius.km]);
+ return JSON.stringify(key);
 }
 
 export function createLimbaMarketplace(api) {
- const {el, state, h, price, number, L, F, W, X, modal, toast, openAuth, openListing, renderSavedSearches} = api;
+ const {el, state, h, price, number, L, F, W, X, modal, toast, openAuth, openListing, renderSavedSearches, queueContact} = api;
  let accountStops = [];
  let panelStops = [];
  let alerts = null;
@@ -125,6 +127,10 @@ export function createLimbaMarketplace(api) {
   if (!badge) return;
   badge.classList.toggle('hidden', !unread);
   badge.textContent = unread ? number(unread) : '';
+  const navBadge = el('navInboxCount');
+  navBadge.classList.toggle('hidden', !unread);
+  navBadge.textContent = badge.textContent;
+  el('navInbox').setAttribute('aria-label', unread ? L('messages') + ' (' + number(unread) + ')' : L('messages'));
   el('inboxBtn').setAttribute('aria-label', unread ? L('notifications') + ' (' + number(unread) + ')' : L('messages'));
   el('inboxBtn').title = L('messages');
  }
@@ -152,7 +158,7 @@ export function createLimbaMarketplace(api) {
   renderSavedSearches();
   try {
    await call('setSavedSearchAlert', {
-    name: item.name, filters: item.filters, countries: item.countries || [], enabled
+    name: item.name, filters: item.filters, countries: item.countries || [], ...(item.radius ? {radius: item.radius} : {}), enabled
    });
    if (accountGeneration !== generation) return false;
    // The snapshot can arrive before the callable resolves. Apply the same
@@ -241,26 +247,28 @@ export function createLimbaMarketplace(api) {
 
  async function startChat(car, button) {
   if (car.isDemo || car.isPreview) { toast(F('contactPreview')); return; }
-  if (!state.user || state.user.isPreview) { openAuth(); return; }
+  if (!state.user || state.user.isPreview) { queueContact(car.id); return; }
   if (!canUseAccount()) { toast(L('featureUnavailable')); return; }
   if (car.uid === state.user.uid) { openInbox(); return; }
-  if (!state.user.emailVerified) { toast(W('verifiedRequired')); openAuth(); return; }
+  if (!state.user.emailVerified) { toast(W('verifiedRequired')); queueContact(car.id); return; }
+  if (button.disabled) return;
+  const uid = state.user.uid;
   button.disabled = true;
   try {
    const {threadId} = await call('startListingChat', {listingId: car.id});
-   if (button.isConnected) openThread(threadId);
-  } catch {
-   if (button.isConnected) toast(L('featureUnavailable'));
+   if (button.isConnected && state.user?.uid === uid) openThread(threadId, car.id);
+  } catch (error) {
+   if (button.isConnected) toast(L(error.code === 'functions/not-found' ? 'listingUnavailable' : 'featureUnavailable'));
   } finally {
    button.disabled = false;
   }
  }
 
- function openThread(threadId) {
+ function openThread(threadId, listingId) {
   const uid = state.user?.uid;
   if (!canUseAccount() || !uid) return;
   const verified = state.user.emailVerified;
-  modal(`<button type="button" class="detail-back outline-btn" id="marketChatBack">${h(L('chatBack'))}</button>
+  modal(`<button type="button" class="detail-back outline-btn" id="marketChatBack">${h(L(listingId ? 'backToAd' : 'chatBack'))}</button>
    <h2 id="modalTitle">${h(L('messages'))}</h2>
    <div id="marketMessageList" class="market-messages" role="log" aria-label="${h(L('messages'))}"><p>${h(L('loading'))}</p></div>
    <p id="marketChatStatus" role="status"></p>
@@ -329,7 +337,12 @@ export function createLimbaMarketplace(api) {
    if (thread && !messagesStarted) { messagesStarted = true; subscribeMessages(); }
   }, () => { if (target.isConnected) target.textContent = L('featureUnavailable'); }));
 
-  el('marketChatBack').addEventListener('click', () => openInbox());
+  el('marketChatBack').addEventListener('click', () => {
+   if (listingId) {
+    const button = el('marketChatBack');
+    void openListing(listingId, {fromHistory: true, guard: () => button.isConnected});
+   } else openInbox();
+  });
   form.querySelectorAll('[data-quick]').forEach(button => button.addEventListener('click', () => {
    input.value = L(button.dataset.quick);
    input.focus();

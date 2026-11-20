@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 import threading, functools
+from datetime import date
 from pathlib import Path
 
 root=Path(__file__).resolve().parent
@@ -10,6 +11,29 @@ handler=functools.partial(Quiet,directory=str(root))
 server=ThreadingHTTPServer(('127.0.0.1',0),handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
 base=f'http://127.0.0.1:{server.server_port}/preview.html'
+
+
+def navigation(page, view):
+ mobile = page.locator('.mobile-nav').is_visible()
+ if view == 'favorites':
+  if mobile:
+   page.locator('.mobile-nav [data-view="account"]').click()
+   page.locator('#accountView [data-view="favorites"]').click()
+  else:
+   page.locator('#loginBtn').click()
+   page.locator('#accountMenu [data-view="favorites"]').click()
+ else:
+  route = '.mobile-nav' if mobile else '.main-nav'
+  page.locator(f'{route} [data-view="{view}"]').click()
+
+
+def account_action(page, action):
+ if page.locator('.mobile-nav').is_visible():
+  navigation(page,'account')
+  page.locator('#accountSignIn' if action=='sign_in' else '#accountView [data-view="settings"]').click()
+ else:
+  page.locator('#loginBtn').click()
+  page.locator('#accountOpenBtn' if action=='sign_in' else '#accountPreferencesBtn').click()
 
 
 def assert_header_available(page):
@@ -24,8 +48,13 @@ def assert_header_available(page):
  }""")
  assert not widths['clipped'], widths
  assert widths['document']<=widths['viewport']+2, widths
- assert page.locator('#fabAdd').is_visible()
- assert page.locator('#fabAdd').get_attribute('aria-label')
+ if page.locator('.mobile-nav').is_visible():
+  assert page.locator('#navSell').is_visible()
+  assert page.locator('#navSell').inner_text().strip()
+  assert page.locator('#headerSell').is_hidden()
+ else:
+  assert page.locator('#headerSell').is_visible()
+  assert page.locator('#headerSell').inner_text()
  assert not page.locator('#settingsBtn').count()
  assert not page.locator('#sellBtn').count()
 
@@ -82,11 +111,10 @@ with sync_playwright() as p:
   assert page.locator('.borderless-box').count()==0
   page.locator('#detailBack').click()
   assert page.locator('#modal').is_hidden()
-  perf_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="performance"]'
-  page.locator(perf_nav).click()
+  navigation(page,'performance')
   assert page.locator('#performanceView').is_visible()
   assert page.locator('#performanceGrid .car-card').count()==0
-  page.locator(('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]').click()
+  navigation(page,'home')
   # The built-in catalogs open without typing and offer live narrowing.
   page.locator('[data-catalog-toggle="make"]').click()
   assert page.locator('#makeDropdown .catalog-option').count()>=400
@@ -148,47 +176,82 @@ with sync_playwright() as p:
   assert page.locator('#homeView').is_visible()
   # heart and favorite page
   page.locator('.car-card .card-heart').first.click()
-  # Personal areas are now in the profile menu on desktop and mobile.
-  page.locator('#loginBtn').click()
-  page.locator('#accountMenu [data-view="favorites"]').click()
+  navigation(page,'favorites')
   assert page.locator('#favoritesGrid .car-card').count()==1
-  home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'
-  page.locator(home_nav).click()
+  navigation(page,'home')
+  # The remaining shortcuts share the regular country selection.
+  assert page.locator('.market-hero #searchForm').is_visible()
+  assert not page.locator('#countryQuick [data-country-quick="MK"], #countryQuick [data-country-quick="XK"]').count()
+  page.locator('#countryQuick [data-country-quick="TR"]').click()
+  assert page.locator('#countryQuick [data-country-quick="TR"]').get_attribute('aria-pressed')=='true'
+  assert page.locator('#emptyResults').is_visible()
+  assert not page.locator('#emptyResults [data-empty-country]').count()
+  assert page.locator('#emptySuggestions button').count()==1
+  assert page.locator('#emptyPerformance').is_visible()
+  page.locator('#resetEmpty').click()
+  assert page.locator('#countryQuick [data-country-quick=""]').get_attribute('aria-pressed')=='true'
+  assert page.locator('#carGrid .car-card').count()==1
   # Countries can only be selected on the homepage.
   assert page.locator('#searchCountryToggle').is_visible()
   assert page.locator('#settingsView #countryChoices').count()==0
   page.locator('#searchCountryToggle').click()
-  page.locator('#countryChoices input[value="TR"]').check()
+  for country in ('MK', 'XK'):
+   option = page.locator(f'#countryChoices input[value="{country}"]')
+   option.check()
+   assert option.is_checked()
   assert page.locator('#carGrid .car-card').count()==0
   page.locator('#allCountries').click()
   assert page.locator('#carGrid .car-card').count()==1
-  page.locator('#loginBtn').click()
-  page.locator('#accountPreferencesBtn').click()
+  for country in ('MK', 'XK'):
+   page.locator(f'#countryChoices input[value="{country}"]').check()
+  page.locator('#saveSearchBtn').click()
+  page.locator('#resetEmpty').click()
+  account_action(page,'settings')
   assert page.locator('#settingsView').is_visible()
   assert page.locator('#settingsView #countryChoices').count()==0
-  page.locator(home_nav).click()
+  page.locator('#savedSearchesList [data-apply]').first.click()
+  assert page.locator('#emptyResults').is_visible()
+  page.locator('#searchCountryToggle').click()
+  for country in ('MK', 'XK'):
+   assert page.locator(f'#countryChoices input[value="{country}"]').is_checked()
+  page.locator('#searchCountryToggle').click()
+  page.locator('#emptyPerformance').click()
+  assert page.locator('#performanceView').is_visible()
+  navigation(page,'home')
   # Search preservation and load
   page.locator('#keyword').fill('GT-R')
   page.locator('#saveSearchBtn').click()
   page.locator('#keyword').fill('nonexistent')
   assert page.locator('#carGrid .car-card').count()==0
-  page.locator('#loginBtn').click()
-  page.locator('#accountPreferencesBtn').click()
+  account_action(page,'settings')
   assert page.locator('#savedSearchesList [data-apply]').count()>=1
   page.locator('#savedSearchesList [data-apply]').first.click()
   assert page.locator('#carGrid .car-card').count()==1
   page.locator('#clearAll').click()
+  # The display currency is approximate. EUR remains the search currency.
+  page.route('https://api.frankfurter.dev/**', lambda route: route.fulfill(json=[
+   {'quote':'CHF','base':'EUR','date':date.today().isoformat(),'rate':0.92}
+  ]))
+  page.locator('#displayCurrency').select_option('CHF')
+  page.locator('#carGrid .car-price').filter(has_text='CHF').wait_for()
+  assert 'Frankfurter' in page.locator('#exchangeRateStatus').inner_text()
+  assert '(€)' in page.locator('label').filter(has=page.locator('#priceTo')).inner_text()
+  page.locator('#displayCurrency').select_option('EUR')
   # Swipe first-run tutorial and returning from info
-  swipe_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="swipe"]'
-  page.locator(swipe_nav).click()
+  navigation(page,'swipe')
   assert page.locator('#swipeView').is_visible()
   assert page.locator('#swipeTutorial').is_visible()
+  assert page.locator('#swipeTutorial [data-gesture]').count()==4
   page.locator('#swipeTutorialBack').click()
   assert page.locator('#swipeTutorial').is_hidden()
   page.locator('#swipeHelp').click()
   assert page.locator('#swipeTutorial').is_visible()
   page.locator('#swipeDone').click()
   assert page.locator('#swipeTutorial').is_hidden()
+  assert page.locator('#swipeActions button').count()==4
+  page.locator('#swipeInfo').click()
+  assert page.locator('#modal').is_visible()
+  page.locator('#detailBack').click()
   # last car message
   page.locator('#swipeCard').focus()
   page.keyboard.press('ArrowLeft')
@@ -211,9 +274,9 @@ with sync_playwright() as p:
   page.locator('#detailBack').click()
   assert page.locator('#modal').is_hidden()
   assert page.locator('#swipeView').is_visible()
-  page.locator('#swipeActions [data-swipe-action="favorite"]').click()
+  page.locator('#swipeFavorite').click()
   assert not page.locator('#swipeFavorite').evaluate('(e) => e.classList.contains("active")')
-  page.locator('#swipeActions [data-swipe-action="favorite"]').click()
+  page.locator('#swipeFavorite').click()
   assert page.locator('#swipeFavorite').evaluate('(e) => e.classList.contains("active")')
   # Escape modal closes modal and retains swipe
   page.locator('#swipeCard').focus()
@@ -236,9 +299,25 @@ with sync_playwright() as p:
    page.locator('#detailBack').click()
    assert page.locator('#modal').is_hidden()
   page.evaluate("""() => {const el=document.querySelector('#settingsLanguage'); el.value='de';el.dispatchEvent(new Event('change',{bubbles:true}))}""")
+  # The current search and appearance are restored when the marketplace reloads.
+  page.locator('#priceTo').fill('5000')
+  page.locator('#sort').select_option('priceLow')
+  page.reload(wait_until='domcontentloaded')
+  assert page.locator('#priceTo').input_value()=='5000'
+  assert page.locator('#sort').input_value()=='priceLow'
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
+  account_action(page,'settings')
+  page.locator('#settingsTheme').select_option('dark')
+  page.reload(wait_until='domcontentloaded')
+  assert page.locator('html').get_attribute('data-theme')=='dark'
+  assert page.locator('html').evaluate('(root) => getComputedStyle(root).colorScheme')=='dark'
+  account_action(page,'settings')
+  assert page.locator('#settingsTheme').input_value()=='dark'
+  page.locator('#settingsTheme').select_option('system')
+  navigation(page,'home')
   # Standalone previews support local accounts without preset credentials
-  page.locator('#loginBtn').click()
-  page.locator('#accountOpenBtn').click()
+  account_action(page,'sign_in')
   assert page.locator('#modal').is_visible()
   assert page.locator('#authForm').is_visible()
   assert page.locator('#demoQuick').count()==0
@@ -253,11 +332,10 @@ with sync_playwright() as p:
    for responsive_width in [1181,1024,768,600,360,320]:
     page.set_viewport_size({'width':responsive_width,'height':844})
     assert_header_available(page)
-   page.locator('#fabAdd').click()
+   page.locator('#navSell').click()
    assert page.locator('#modal').is_visible()
    page.locator('#modalClose').click()
-   page.locator('#loginBtn').click()
-   page.locator('#accountPreferencesBtn').click()
+   account_action(page,'settings')
    assert page.locator('#settingsLanguage').is_visible()
   context.close()
  browser.close()

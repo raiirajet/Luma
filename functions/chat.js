@@ -87,10 +87,20 @@ function chatHandlers(db) {
         throw new HttpsError('failed-precondition', 'This listing is unavailable.');
       }
 
+      const message = { text: body, senderUid: uid, createdAt: FieldValue.serverTimestamp() };
+      const threadUpdate = { lastMessage: body, updatedAt: FieldValue.serverTimestamp() };
+      if (uid === thread.buyerUid && listing.sellerType === 'dealer' && !thread.firstBuyerMessageId) {
+        const history = ref.collection('messages').where('senderUid', '==', uid).limit(1);
+        const prior = thread.lastMessage ? (await transaction.get(history)).docs[0] : undefined;
+        threadUpdate.firstBuyerMessageId = prior?.id ?? messageId;
+        if (!prior) {
+          const approval = await transaction.get(db.collection('dealerApplications').doc(thread.sellerUid));
+          if (approval.get('status') === 'approved') message.dealerInquiry = true;
+        }
+      }
       await applyRateLimit(db, transaction, uid, 'sendMessage', 30);
-      const now = FieldValue.serverTimestamp();
-      transaction.create(messageRef, { text: body, senderUid: uid, createdAt: now });
-      transaction.update(ref, { lastMessage: body, updatedAt: now });
+      transaction.create(messageRef, message);
+      transaction.update(ref, threadUpdate);
       return { messageId };
     });
   }
