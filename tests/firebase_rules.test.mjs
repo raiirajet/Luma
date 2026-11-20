@@ -141,6 +141,11 @@ try {
 
   // Positive marketplace path.
   await assertSucceeds(setDoc(listed, car('car1')));
+  await assertFails(updateDoc(listed, { customsStatus: 'cleared' }));
+  await assertFails(updateDoc(listed, { customsStatus: 'certified', customsCountry: 'AL' }));
+  await assertFails(updateDoc(listed, { customsStatus: 'cleared', customsCountry: 'CH' }));
+  await assertSucceeds(updateDoc(listed, { customsStatus: 'cleared', customsCountry: 'AL' }));
+  await assertFails(updateDoc(doc(dbB, listed.path), { customsStatus: 'unknown' }));
   await assertSucceeds(updateDoc(listed, { placeId: 'gn-3183875' }));
   await assertFails(updateDoc(listed, { placeId: 'coordinates' }));
   await assertSucceeds(getDoc(doc(dbGuest, 'listings', 'car1')));
@@ -402,7 +407,7 @@ try {
   });
   const fullBatch = writeBatch(dbA);
   fullBatch.set(doc(dbA, 'listings', fullSecure), {
-    ...car(fullSecure), fuel: 'electric', image: secureImages[0], images: secureImages,
+    ...car(fullSecure), customsStatus: 'cleared', customsCountry: 'AL', fuel: 'electric', image: secureImages[0], images: secureImages,
     photoDetails: allPhotoDetails, batteryReport, modelExtension: 'Special', title: 'Nissan GT-R Special',
     serviceHistory: 'Service details', modificationNotes: 'Modification details', documentNotes: 'Documents on request',
     engineName: 'Electric', engineCapacity: 0

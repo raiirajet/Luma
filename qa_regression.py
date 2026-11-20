@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 import threading, functools
+from datetime import date
 from pathlib import Path
 
 root=Path(__file__).resolve().parent
@@ -13,14 +14,17 @@ base=f'http://127.0.0.1:{server.server_port}/preview.html'
 
 
 def navigation(page, view):
- if not page.locator('.mobile-nav').is_visible():
-  page.locator(f'.main-nav [data-view="{view}"]').click()
- elif view in ('swipe','performance'):
-  page.locator('.mobile-nav [data-view="account"]').click()
-  page.locator('#accountView [data-view="discover"]').click()
-  page.locator(f'#discoverView [data-view="{view}"]').click()
+ mobile = page.locator('.mobile-nav').is_visible()
+ if view == 'favorites':
+  if mobile:
+   page.locator('.mobile-nav [data-view="account"]').click()
+   page.locator('#accountView [data-view="favorites"]').click()
+  else:
+   page.locator('#loginBtn').click()
+   page.locator('#accountMenu [data-view="favorites"]').click()
  else:
-  page.locator(f'.mobile-nav [data-view="{view}"]').click()
+  route = '.mobile-nav' if mobile else '.main-nav'
+  page.locator(f'{route} [data-view="{view}"]').click()
 
 
 def account_action(page, action):
@@ -47,10 +51,10 @@ def assert_header_available(page):
  if page.locator('.mobile-nav').is_visible():
   assert page.locator('#navSell').is_visible()
   assert page.locator('#navSell').inner_text().strip()
-  assert page.locator('#fabAdd').is_hidden()
+  assert page.locator('#headerSell').is_hidden()
  else:
-  assert page.locator('#fabAdd').is_visible()
-  assert page.locator('#fabAdd').get_attribute('aria-label')
+  assert page.locator('#headerSell').is_visible()
+  assert page.locator('#headerSell').inner_text()
  assert not page.locator('#settingsBtn').count()
  assert not page.locator('#sellBtn').count()
 
@@ -172,11 +176,18 @@ with sync_playwright() as p:
   assert page.locator('#homeView').is_visible()
   # heart and favorite page
   page.locator('.car-card .card-heart').first.click()
-  if width<500:
-   print('NAV_HITTEST',page.evaluate("""() => { const n=document.querySelector('.mobile-nav [data-view="favorites"]');const r=n.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;const el=document.elementFromPoint(x,y);return {rect:[r.x,r.y,r.width,r.height],viewport:[innerWidth,innerHeight],visual:[visualViewport.width,visualViewport.height,visualViewport.offsetTop],hit:el?.outerHTML?.slice(0,160),z:getComputedStyle(n.closest('nav')).zIndex,navDisplay:getComputedStyle(n.closest('nav')).display};}"""),flush=True)
   navigation(page,'favorites')
   assert page.locator('#favoritesGrid .car-card').count()==1
   navigation(page,'home')
+  # The hero filters and regional shortcuts share one state.
+  assert page.locator('.market-hero #searchForm').is_visible()
+  page.locator('#countryQuick [data-country-quick="MK"]').click()
+  assert page.locator('#countryQuick [data-country-quick="MK"]').get_attribute('aria-pressed')=='true'
+  assert page.locator('#emptyResults').is_visible()
+  assert page.locator('#emptySuggestions button').count()==3
+  page.locator('#resetEmpty').click()
+  assert page.locator('#countryQuick [data-country-quick=""]').get_attribute('aria-pressed')=='true'
+  assert page.locator('#carGrid .car-card').count()==1
   # Countries can only be selected on the homepage.
   assert page.locator('#searchCountryToggle').is_visible()
   assert page.locator('#settingsView #countryChoices').count()==0
@@ -199,16 +210,30 @@ with sync_playwright() as p:
   page.locator('#savedSearchesList [data-apply]').first.click()
   assert page.locator('#carGrid .car-card').count()==1
   page.locator('#clearAll').click()
+  # The display currency is approximate. EUR remains the search currency.
+  page.route('https://api.frankfurter.dev/**', lambda route: route.fulfill(json=[
+   {'quote':'CHF','base':'EUR','date':date.today().isoformat(),'rate':0.92}
+  ]))
+  page.locator('#displayCurrency').select_option('CHF')
+  page.locator('#carGrid .car-price').filter(has_text='CHF').wait_for()
+  assert 'Frankfurter' in page.locator('#exchangeRateStatus').inner_text()
+  assert '(€)' in page.locator('label').filter(has=page.locator('#priceTo')).inner_text()
+  page.locator('#displayCurrency').select_option('EUR')
   # Swipe first-run tutorial and returning from info
   navigation(page,'swipe')
   assert page.locator('#swipeView').is_visible()
   assert page.locator('#swipeTutorial').is_visible()
+  assert page.locator('#swipeTutorial [data-gesture]').count()==4
   page.locator('#swipeTutorialBack').click()
   assert page.locator('#swipeTutorial').is_hidden()
   page.locator('#swipeHelp').click()
   assert page.locator('#swipeTutorial').is_visible()
   page.locator('#swipeDone').click()
   assert page.locator('#swipeTutorial').is_hidden()
+  assert page.locator('#swipeActions button').count()==4
+  page.locator('#swipeInfo').click()
+  assert page.locator('#modal').is_visible()
+  page.locator('#detailBack').click()
   # last car message
   page.locator('#swipeCard').focus()
   page.keyboard.press('ArrowLeft')

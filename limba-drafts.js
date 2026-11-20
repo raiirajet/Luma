@@ -1,14 +1,14 @@
 const fieldLimits = {
   make: 35, model: 65, modelExtension: 40, year: 4, mileage: 12,
   fuel: 16, transmission: 16, body: 16, power: 10, engineName: 80, engineCapacity: 10,
-  price: 12, sellerType: 20, country: 2, city: 90, placeId: 13,
+  price: 12, sellerType: 20, country: 2, city: 90, placeId: 13, customsStatus: 14,
   condition: 12, accidentStatus: 12, conditionNote: 240, serviceHistory: 500,
   modificationNotes: 500, documentNotes: 240, description: 3000,
   batteryHealth: 16, batteryMeasuredAt: 10, batteryIssuer: 120, batteryUrl: 500,
 };
 
 const priceFields = new Set([
-  'price', 'sellerType', 'country', 'city', 'placeId', 'description',
+  'price', 'sellerType', 'country', 'city', 'placeId', 'customsStatus', 'description',
 ]);
 const stepLabels = ['draftVehicleStep', 'draftPhotosStep', 'draftPriceStep', 'draftPreviewStep'];
 

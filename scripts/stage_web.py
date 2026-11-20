@@ -29,6 +29,7 @@ PUBLIC_FILES = (
     "limba-dealer-ui.js",
     "limba-drafts.js",
     "limba-web-search.js",
+    "functions/listing-badges.mjs",
     "limba-theme.js",
     "limba-share.js",
     "mvp-i18n.js",

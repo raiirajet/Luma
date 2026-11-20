@@ -662,7 +662,7 @@ body { overflow-x:clip; }
   overflow-wrap:anywhere;
 }
 .place-results button:is(:hover,:focus-visible) { background:var(--selection); }
-.account-actions,.settings-actions,.discover-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.account-actions,.settings-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .settings-layout { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .settings-card { border:1px solid var(--border); border-radius:14px; padding:20px; min-width:0; }
 .settings-card h3 { margin:0 0 10px; color:var(--ink); }
@@ -696,6 +696,101 @@ body { overflow-x:clip; }
   .car-card .car-specs span { font-size:.72rem; }
 }
 
+/* Marketplace entry, regional filters and card hierarchy */
+.market-hero {
+  padding: clamp(25px, 4.5vw, 62px) 0 clamp(20px, 3vw, 38px);
+  background: linear-gradient(120deg, #0d2e3b 3%, #153d50 64%, #20586c);
+  color: #f5fbff;
+}
+.market-hero-heading h1 {margin: 0; font-size: clamp(29px, 4.2vw, 58px); letter-spacing: -.04em; line-height: 1.07}
+.market-hero-heading p {margin: 9px 0 0; color: #d4e7ef; font-size: clamp(14px, 1.6vw, 17px)}
+.market-hero .search-wrap {margin: clamp(16px, 2.8vw, 26px) auto 0; color: var(--ink)}
+.market-hero .search-panel {margin: 0; padding: clamp(14px, 2.4vw, 23px)}
+.market-hero .search-top h2 {font-size: clamp(17px, 2vw, 22px)}
+.marketplace-sell {min-height: 44px; white-space: nowrap}
+.header-right .marketplace-sell span:first-child {font-size: 1.3em}
+.country-bar {display: grid; gap: 7px; margin: 15px 0 10px}
+.country-bar h3 {margin: 0; font-size: 15px}
+.country-quick {display: flex; gap: 8px; overflow-x: auto; padding: 3px 3px 9px; scrollbar-width: thin}
+.country-quick button {
+  color: var(--ink); background: var(--paper); border: 1px solid var(--border);
+  border-radius: 999px; flex: none; min-height: 44px; padding: 0 14px; font-weight: 700;
+}
+.country-quick button[aria-pressed="true"] {background: var(--accent2); border-color: var(--accent2); color: #fff}
+.price-toolbar {display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; margin: 6px 0 13px}
+.price-toolbar label {display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 750}
+.price-toolbar select {min-height: 44px; padding: 5px 10px; color: var(--ink); background: var(--paper); border: 1px solid var(--border); border-radius: 9px}
+.price-toolbar small {color: var(--muted)}
+.card-badges {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px}
+.customs-badge, .tuning-badge {border-radius: 6px; padding: 4px 7px; background: var(--soft); color: var(--ink); font-size: 12px; font-weight: 650}
+.car-card .car-location {margin-top: 10px}
+.empty-actions, .empty-suggestions {display: flex; flex-wrap: wrap; justify-content: center; gap: 9px}
+#emptyResults > .empty-actions {margin-top: 17px}
+#retryListings, #loadMorePerformance {margin: 12px 0}
+.car-skeleton {border-radius: var(--radius); overflow: hidden; min-height: 290px; background: var(--paper); border: 1px solid var(--border); animation: cards-loading 1.5s ease-in-out infinite alternate}
+.car-skeleton > div {height: clamp(135px, 21vw, 224px); background: var(--border)}
+.car-skeleton > span {display: block; margin: 13px 14px; height: 12px; width: 49%; border-radius: 8px; background: var(--border)}
+.car-skeleton > span:nth-child(2) {height: 21px; width: 37%; margin-top: 19px}
+.car-skeleton > span:nth-child(3) {width: 71%}
+@keyframes cards-loading {from {opacity: 1} to {opacity: .46}}
+@media (min-width: 900px) {.country-quick {flex-wrap: wrap}}
+@media (max-width: 760px) {
+  .marketplace-sell {display: none}
+  .mobile-nav #navSell {background: var(--selection); color: var(--accent-ink)}
+  .market-hero .search-top {margin-bottom: 8px}
+  .market-hero .search-grid {gap: 9px}
+  .market-hero .search-top .compact-btn {max-width: 50%; min-height: 44px}
+  .mobile-nav small {overflow-wrap: anywhere}
+}
+
+/* Limba Drive stages the photograph, controls and first-use hints together. */
+.swipe-full {display: grid; place-items: center; padding: 64px 16px max(16px, env(safe-area-inset-bottom)); grid-template-rows: minmax(0, 1fr) auto; row-gap: 12px}
+.swipe-photo {position: relative; inset: auto; width: min(100%, 880px); height: 100%; border-radius: 24px; background: #102835}
+.swipe-details {bottom: 14px; left: clamp(13px, 3vw, 36px); right: 13px}
+.swipe-details h2 {font-size: clamp(23px, 4vw, 45px); line-height: 1.08; margin: 7px 0}
+.swipe-details p {margin: 7px 0}
+.swipe-actions {display: flex; align-items: center; gap: clamp(11px, 4vw, 24px)}
+.swipe-action {
+  display: grid; place-items: center; width: clamp(50px, 12vw, 62px); aspect-ratio: 1;
+  border: 1px solid #517085; border-radius: 50%; background: #16384a; color: #f2faff; font-size: 30px;
+}
+.swipe-action:hover {background: #23546c}
+.swipe-action:focus-visible {outline: 3px solid #ffbe68; outline-offset: 3px}
+.swipe-skip {color: #ffb3a8}
+.swipe-save {color: #9deacb}
+.swipe-save.active {color: #182f2b; background: #9deacb}
+.swipe-similar {color: #ffd083}
+.swipe-status {display: grid; place-items: center; height: 100%; color: #fff; padding: 20px}
+.swipe-tutorial {inset: 64px 16px calc(77px + env(safe-area-inset-bottom)); margin: 0 auto; width: min(calc(100% - 32px), 880px); border-radius: 24px; background: #06182350; backdrop-filter: blur(2px); overflow: auto}
+.swipe-instruction {width: min(560px, 100%); padding: 17px; background: #0d2735e8; border: 1px solid #c7e4fa45; color: #f2faff}
+.swipe-instruction h2 {margin: 6px 0 12px; font-size: clamp(19px, 3vw, 26px)}
+.swipe-instruction .gesture-grid {display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; margin: 0 0 12px}
+.gesture-grid button {min-height: 50px; padding: 5px 2px; display: grid; gap: 3px; justify-items: center; align-content: center; border-radius: 9px; border: 1px solid #9cc7de60; background: #12384fc9; color: #fff; font-size: 12px; overflow-wrap: anywhere}
+.gesture-grid button b {display: block; background: transparent; width: auto; height: auto; color: #a8d4fa; font-size: 23px; animation: gesture-hint 1.8s ease-in-out infinite}
+.gesture-grid [data-gesture="left"] {--gesture-x: -7px}
+.gesture-grid [data-gesture="right"] {--gesture-x: 7px}
+.gesture-grid [data-gesture="up"] {--gesture-y: -6px}
+.gesture-grid [data-gesture="down"] {--gesture-y: 6px}
+@keyframes gesture-hint {40%,65% {transform: translate(var(--gesture-x,0),var(--gesture-y,0))}}
+.swipe-instruction .swipe-tutorial-back {color: #f2faff; border-color: #91a9b7}
+@media (max-height: 540px) {
+  .swipe-tutorial {inset-block: 55px 66px; place-items: start center; padding: 7px}
+  .swipe-full {padding-top: 55px}
+  .swipe-details {bottom: 5px}
+}
+@media (prefers-reduced-motion: reduce) {.car-skeleton, .gesture-grid button b {animation: none}}
+
+/* Performance needs its own atmosphere regardless of the site appearance. */
+#performanceView {
+  --ink: #f4f4f6; --paper: #23262c; --soft: #343942; --border: #474c55; --muted: #c0c3ca;
+  background: linear-gradient(145deg, #12151b, #25272b); color: var(--ink); border-radius: 24px;
+  margin-top: 26px; margin-bottom: 32px; padding: clamp(15px, 4vw, 35px);
+}
+#performanceView :is(.section-intro h2, .car-title, .car-location, .car-specs, .empty-panel h3) {color: var(--ink)}
+#performanceView :is(.dark-overline, .car-price, .car-price-overview) {color: #ffbe68}
+#performanceView :is(.outline-btn,.empty-panel) {color: var(--ink); background: #32363e; border-color: var(--border)}
+#performanceView .tuning-badge {color: #ffdd9b; background: #4b3719}
+
 </style>
 <script>window.LIMBA_OFFLINE_PREVIEW=true;window.LIMBA_FIREBASE_CONFIG=null;window.LUMA_FIREBASE_CONFIG=null;</script>
 
@@ -706,18 +801,16 @@ body { overflow-x:clip; }
 <header class="site-header" id="siteHeader"><div class="wrap head-row">
 <button class="brand brand-limba" id="brandBtn" aria-label="Limba Auto"><img class="limba-wordmark" src="assets/limba/logos/wordmark.png" alt="Limba"><small>AUTO</small></button>
 <nav class="main-nav" aria-label="Navigation">
-<button class="nav-link is-active" data-view="home"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="carsNav">Autos finden</span></button>
-<button class="nav-link" data-view="swipe"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="swipe">Swipe</span></button>
+<button class="nav-link is-active" data-view="home"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"> <span data-release="marketNav">Marktplatz</span></button>
+<button class="nav-link" data-view="swipe"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true" draggable="false"> <span>Limba Drive</span></button>
 <button class="nav-link" data-view="performance"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/car.png" alt="" aria-hidden="true" draggable="false"> <span data-lux="performance">Performance</span></button>
-<button class="nav-link" data-view="favorites"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/favorites.png" alt="" aria-hidden="true" draggable="false"> <span data-lux="garage">Meine Garage</span></button>
-<button class="nav-link" data-view="mine"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="myAds">Meine Inserate</span></button>
 </nav>
-<div class="header-right"><div class="account-area" id="accountArea"><button id="loginBtn" type="button" class="signin-btn account-toggle" aria-haspopup="menu" aria-controls="accountMenu" aria-expanded="false" aria-label="Benutzerkonto"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt="" aria-hidden="true"><span id="loginText" data-i18n="login">Anmelden</span></button><div id="accountMenu" class="account-menu hidden" role="menu" aria-label="Benutzerkonto"><button id="accountOpenBtn" type="button" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt="" aria-hidden="true"><span data-i18n="login">Mein Konto</span></button><button id="accountPreferencesBtn" type="button" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/settings.png" alt="" aria-hidden="true"><span data-i18n="settings">Einstellungen</span></button><button id="inboxBtn" type="button" class="market-inbox-button" role="menuitem" aria-label="Nachrichten"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/notifications.png" alt="" aria-hidden="true"><span data-release="messages">Nachrichten</span><span id="inboxCount" class="market-inbox-count hidden"></span></button><button type="button" data-view="mine" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true"><span data-i18n="myAds">Meine Inserate</span></button></div></div><label for="language" class="sr-only" data-i18n="language">Sprache</label><select id="language" class="sr-only" aria-label="Sprache"></select></div>
+<div class="header-right"><button class="primary-btn marketplace-sell" id="headerSell" type="button"><span aria-hidden="true">+</span> <span data-release="sellNav">Inserieren</span></button><div class="account-area" id="accountArea"><button id="loginBtn" type="button" class="signin-btn account-toggle" aria-haspopup="menu" aria-controls="accountMenu" aria-expanded="false" aria-label="Benutzerkonto"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt="" aria-hidden="true"><span id="loginText" data-i18n="login">Anmelden</span></button><div id="accountMenu" class="account-menu hidden" role="menu" aria-label="Benutzerkonto"><button id="accountOpenBtn" type="button" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt="" aria-hidden="true"><span data-i18n="login">Mein Konto</span></button><button type="button" data-view="favorites" role="menuitem"><span data-lux="garage">Meine Garage</span></button><button id="menuSavedSearches" type="button" role="menuitem"><span data-i18n="savedSearches">Gespeicherte Suchen</span></button><button id="accountPreferencesBtn" type="button" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/settings.png" alt="" aria-hidden="true"><span data-i18n="settings">Einstellungen</span></button><button id="inboxBtn" type="button" class="market-inbox-button" role="menuitem" aria-label="Nachrichten"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/notifications.png" alt="" aria-hidden="true"><span data-release="messages">Nachrichten</span><span id="inboxCount" class="market-inbox-count hidden"></span></button><button type="button" data-view="mine" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true"><span data-i18n="myAds">Meine Inserate</span></button></div></div><label for="language" class="sr-only" data-i18n="language">Sprache</label><select id="language" class="sr-only" aria-label="Sprache"></select></div>
 </div></header>
 <main>
-<section id="homeView">
+<section id="homeView"><section class="market-hero" aria-labelledby="marketHeroTitle"><div class="wrap market-hero-heading"><h1 id="marketHeroTitle" data-release="marketHeroTitle">Finde dein nächstes Auto</h1><p data-release="marketHeroText">Fahrzeuge aus Südosteuropa entdecken.</p></div>
 
-<div class="wrap search-wrap" id="searchAnchor"><form class="search-panel" id="searchForm" role="search"><div class="search-top"><div><h2 data-i18n="carsNav">Autos finden</h2></div><button type="button" id="saveSearchBtn" class="outline-btn compact-btn"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/notifications.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="saveSearch">Suche speichern</span></button></div>
+<div class="wrap search-wrap" id="searchAnchor"><form class="search-panel" id="searchForm" role="search"><div class="search-top"><div><h2 data-release="quickSearch">Schnellsuche</h2></div><button type="button" id="saveSearchBtn" class="outline-btn compact-btn"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/notifications.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="saveSearch">Suche speichern</span></button></div>
 <div class="search-grid">
 
 <div class="search-field"><label for="make" data-i18n="make">Marke</label><div class="catalog-select"><input id="make" type="search" autocomplete="off" maxlength="35" data-i18n-placeholder="allMakes" placeholder="Alle Marken" role="combobox" aria-controls="makeDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="make" aria-label="Markenliste öffnen" data-filter-aria="showMakes">▾</button><div id="makeDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="makeOptions"></datalist></div>
@@ -726,7 +819,7 @@ body { overflow-x:clip; }
 <div class="search-field search-country" id="searchCountryField"><span data-release="filterCountry">Suchländer</span><button id="searchCountryToggle" class="search-country-toggle" type="button" aria-expanded="false" aria-controls="searchCountryPanel" aria-label="Suchländer wählen"></button><div id="searchCountryPanel" class="search-country-panel hidden"><div id="countryChoices" class="country-choices"></div><button id="allCountries" class="link-btn" type="button" data-release="allCountries">Alle Länder</button><p class="muted-copy" id="prefsStatus" aria-live="polite"></p></div></div>
 
 
-<button class="primary-btn search-main" type="submit"><span class="magnify"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><span data-i18n="showResults">Fahrzeuge anzeigen</span><b id="heroCount">1</b></button>
+<button class="primary-btn search-main" type="submit"><span class="magnify"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><span data-i18n="showResults">Fahrzeuge anzeigen</span><b id="heroCount"></b></button>
 </div>
 <div class="filter-ext"><button type="button" class="link-btn" id="advancedToggle" aria-expanded="false" aria-controls="advancedFilters"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/filter.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="moreFilters">Weitere Filter</span><span id="filterChevron"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-chevron_down"></use></svg></span></button><button type="button" class="link-btn faint" id="clearAll" data-i18n="resetFilters">Filter zurücksetzen</button></div>
 <div class="advanced hidden" id="advancedFilters"><label class="search-field"><span data-i18n="yearFrom">Erstzulassung ab</span><select id="yearFrom"></select></label>
@@ -736,8 +829,10 @@ body { overflow-x:clip; }
 <div class="search-field"><label for="radiusPlace" data-release="radiusPlace">Ort für die Umkreissuche</label><input id="radiusPlace" type="search" maxlength="100" autocomplete="off" aria-describedby="radiusStatus"><div id="radiusPlaces" class="place-results hidden"></div></div>
 <label class="search-field"><span data-release="radiusDistance">Umkreis</span><select id="radiusDistance"><option value="25">25 km</option><option value="50" selected>50 km</option><option value="100">100 km</option><option value="250">250 km</option></select></label>
 <p id="radiusStatus" class="helper" role="status"></p>
-</div></form></div><section class="wrap showroom-spotlight" id="showroomSpotlight" aria-label="Limba Showroom"></section>
-<section class="wrap main-content" id="resultsSection"><div class="section-intro"><div><div class="overline dark-overline" data-i18n="featuredCars">FAHRZEUGE ENTDECKEN</div><h2 data-i18n="latestCars">Aktuelle Fahrzeugangebote</h2></div></div><div class="result-ops market-result-toolbar"><button id="resultFilter" class="outline-btn compact-btn" type="button" aria-controls="advancedFilters" aria-expanded="false" data-release="filters">Filter</button><span id="resultCount" class="result-count" role="status"></span><label for="sort" class="sr-only" data-i18n="sort">Sortieren</label><select id="sort" class="sort-select"></select></div>
+</div></form></div></section>
+<section class="wrap main-content" id="resultsSection"><div class="section-intro"><div><div class="overline dark-overline" data-i18n="featuredCars">FAHRZEUGE ENTDECKEN</div><h2 data-i18n="latestCars">Aktuelle Fahrzeugangebote</h2></div></div>
+<div class="country-bar"><h3 data-release="filterCountry">Suchländer</h3><div id="countryQuick" class="country-quick" role="group" aria-label="Suchländer"></div></div>
+<div class="result-ops market-result-toolbar"><button id="resultFilter" class="outline-btn compact-btn" type="button" aria-controls="advancedFilters" aria-expanded="false" data-release="filters">Filter</button><span id="resultCount" class="result-count" role="status"></span><label for="sort" class="sr-only" data-i18n="sort">Sortieren</label><select id="sort" class="sort-select"></select></div>
 <div class="detail-actions seller-segments" role="group" aria-label="Anbieter" data-i18n-aria="sellerType">
 <button type="button" class="outline-btn" data-seller-segment="" aria-pressed="true" data-i18n="allSeller">Alle</button>
 <button type="button" class="outline-btn" data-seller-segment="privateSeller" aria-pressed="false" data-i18n="privateSeller">Privat</button>
@@ -745,27 +840,30 @@ body { overflow-x:clip; }
 </div>
 <div class="active-filters hidden" id="activeFilters" aria-label="Aktive Filter"></div>
 <div class="body-quick" id="bodyQuick"><button data-body="" class="quick-card is-selected"><span class="quick-icon"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/car.png" alt="" aria-hidden="true" draggable="false"></span><b data-i18n="allCars">Alle Autos</b></button><button data-body="suv" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-suv"></use></svg></span><b data-i18n="suv">SUV</b></button><button data-body="sedan" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-sedan"></use></svg></span><b data-i18n="sedan">Limousine</b></button><button data-body="wagon" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-wagon"></use></svg></span><b data-i18n="wagon">Kombi</b></button><button data-body="hatchback" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-hatchback"></use></svg></span><b data-i18n="hatchback">Kompakt</b></button><button data-body="coupe" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-coupe"></use></svg></span><b data-i18n="coupe">Coupé</b></button></div>
-<div id="carGrid" class="car-grid"></div><div id="searchProgress" class="search-progress hidden" role="status"></div><div class="search-more"><button id="loadMoreSearch" type="button" class="outline-btn hidden" data-release="loadMore">Mehr Fahrzeuge laden</button></div><div id="emptyResults" class="empty-panel hidden"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><h3 data-i18n="emptyCars">Keine passenden Fahrzeuge gefunden.</h3><p data-i18n="adjustSearch">Ändere die Filter oder erweitere die Suchländer in den Einstellungen.</p><button class="primary-btn" id="resetEmpty" data-i18n="resetFilters">Filter zurücksetzen</button></div></section>
+<div class="price-toolbar"><label><span data-release="displayCurrency">Anzeigewährung</span><select id="displayCurrency"><option>EUR</option><option>MKD</option><option>ALL</option><option>RSD</option><option>CHF</option></select></label><small id="exchangeRateStatus" role="status"></small></div>
+<div id="carGrid" class="car-grid" aria-busy="true"><div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div><div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div><div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div></div><div id="searchProgress" class="search-progress hidden" role="status"></div><button id="retryListings" type="button" class="outline-btn hidden" data-release="retry">Erneut versuchen</button><div class="search-more"><button id="loadMoreSearch" type="button" class="outline-btn hidden" data-release="loadMore">Mehr Fahrzeuge laden</button></div><div id="emptyResults" class="empty-panel hidden"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><h3 data-i18n="emptyCars">Keine passenden Fahrzeuge gefunden.</h3><p data-release="emptySearchHint">Starte eine neue Suche oder wähle einen Vorschlag.</p><div class="empty-actions"><button type="button" class="primary-btn" id="resetEmpty" data-i18n="resetFilters">Filter zurücksetzen</button><div id="emptySuggestions" class="empty-suggestions"></div></div></div></section>
 
+<section class="wrap showroom-spotlight" id="showroomSpotlight" aria-label="Limba Showroom"></section>
 <section class="wrap swipe-promo"><div><span class="overline">LIMBA DRIVE</span><h2 data-i18n="swipePromo">Fahrzeuge entdecken. Einfach wischen.</h2><p data-i18n="swipePromoDesc">Swipe durch Autos statt durch endlose Listen.</p><button class="white-btn" data-view="swipe" data-i18n="trySwipe">Swipe entdecken →</button></div><div class="promo-art" aria-hidden="true"><img class="limba-promo-logo" src="assets/limba/logos/symbol.png" alt=""></div></section>
 </section>
-<section id="swipeView" class="swipe-full hidden" aria-label="Limba Drive"><div id="swipeCard" class="swipe-photo" tabindex="0" role="group" aria-label="Fahrzeug mit Wischgeste entdecken"></div><button id="swipeHome" class="swipe-home" aria-label="Zur Startseite" title="Home"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/home.png" alt="" aria-hidden="true" draggable="false"></button><button id="swipeFavorite" class="swipe-heart" aria-label="Als Favorit speichern"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/favorites.png" alt="" aria-hidden="true" draggable="false"></button><button id="swipeHelp" class="swipe-help" aria-label="Swipe-Anleitung anzeigen"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/info.png" alt="" aria-hidden="true" draggable="false"></button><div id="swipeTutorial" class="swipe-tutorial hidden"><div class="swipe-instruction"><span class="overline">LIMBA DRIVE</span><h2 data-i18n="howSwipe">So funktioniert Limba Swipe</h2><p data-i18n="swipeTeach">Vier Gesten – danach siehst du nur das Fahrzeug.</p><div class="gesture-grid"><div><b><img class="ui-icon limba-3d-icon " src="assets/limba/icons/back.png" alt="" aria-hidden="true" draggable="false"></b><span data-i18n="swipeNext">Weiter</span></div><div><b><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-arrow_right"></use></svg></b><span data-i18n="swipeOpen">Öffnen</span></div><div><b><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-arrow_up"></use></svg></b><span data-i18n="swipeDetails">Details</span></div><div><b><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-arrow_down"></use></svg></b><span data-i18n="swipeSimilar">Ähnliche</span></div></div><button id="swipeDone" class="primary-btn full-width" data-i18n="swipeStart">Verstanden, los geht's!</button><button id="swipeTutorialBack" class="swipe-tutorial-back" type="button"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/back.png" alt="" aria-hidden="true" draggable="false"> <span>Zurück zum Fahrzeug</span></button></div></div></section>
+<section id="swipeView" class="swipe-full hidden" aria-label="Limba Drive"><div id="swipeCard" class="swipe-photo" tabindex="0" role="group" aria-label="Fahrzeug mit Wischgeste entdecken"></div><button id="swipeHome" class="swipe-home" aria-label="Zur Startseite" title="Home"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/home.png" alt="" aria-hidden="true" draggable="false"></button><div id="swipeActions" class="swipe-actions" role="group" aria-label="Limba Drive">
+<button class="swipe-action swipe-skip" id="swipeSkip" type="button" aria-label="Weiter" data-i18n-aria="swipeNext" title="Weiter">×</button>
+<button class="swipe-action swipe-save" id="swipeFavorite" type="button" aria-label="Als Favorit speichern" data-i18n-aria="saveFavourites" aria-pressed="false">♡</button>
+<button class="swipe-action swipe-info" id="swipeInfo" type="button" aria-label="Details" data-i18n-aria="swipeDetails">ⓘ</button>
+<button class="swipe-action swipe-similar" id="swipeSimilar" type="button" aria-label="Ähnliche" data-i18n-aria="swipeSimilar">ϟ</button>
+</div><button id="swipeHelp" class="swipe-help" aria-label="Swipe-Anleitung anzeigen"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/info.png" alt="" aria-hidden="true" draggable="false"></button><div id="swipeTutorial" class="swipe-tutorial hidden" role="dialog" aria-modal="true" aria-labelledby="swipeTutorialTitle"><div class="swipe-instruction"><span class="overline">LIMBA DRIVE</span><h2 id="swipeTutorialTitle" data-i18n="howSwipe">So funktioniert Limba Swipe</h2><div class="gesture-grid"><button type="button" data-gesture="left"><b aria-hidden="true">←</b><span data-i18n="swipeNext">Weiter</span></button><button type="button" data-gesture="right"><b aria-hidden="true">→</b><span data-i18n="swipeOpen">Öffnen</span></button><button type="button" data-gesture="up"><b aria-hidden="true">↑</b><span data-i18n="swipeDetails">Details</span></button><button type="button" data-gesture="down"><b aria-hidden="true">↓</b><span data-i18n="swipeSimilar">Ähnliche</span></button></div><button id="swipeDone" class="primary-btn full-width" data-i18n="swipeStart">Verstanden, los geht's!</button><button id="swipeTutorialBack" class="swipe-tutorial-back" type="button"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/back.png" alt="" aria-hidden="true" draggable="false"> <span>Zurück zum Fahrzeug</span></button></div></div></section>
 <section class="wrap subpage hidden" id="favoritesView"><div class="section-intro"><div><span class="overline dark-overline">LIMBA GARAGE</span><h2 data-lux="garage">Meine Garage</h2></div></div><div id="garageComparison"></div><div id="favoritesGrid" class="car-grid"></div></section>
-<section class="wrap subpage hidden" id="performanceView"><div class="section-intro"><div><span class="overline dark-overline">LIMBA PERFORMANCE</span><h2 data-lux="performance">Performance</h2><p class="muted-copy" data-lux="performanceDesc">Entdecke Fahrzeuge mit Tuning und besonderen Umbauten.</p></div></div><div class="car-grid" id="performanceGrid"></div></section>
+<section class="wrap subpage hidden" id="performanceView"><div class="section-intro"><div><span class="overline dark-overline">LIMBA PERFORMANCE</span><h2 data-lux="performance">Performance</h2><p class="muted-copy" data-lux="performanceDesc">Entdecke Fahrzeuge mit Tuning und besonderen Umbauten.</p></div></div><div class="car-grid" id="performanceGrid"></div><button id="loadMorePerformance" class="outline-btn hidden" type="button" data-release="loadMore">Mehr Fahrzeuge laden</button></section>
 <section class="wrap subpage hidden" id="mineView"><div class="section-intro"><div><span class="overline dark-overline" data-i18n="myAds">Meine Inserate</span><h2 data-i18n="myVehicles">Meine Fahrzeuge</h2></div></div><div id="mineGrid" class="car-grid"></div></section>
-<section class="wrap subpage hidden" id="discoverView">
-<h2 data-release="discover">Entdecken</h2>
-<div class="discover-actions">
-<button class="outline-btn" type="button" data-view="swipe" data-i18n="swipe">Swipe</button>
-<button class="outline-btn" type="button" data-view="performance" data-lux="performance">Performance</button>
-</div></section>
 <section class="wrap subpage hidden" id="accountView">
 <h2 data-release="accountNav">Konto</h2>
 <div class="account-actions">
 <button class="primary-btn" type="button" id="accountSignIn" data-i18n="login">Anmelden</button>
+<button class="outline-btn" type="button" data-view="favorites" data-lux="garage">Meine Garage</button>
+<button class="outline-btn" type="button" id="mobileSavedSearches" data-i18n="savedSearches">Gespeicherte Suchen</button>
+<button class="outline-btn" type="button" id="navInbox"><span data-release="messages">Nachrichten</span><span id="navInboxCount" class="market-inbox-count hidden"></span></button>
 <button class="outline-btn" type="button" data-view="mine" data-i18n="myAds">Meine Inserate</button>
 <button class="outline-btn" type="button" data-view="settings" data-i18n="settings">Einstellungen</button>
-<button class="outline-btn" type="button" data-view="discover" data-release="discover">Entdecken</button>
 </div></section>
 <section class="wrap subpage hidden" id="settingsView">
 <h2 data-i18n="settings">Einstellungen</h2>
@@ -775,7 +873,7 @@ body { overflow-x:clip; }
 <select id="settingsTheme" class="settings-language-select"><option value="system" data-release="systemTheme">System</option><option value="light" data-release="lightTheme">Hell</option><option value="dark" data-release="darkTheme">Dunkel</option></select>
 <label for="settingsLanguage" id="settingsLanguageLabel" class="settings-inline-label">Sprache auswählen</label><select id="settingsLanguage" class="settings-language-select"></select>
 </section>
-<section class="settings-card"><h3 data-i18n="savedSearches">Gespeicherte Suchen</h3><div id="savedSearchesList"></div>
+<section class="settings-card"><h3 data-i18n="savedSearches">Gespeicherte Suchen</h3><div id="savedSearchesList" tabindex="-1"></div>
 <button class="outline-btn" id="settingsCountries" type="button" data-release="chooseCountries">Suchländer auswählen</button>
 </section>
 <section class="settings-card"><h3 data-release="notifications">Benachrichtigungen</h3><p class="muted-copy" data-release="webPushHint">Push-Mitteilungen werden in der Android-App verwaltet. Deine Suchalarme kannst du hier in Limba lesen.</p>
@@ -789,12 +887,11 @@ body { overflow-x:clip; }
 </section></div></section>
 </main>
 <footer class="site-footer"><div class="wrap footer-layout"><div><div class="brand footer-brand"><img class="limba-wordmark limba-wordmark-footer" src="assets/limba/logos/wordmark.png" alt="Limba"><small>AUTO</small></div><p data-i18n="footerCar">Dein Automarkt für Südosteuropa.</p><p class="muted-copy">Vehicle data by <a href="https://vehiclesdb.com" target="_blank" rel="noopener noreferrer">VehiclesDB</a></p></div><div class="footer-links"><button data-view="home" data-i18n="carsNav">Autos finden</button><button id="footerSafety" data-i18n="safeTrading">Sicher handeln</button><button id="footerPrivacy" data-i18n="privacy">Datenschutz</button></div></div></footer>
-<button id="fabAdd" class="fab-add" type="button" aria-label="Auto hinzufügen" title="Auto hinzufügen"><span class="fab-plus" aria-hidden="true">+</span><span id="fabAddLabel" class="sr-only">Auto hinzufügen</span></button>
 <nav class="mobile-nav" aria-label="Mobile Navigation">
 <button type="button" data-view="home"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/search.png" alt=""><small data-release="searchNav">Suche</small></button>
-<button type="button" data-view="favorites"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/favorites.png" alt=""><small data-release="favoritesNav">Merkliste</small></button>
+<button type="button" data-view="swipe"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/vehicle_cards.png" alt=""><small>Drive</small></button>
+<button type="button" data-view="performance"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/car.png" alt=""><small>Performance</small></button>
 <button type="button" id="navSell"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/add_car.png" alt=""><small data-release="sellNav">Inserieren</small></button>
-<button type="button" id="navInbox"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/messages.png" alt=""><small data-release="messages">Nachrichten</small><span id="navInboxCount" class="market-inbox-count hidden"></span></button>
 <button type="button" data-view="account"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt=""><small data-release="accountNav">Konto</small></button>
 </nav>
 <div id="modal" class="modal-wrap hidden" role="presentation"><div class="modal-backdrop" data-close="true"></div><div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button id="modalClose" class="modal-close" aria-label="Schliessen"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-close"></use></svg></button><div id="modalContent"></div></div></div>
@@ -1851,7 +1948,7 @@ const createLimbaExperiences=function createLimbaExperiences(api){
   const performance=el('performanceGrid');
   if(performance){
    const cars=arr.filter(car=>car.performance===true||String(car.modelExtension||'').trim()||String(car.modificationNotes||'').trim());
-   performance.innerHTML=cars.length?cars.map(carCard).join(''):`<div class="empty-panel"><h3>${h(X('noPerformance'))}</h3><p>${h(X('performanceDesc'))}</p></div>`;
+   performance.innerHTML=cars.length?cars.map(car=>carCard(car,{performance:true})).join(''):`<div class="empty-panel"><h3>${h(X('noPerformance'))}</h3><p>${h(X('performanceDesc'))}</p></div>`;
   }
   const summary=el('garageComparison');
   if(summary)summary.innerHTML=`<div class="garage-toolbar"><p>${h(X('garageDesc'))}</p><div><button type="button" class="outline-btn" data-compare-clear>${h(X('clearCompare'))}</button><button type="button" class="primary-btn" data-compare-open ${selected.size===2?'':'disabled'}>${h(X('compare'))} (${selected.size}/2)</button></div></div>`;
@@ -2174,10 +2271,45 @@ const marketplace19Translations = {
   ro: {searchNav:'Caută', favoritesNav:'Salvate', sellNav:'Publică', accountNav:'Cont', discover:'Descoperă'},
 };
 
+const marketplaceUiTranslations = {
+  en: {
+    marketNav: 'Marketplace', marketHeroTitle: 'Find your next car', marketHeroText: 'Discover vehicles across Southeastern Europe.',
+    quickSearch: 'Quick search', displayCurrency: 'Display currency', rateReference: 'Reference rate',
+    rateUnavailable: 'Exchange rate unavailable. Prices shown in EUR.', emptySearchHint: 'Start a new search or try one of these options.',
+    browseCountry: 'Vehicles in {country}', browsePerformance: 'Explore performance models',
+    customsInListingCountry: 'Customs in the listing country (seller’s statement)', customsUnknown: 'Customs status unknown',
+    customsCleared: 'Cleared in the listing country', customsRequired: 'Import required in the listing country',
+    stage1: 'Stage 1', stage2: 'Stage 2', suspension: 'Coilovers', exhaust: 'Exhaust system',
+  },
+  de: {
+    marketNav: 'Marktplatz', marketHeroTitle: 'Finde dein nächstes Auto', marketHeroText: 'Fahrzeuge aus Südosteuropa entdecken.',
+    quickSearch: 'Schnellsuche', displayCurrency: 'Anzeigewährung', rateReference: 'Referenzkurs vom',
+    rateUnavailable: 'Kurs nicht verfügbar. Preise in EUR.', emptySearchHint: 'Starte eine neue Suche oder wähle einen Vorschlag.',
+    browseCountry: 'Fahrzeuge in {country}', browsePerformance: 'Performance-Modelle entdecken',
+    customsInListingCountry: 'Zollstatus im Inseratsland laut Verkäufer', customsUnknown: 'Zollstatus unbekannt',
+    customsCleared: 'Im Inseratsland verzollt', customsRequired: 'Einfuhr im Inseratsland nötig',
+    suspension: 'Gewindefahrwerk', exhaust: 'Abgasanlage',
+  },
+  sq: {
+    marketNav: 'Tregu', marketHeroTitle: 'Gjej makinën tënde të radhës', marketHeroText: 'Zbulo automjete në Europën Juglindore.',
+    quickSearch: 'Kërkim i shpejtë', displayCurrency: 'Monedha e shfaqur', rateReference: 'Kursi i referencës',
+    rateUnavailable: 'Kursi nuk është i disponueshëm. Çmimet shfaqen në EUR.', emptySearchHint: 'Fillo një kërkim të ri ose zgjidh një sugjerim.',
+    browseCountry: 'Automjete në {country}', browsePerformance: 'Zbulo modelet Performance',
+    customsInListingCountry: 'Statusi doganor në vendin e shpalljes sipas shitësit', customsUnknown: 'Statusi doganor i panjohur',
+    customsCleared: 'Zhdoganuar në vendin e shpalljes', customsRequired: 'Kërkohet import në vendin e shpalljes',
+    suspension: 'Amortizatorë të rregullueshëm', exhaust: 'Sistemi i shkarkimit',
+  },
+  mk: {marketNav: 'Пазар', quickSearch: 'Брзо пребарување'},
+  'sr-Latn': {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
+  'sr-Cyrl': {marketNav: 'Огласи', quickSearch: 'Брза претрага'},
+  hr: {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
+  bs: {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
+};
+
 const RELEASE_TRANSLATIONS = Object.fromEntries(
   Object.entries(translations).map(([locale, entries]) => [
     locale, { ...Object.fromEntries(keys.map((key, index) => [key, entries[index]])), ...dealerTranslations.en, ...dealerTranslations[locale],
-      ...marketplace19Translations.en, ...marketplace19Translations[locale] }
+      ...marketplace19Translations.en, ...marketplace19Translations[locale], ...marketplaceUiTranslations.en, ...marketplaceUiTranslations[locale] }
   ])
 );
 
@@ -3032,14 +3164,14 @@ function createDealerAccountUI({ el, state, h, L, T, modal, toast, openAuth,
 const fieldLimits = {
   make: 35, model: 65, modelExtension: 40, year: 4, mileage: 12,
   fuel: 16, transmission: 16, body: 16, power: 10, engineName: 80, engineCapacity: 10,
-  price: 12, sellerType: 20, country: 2, city: 90, placeId: 13,
+  price: 12, sellerType: 20, country: 2, city: 90, placeId: 13, customsStatus: 14,
   condition: 12, accidentStatus: 12, conditionNote: 240, serviceHistory: 500,
   modificationNotes: 500, documentNotes: 240, description: 3000,
   batteryHealth: 16, batteryMeasuredAt: 10, batteryIssuer: 120, batteryUrl: 500,
 };
 
 const priceFields = new Set([
-  'price', 'sellerType', 'country', 'city', 'placeId', 'description',
+  'price', 'sellerType', 'country', 'city', 'placeId', 'customsStatus', 'description',
 ]);
 const stepLabels = ['draftVehicleStep', 'draftPhotosStep', 'draftPriceStep', 'draftPreviewStep'];
 
@@ -3620,6 +3752,24 @@ function createWebMarketplaceSearch({request, criteria, update}) {
 }
 
 
+/* functions/listing-badges.mjs */
+const badges = {
+  stage1: /\bstage\s*[-–]?\s*1\b/i,
+  stage2: /\bstage\s*[-–]?\s*2\b/i,
+  suspension: /\b(?:gewindefahrwerk|coilovers?)\b/i,
+  exhaust: /\b(?:sportabgasanlage|abgasanlage|sportauspuff|cat[- ]?back)\b/i,
+};
+
+function listingBadges(listing) {
+  if (Array.isArray(listing.tuningBadges)) {
+    return Object.keys(badges).filter(key => listing.tuningBadges.includes(key));
+  }
+  // Only derive from the seller's explicit tuning statement or model suffix.
+  const text = [listing.modelExtension, listing.modificationNotes].filter(Boolean).join(' ');
+  return Object.entries(badges).filter(([, pattern]) => pattern.test(text)).map(([key]) => key);
+}
+
+
 /* app.js */
 
 const $=id=>document.getElementById(id);
@@ -3691,6 +3841,31 @@ function switchAccount(user){
 }
 let serverActive=[],serverOwned=[],unsubscribeOwned=null,unsubscribeSearches=null,accountLoad=0;
 const favoriteCars=new Map();
+let listingLoad = offlinePreview ? 'ready' : 'loading';
+let legacyRetry;
+let legacyDeadline;
+let advanceSwipeAfterPage = false;
+
+function beginListingLoad() {
+ listingLoad = 'loading';
+ clearTimeout(legacyDeadline);
+ legacyDeadline = setTimeout(() => {
+  if (listingLoad === 'loading' && !marketplaceSearch.enabled) {
+   listingLoad = 'failed';
+   renderAll();
+  }
+ }, 12000);
+}
+
+async function retryListingLoad() {
+ if (legacyRetry) return legacyRetry();
+ beginListingLoad();
+ renderAll();
+ if (!await connectFirebase()) {
+  listingLoad = 'failed';
+  renderAll();
+ }
+}
 const marketplaceSearch=createWebMarketplaceSearch({request:callSecureMarketplace,
  criteria:()=>({filters:state.filters,countries:state.countries,sort:state.sort==='latest'?'recent':state.sort,
   ...(state.radius?{radius:state.radius}:{})}),update:mergeListings});
@@ -3704,6 +3879,63 @@ function mergeListings(){
 
 const D=k=>(GTR_COPY[state.locale]||GTR_COPY.de)[k]||GTR_COPY.de[k]||k;
 const price=x=>new Intl.NumberFormat(state.locale==='cnr'?'sr-Latn':state.locale,{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Number(x)||0);
+const displayCurrencies = ['EUR', 'MKD', 'ALL', 'RSD', 'CHF'];
+const cachedRates = restore('displayRates', {});
+let rateTable = {};
+let currency = 'EUR';
+let currencyRequest;
+let currencyError = false;
+function validRate(row) {
+ const age = Date.now() - Date.parse(row?.date);
+ return Number.isFinite(row?.rate) && row.rate > 0 && age > -86400000 && age <= 7 * 86400000;
+}
+function displayPrice(amount) {
+ const quote = rateTable[currency];
+ if (currency === 'EUR' || !validRate(quote)) return price(amount);
+ return '≈ ' + new Intl.NumberFormat(state.locale === 'cnr' ? 'sr-Latn' : state.locale, {
+  style: 'currency', currency, maximumFractionDigits: 0,
+ }).format((Number(amount) || 0) * quote.rate);
+}
+async function changeCurrency(value) {
+ if (!displayCurrencies.includes(value)) return;
+ currency = value;
+ currencyError = false;
+ persist('displayCurrency', value);
+ renderAll();
+ if (value === 'EUR' || validRate(rateTable[value])) return;
+ rateTable = Object.fromEntries(displayCurrencies.filter(code => validRate(cachedRates?.[code]))
+  .map(code => [code, cachedRates[code]]));
+ if (validRate(rateTable[value])) renderAll();
+ try {
+  currencyRequest ??= fetch('https://api.frankfurter.dev/v2/rates?base=EUR&quotes=MKD,ALL,RSD,CHF', {
+   referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(6500),
+  }).then(response => {
+   if (!response.ok) throw new Error('Reference rates unavailable');
+   return response.json();
+  }).then(rows => {
+   for (const row of rows) {
+    if (row.base === 'EUR' && displayCurrencies.includes(row.quote) && validRate(row)) {
+     rateTable[row.quote] = { rate: row.rate, date: row.date };
+    }
+   }
+   persist('displayRates', rateTable);
+  }).finally(() => { currencyRequest = null; });
+  await currencyRequest;
+ } catch {
+  // A valid cached rate is still usable with its quotation date.
+ }
+ currencyError = currency !== 'EUR' && !validRate(rateTable[currency]);
+ renderAll();
+}
+function renderCurrencyStatus() {
+ const rate = rateTable[currency];
+ $('exchangeRateStatus').textContent = currency === 'EUR' ? '' : validRate(rate) ?
+  L('rateReference') + ' ' + rate.date + ' · Frankfurter' : L(currencyError ? 'rateUnavailable' : 'loading');
+}
+function customsLabel(listing) {
+ if (listing.customsCountry !== listing.country) return L('customsUnknown');
+ return L(({cleared: 'customsCleared', importRequired: 'customsRequired'})[listing.customsStatus] || 'customsUnknown');
+}
 const number=x=>new Intl.NumberFormat(state.locale==='cnr'?'sr-Latn':state.locale).format(Number(x)||0);
 const flag=c=>COUNTRIES.find(x=>x[0]===c)?.[1]||'🌐';
 const countryLabel=c=>{if(c==='XK')return ({de:'Kosovo',en:'Kosovo',sq:'Kosovë',tr:'Kosova',el:'Κόσοβο','sr-Cyrl':'Косово',mk:'Косово',bg:'Косово'})[state.locale]||'Kosovo';try{return new Intl.DisplayNames([state.locale==='cnr'?'sr-Latn':state.locale],{type:'region'}).of(c)||c}catch{return COUNTRIES.find(x=>x[0]===c)?.[2]||c}};
@@ -3712,7 +3944,7 @@ const labelFor=(field,v)=>T(v||field);
 const isSample=x=>x?.id==='demo-nissan-gtr';
 const isDemo=x=>Boolean(x?.isDemo||x?.isPreview||String(x?.id||'').startsWith('demo-'));
 const toast=(msg)=>{$('toast').textContent=msg;$('toast').classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('visible'),3200)};
-const luxUI=createLimbaExperiences({el:$,state,filtered:()=>filtered(),carCard:x=>carCard(x),price,number,flag,countryLabel,h,safeURL,T,F,X,L,isDemo,openDetails:openListing,modal,toast});
+const luxUI=createLimbaExperiences({el:$,state,filtered:()=>filtered(),carCard,price,number,flag,countryLabel,h,safeURL,T,F,X,L,isDemo,openDetails:openListing,modal,toast});
 const marketUI=createLimbaMarketplace({el:$,state,h,price,number,L,T,F,W,X,modal,toast,openAuth,openListing,renderSavedSearches,queueContact});
 const dealerUI=createDealerAccountUI({el:$,state,h,L,T,modal,toast,openAuth,carCard,openListing,countryLabel,COUNTRIES,number,callSecureMarketplace});
 let searchAnchor, restoreAnchorPending=false, lastResultMarkup;
@@ -3752,7 +3984,7 @@ async function resumeContact(){
   if(guard()){clearContact();closeModal();toast(L('listingUnavailable'))}
  }
 }
-function applyTranslations(){document.documentElement.lang=state.locale;document.title=`Limba Auto · ${T('heroTitle1')}`;document.querySelector('meta[name="description"]').content=T('footerCar');document.querySelector('meta[property="og:title"]').content=document.title;document.querySelector('meta[property="og:description"]').content=T('heroDescription');document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=T(el.dataset.i18n)});document.querySelectorAll('[data-release]').forEach(el=>{el.textContent=L(el.dataset.release)});marketUI.updateInboxButton();document.querySelectorAll('[data-lux]').forEach(el=>{el.textContent=X(el.dataset.lux)});document.querySelectorAll('[data-filter]').forEach(el=>{el.textContent=S(el.dataset.filter)});document.querySelectorAll('[data-filter-aria]').forEach(el=>{el.setAttribute('aria-label',S(el.dataset.filterAria))});document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',T(el.dataset.i18nAria)));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=T(el.dataset.i18nPlaceholder));$('loginText').textContent=state.user?(state.user.email?.split('@')[0]||T('logout')):T('login');$('loginBtn').setAttribute('aria-label',$('loginText').textContent);$('accountSignIn').textContent=state.user?L('accountNav'):T('login');$('accountOpenBtn').querySelector('span').textContent=$('accountSignIn').textContent;$('accountStatus').textContent=state.user?.isPreview?F('previewMode'):T(state.user?'profileSync':'guestSync');$('fabAdd').setAttribute('aria-label',F('addVehicle'));$('fabAdd').title=F('addVehicle');$('fabAddLabel').textContent=F('addVehicle');$('settingsLanguageLabel').textContent=F('chooseLanguage');$('swipeHelp').setAttribute('aria-label',T('learnSwipeAgain'));$('swipeHome').setAttribute('aria-label',T('backToMarket'));$('swipeFavorite').setAttribute('aria-label',T('saveFavourites'));$('modalClose').setAttribute('aria-label',T('cancel'));$('swipeTutorialBack').querySelector('span').textContent=D('backToCar');document.querySelector('.swipe-photo').setAttribute('aria-label',T('swipeTitle'));renderInputs();renderAll()}
+function applyTranslations(){document.documentElement.lang=state.locale;document.title=`Limba Auto · ${T('heroTitle1')}`;document.querySelector('meta[name="description"]').content=T('footerCar');document.querySelector('meta[property="og:title"]').content=document.title;document.querySelector('meta[property="og:description"]').content=T('heroDescription');document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=T(el.dataset.i18n)});document.querySelectorAll('[data-release]').forEach(el=>{el.textContent=L(el.dataset.release)});marketUI.updateInboxButton();document.querySelectorAll('[data-lux]').forEach(el=>{el.textContent=X(el.dataset.lux)});document.querySelectorAll('[data-filter]').forEach(el=>{el.textContent=S(el.dataset.filter)});document.querySelectorAll('[data-filter-aria]').forEach(el=>{el.setAttribute('aria-label',S(el.dataset.filterAria))});document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',T(el.dataset.i18nAria)));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=T(el.dataset.i18nPlaceholder));$('loginText').textContent=state.user?(state.user.email?.split('@')[0]||T('logout')):T('login');$('loginBtn').setAttribute('aria-label',$('loginText').textContent);$('accountSignIn').textContent=state.user?L('accountNav'):T('login');$('accountOpenBtn').querySelector('span').textContent=$('accountSignIn').textContent;$('accountStatus').textContent=state.user?.isPreview?F('previewMode'):T(state.user?'profileSync':'guestSync');$('settingsLanguageLabel').textContent=F('chooseLanguage');$('swipeHelp').setAttribute('aria-label',T('learnSwipeAgain'));$('swipeHome').setAttribute('aria-label',T('backToMarket'));$('swipeFavorite').setAttribute('aria-label',T('saveFavourites'));$('modalClose').setAttribute('aria-label',T('cancel'));$('swipeTutorialBack').querySelector('span').textContent=D('backToCar');document.querySelector('.swipe-photo').setAttribute('aria-label',T('swipeTitle'));renderInputs();renderAll()}
 function opts(items,first,chosen){return `<option value="">${h(T(first))}</option>`+items.map(v=>`<option value="${h(v)}" ${chosen===v?'selected':''}>${h(T(v))}</option>`).join('')}
 let catalogChooser=null;
 function setupCatalogChooser(ids=['make','model']){const controller=new AbortController();
@@ -3831,12 +4063,37 @@ function filtered(){if(marketplaceSearch.enabled)return marketplaceSearch.items;
  if(f.capacityFrom&&(!Number.isFinite(Number(x.engineCapacity))||!x.engineCapacity||Number(x.engineCapacity)<Number(f.capacityFrom)))return false;
  if(f.capacityTo&&(!Number.isFinite(Number(x.engineCapacity))||!x.engineCapacity||Number(x.engineCapacity)>Number(f.capacityTo)))return false;return true});
  if(state.sort==='priceLow')items.sort((a,b)=>a.price-b.price);else if(state.sort==='priceHigh')items.sort((a,b)=>b.price-a.price);else items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));return items}
-function carCard(x){const liked=state.favorites.includes(x.id);return `<article class="car-card" data-open="${h(x.id)}" tabindex="0" aria-label="${h(x.title)}"><div class="car-img"><img loading="lazy" src="${h(safeURL(x.image)||'assets/limba/icons/car.png')}" alt="${h(x.title)}"/><span class="car-tag">${h(isDemo(x)?F('previewOnly'):T(x.sellerType||'privateSeller'))}</span><button class="card-heart ${liked?'active':''}" type="button" data-like="${h(x.id)}" aria-pressed="${liked}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button></div><div class="card-body"><strong class="car-price car-price-overview">${price(x.price)}</strong><h3 class="car-title">${h(x.title)}</h3><p class="car-sub">${h(T(x.fuel||'petrol'))} · ${h(T(x.transmission||'manual'))}${x.engineName?' · '+h(x.engineName):''}</p><div class="car-specs"><span>${h(String(x.year||'—'))}</span><span>${number(x.mileage)} ${h(T('kmUnit'))}</span><span>${number(x.power)} ${h(T('powerUnit'))}</span></div><div class="car-bottom"><div class="car-location">${icon('location')} ${flag(x.country)} ${h(x.city)}, ${h(countryLabel(x.country))}${Number.isFinite(x.distanceKm)?' · '+h(number(x.distanceKm))+' '+h(T('kmUnit')):''}</div></div></div></article>`}
+function carCard(car, {performance = false} = {}) {
+ const liked = state.favorites.includes(car.id);
+ const badges = performance ? listingBadges(car) : [];
+ return `<article class="car-card" data-open="${h(car.id)}" tabindex="0" aria-label="${h(car.title)}">
+  <div class="car-img"><img loading="lazy" src="${h(safeURL(car.image) || 'assets/limba/icons/car.png')}" alt="${h(car.title)}">
+   <span class="car-tag">${h(isDemo(car) ? F('previewOnly') : T(car.sellerType || 'privateSeller'))}</span>
+   <button class="card-heart ${liked ? 'active' : ''}" type="button" data-like="${h(car.id)}" aria-pressed="${liked}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button>
+  </div>
+  <div class="car-body">
+   <strong class="car-price car-price-overview">${h(displayPrice(car.price))}</strong>
+   <h3 class="car-title">${h(car.title)}</h3>
+   <div class="car-specs"><span aria-label="${h(T('firstReg'))}">${h(car.year || '—')}</span><span>${number(car.mileage)} ${h(T('kmUnit'))}</span></div>
+   <div class="car-location">${flag(car.country)} ${h(car.city)}, ${h(countryLabel(car.country))}${Number.isFinite(car.distanceKm) ? ' · ' + h(number(car.distanceKm)) + ' ' + h(T('kmUnit')) : ''}</div>
+   <div class="card-badges"><span class="customs-badge">${h(customsLabel(car))}</span>
+   ${badges.map(badge => `<span class="tuning-badge" title="${h(X('sellerClaims'))}">${h(L(badge))}</span>`).join('')}</div>
+  </div></article>`;
+}
+
+function skeletonCards(count = 4) {
+ return '<div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div>'.repeat(count);
+}
 function renderAll(){
- const arr=filtered(), searching=marketplaceSearch.enabled, pending=marketplaceSearch.pending, failed=marketplaceSearch.failed;
+ const arr=filtered(), searching=marketplaceSearch.enabled;
+ const pending = searching ? marketplaceSearch.pending : listingLoad === 'loading';
+ const failed = searching ? marketplaceSearch.failed : listingLoad === 'failed';
+ $('carGrid').setAttribute('aria-busy', String(pending));
+ $('retryListings').classList.toggle('hidden', !failed || searching);
+ renderCurrencyStatus();
  const focus=document.activeElement;
  const focusedGrid=$('carGrid').contains(focus)?focus.closest('[data-open]')?.dataset.open:null;
- const nextCards=arr.map(carCard).join('');
+ const nextCards=arr.length ? arr.map(car=>carCard(car)).join('') : pending ? skeletonCards() : '';
  if(lastResultMarkup!==nextCards){
   $('carGrid').innerHTML=nextCards;
   lastResultMarkup=nextCards;
@@ -3864,7 +4121,15 @@ function renderAll(){
   return '<div class="my-car-item">'+carCard(x)+'<div class="mine-actions"><span class="status-pill">'+h(W('statusLabel'))+': '+h(W('status'+status[0].toUpperCase()+status.slice(1)))+'</span><button class="outline-btn" data-edit="'+h(x.id)+'">'+h(W('editAd'))+'</button>'+actions+'<button class="outline-btn" data-delete="'+h(x.id)+'">'+h(T('removeAd'))+'</button></div></div>';
  }).join(''):`<div class="empty-panel"><h3>${h(T('noOwnCars'))}</h3></div>`;
  renderSearchCountries();renderSavedSearches();
- luxUI.render();renderSwipe();restoreSearchAnchor()}
+ luxUI.render();
+ if (state.view === 'performance') {
+  if (pending && !$('performanceGrid').querySelector('[data-open]')) $('performanceGrid').innerHTML = skeletonCards();
+  $('loadMorePerformance').classList.toggle('hidden', !searching || (!marketplaceSearch.hasMore && !failed));
+  $('loadMorePerformance').textContent=L(failed?'retry':'loadMore');
+  $('loadMorePerformance').disabled=pending;
+ }
+ renderSwipe(pending);
+ restoreSearchAnchor()}
 function renderSavedSearches(){
  const saved=state.searches.map((item,index)=>`<div class="saved-search-row">
  <span>${h(item.name||T('yourSavedSearch'))}</span><button type="button" data-apply="${index}">${h(T('repeatSearch'))}</button>
@@ -3896,6 +4161,14 @@ function renderSearchCountries(){
  const label=state.countries.length?(state.countries.length<=2?state.countries.map(c=>flag(c)+' '+countryLabel(c)).join(', '):state.countries.length+' '+L('filterCountry')):L('allCountries');
  $('searchCountryToggle').innerHTML='<span>'+h(label)+'</span>';
  $('searchCountryToggle').setAttribute('aria-label',L('filterCountry')+': '+label);
+ const quick = $('countryQuick');
+ const focusCountry = quick.contains(document.activeElement) ? document.activeElement.dataset.countryQuick : undefined;
+ const order = ['','MK','XK','AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
+ quick.setAttribute('aria-label', L('filterCountry'));
+ quick.innerHTML = order.map(code => `<button type="button" data-country-quick="${code}" aria-pressed="${code ? state.countries.includes(code) : !state.countries.length}">${code ? flag(code) + ' ' + h(countryLabel(code)) : h(L('allCountries'))}</button>`).join('');
+ if (focusCountry !== undefined) quick.querySelector(`[data-country-quick="${CSS.escape(focusCountry)}"]`)?.focus({preventScroll:true});
+ $('emptySuggestions').innerHTML = ['MK','XK'].map(code => `<button type="button" class="outline-btn" data-empty-country="${code}">${flag(code)} ${h(L('browseCountry').replace('{country}',countryLabel(code)))}</button>`).join('') +
+  `<button type="button" class="outline-btn" id="emptyPerformance">${h(L('browsePerformance'))}</button>`;
  $('countryChoices').innerHTML=COUNTRIES.map(([c,fl])=>'<label class="country-choice '+(state.countries.includes(c)?'is-active':'')+'"><input type="checkbox" value="'+h(c)+'" '+(state.countries.includes(c)?'checked':'')+'><span>'+fl+' '+h(countryLabel(c))+'</span></label>').join('');
 }
 function closeSearchCountries(){
@@ -3927,7 +4200,7 @@ function restoreSearchAnchor(){
 }
 function showView(view,{fromHistory=false}={}){
  closeAccountMenu();closeSearchCountries();
- const views=['home','swipe','favorites','performance','mine','settings','account','discover'];if(!views.includes(view))return;
+ const views=['home','swipe','favorites','performance','mine','settings','account'];if(!views.includes(view))return;
  const changed=state.view!==view;
  if(changed&&state.view==='home')rememberSearchAnchor();
  if(changed&&view==='home')restoreAnchorPending=true;
@@ -3935,26 +4208,75 @@ function showView(view,{fromHistory=false}={}){
  state.view=view;
  views.forEach(v=>$(v==='home'?'homeView':`${v}View`).classList.toggle('hidden',v!==view));
  document.querySelectorAll('.nav-link,.mobile-nav [data-view]').forEach(b=>{
-  const active=b.dataset.view===view||(b.dataset.view==='account'&&['mine','settings','discover'].includes(view));
+  const active=b.dataset.view===view||(b.dataset.view==='account'&&['mine','favorites','settings'].includes(view));
   b.classList.toggle('is-active',active);
   if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
  });
  document.body.style.overflow=view==='swipe'?'hidden':'';
- if(view!=='swipe')$('swipeTutorial').classList.add('hidden');
+ if(view!=='swipe')hideTutorial();
  if(changed&&view!=='home')window.scrollTo({top:0,behavior:'instant'});
- if(view==='swipe'&&!state.swipeSeen)showTutorial();renderAll()
+ if(changed&&view==='swipe') tutorialOffered=false;
+ renderAll();
 }
-function showTutorial(){$('swipeTutorial').classList.remove('hidden')}
-function dismissTutorial(){$('swipeTutorial').classList.add('hidden');state.swipeSeen=true;persist('swipeSeen',true)}
-function hideTutorial(){$('swipeTutorial').classList.add('hidden')}
-function renderSwipe(){const arr=filtered();if(!arr.length){$('swipeCard').innerHTML=`<div class="empty-panel swipe-empty"><h3>${h(T('emptyCars'))}</h3></div>`;$('swipeFavorite').classList.remove('active');return}state.swipeIndex=((state.swipeIndex%arr.length)+arr.length)%arr.length;const x=arr[state.swipeIndex];$('swipeCard').innerHTML=`<img src="${h(safeURL(x.image))}" alt="${h(x.title)}" draggable="false"><div class="swipe-shade"></div><div class="swipe-details"><span class="swipe-demo-badge">${h(isDemo(x)?F('previewOnly'):T('carsNav'))} · ${state.swipeIndex+1}/${arr.length}</span><h2>${h(x.title)}</h2><strong>${price(x.price)}</strong><p>${flag(x.country)} ${h(x.city)} · ${number(x.mileage)} ${h(T('kmUnit'))} · ${h(String(x.year))}</p></div>`;$('swipeFavorite').innerHTML=icon('heart');$('swipeFavorite').classList.toggle('active',state.favorites.includes(x.id))}
+let tutorialOffered = false;
+function showTutorial() {
+ tutorialOffered = true;
+ $('swipeTutorial').classList.remove('hidden');
+ $('swipeActions').inert = true;
+ $('swipeCard').inert = true;
+ $('swipeDone').focus();
+}
+function dismissTutorial() {
+ hideTutorial();
+ state.swipeSeen = true;
+ persist('swipeSeen', true);
+}
+function hideTutorial() {
+ const wasOpen = !$('swipeTutorial').classList.contains('hidden');
+ $('swipeTutorial').classList.add('hidden');
+ $('swipeCard').inert = false;
+ $('swipeActions').inert = false;
+ if (wasOpen && state.view === 'swipe') $('swipeCard').focus({preventScroll:true});
+}
+function renderSwipe(pending = marketplaceSearch.pending) {
+ if (state.view !== 'swipe') return;
+ const cars = filtered();
+ $('swipeActions').classList.toggle('hidden', !cars.length);
+ $('swipeHelp').disabled = !cars.length;
+ if (!cars.length) {
+  hideTutorial();
+  $('swipeCard').innerHTML = `<div class="swipe-status">${h(pending ? L('loading') : T('emptyCars'))}</div>`;
+  return;
+ }
+ if (advanceSwipeAfterPage && !pending) {
+  if (cars.length > state.swipeIndex + 1) state.swipeIndex++;
+  advanceSwipeAfterPage = false;
+ }
+ state.swipeIndex = ((state.swipeIndex % cars.length) + cars.length) % cars.length;
+ const car = cars[state.swipeIndex];
+ $('swipeCard').innerHTML = `<img src="${h(safeURL(car.image) || 'assets/limba/icons/car.png')}" alt="${h(car.title)}" draggable="false">
+  <div class="swipe-shade"></div><div class="swipe-details"><span class="swipe-demo-badge">${h(isDemo(car) ? F('previewOnly') : T('carsNav'))} · ${state.swipeIndex + 1}/${cars.length}</span>
+  <h2>${h(car.title)}</h2><strong>${h(displayPrice(car.price))}</strong><p>${flag(car.country)} ${h(car.city)} · ${number(car.mileage)} ${h(T('kmUnit'))} · ${h(car.year)}</p></div>`;
+ const liked = state.favorites.includes(car.id);
+ const favorite = $('swipeFavorite');
+ favorite.classList.toggle('active', liked);
+ favorite.setAttribute('aria-pressed', String(liked));
+ favorite.textContent = liked ? '♥' : '♡';
+ if (!tutorialOffered && !state.swipeSeen && $('modal').classList.contains('hidden')) showTutorial();
+}
 function swipeAction(dir){
  const arr=filtered();if(!arr.length)return;
  const x=arr[state.swipeIndex];
  if(dir==='right')return openListing(x.id);
  if(dir==='up')return openListing(x.id,{focusSpecs:true});
  if(dir==='left'){
-  if(state.swipeIndex===arr.length-1){toast(D('onlyCar'));return}
+  if(state.swipeIndex===arr.length-1){
+   if(marketplaceSearch.hasMore&&!marketplaceSearch.pending){
+    advanceSwipeAfterPage=true;
+    marketplaceSearch.more();
+   } else if(!marketplaceSearch.pending) toast(D('onlyCar'));
+   return;
+  }
   state.swipeIndex++;
  }
  if(dir==='down'){
@@ -3999,7 +4321,7 @@ function showDetails(id,{focusSpecs=false,fromHistory=false,listing=null}={}){co
  ${images.length>1?`<div class="detail-thumbnails">${images.map((image,index)=>`<button type="button" data-photo-index="${index}" aria-current="${index===0}" aria-label="${h(L('photoNumber')+' '+(index+1))}">
   <img loading="lazy" src="${h(image.src)}" alt="">${image.detail?`<span>${h(marketUI.photoSummary(image.detail))}</span>`:''}</button>`).join('')}</div>`:''}</figure>`;
  detailModalOpening=true;
- modal(`<button type="button" class="detail-back outline-btn" id="detailBack">${icon('arrow_left')} ${h(D(returnTo==='swipe'?'backToSwipe':'backToListing'))}</button><div class="detail-head"><div><span class="overline">${h(T('vehicleDetails'))}</span><h2 id="modalTitle">${h(x.title)}</h2><p>${flag(x.country)} ${h(x.city)}, ${h(countryLabel(x.country))}</p></div><div class="detail-price">${price(x.price)}</div></div>${gallery}<div class="detail-actions" id="photoControls"><button class="outline-btn" id="photoPrev" aria-label="${h(T('photoPrevious'))}">${icon('arrow_left')}</button><button class="outline-btn" id="photoNext" aria-label="${h(T('photoNext'))}">${icon('arrow_right')}</button><button class="outline-btn" id="detailLike">${icon('heart')} ${h(T('saved'))}</button></div><h3 id="specsHeading">${h(T('technicalData'))}</h3><div class="spec-table">${detailPair('make',x.make)}${detailPair('model',x.model)}${x.modelExtension?detailPair('modelExtension',x.modelExtension):''}${detailPair('firstReg',String(x.year))}${detailPair('mileage',`${number(x.mileage)} ${T('kmUnit')}`)}${detailPair('fuel',T(x.fuel))}${detailPair('transmission',T(x.transmission))}${detailPair('body',T(x.body))}${detailPair('power',`${number(x.power)} ${T('powerUnit')}`)}${x.engineName?detailPair('engineName',x.engineName):''}${x.engineCapacity!==undefined&&x.engineCapacity!==null?detailPair('engineCapacity',String(x.engineCapacity)+' cm³'):''}${detailPair('sellerType',T(x.sellerType))}${detailPair('carCondition',T(x.condition==='new'?'conditionNew':'conditionUsed'))}${detailPair('accidentHistory',F(x.accidentStatus==='yes'?'accidentYes':x.accidentStatus==='no'?'accidentNo':'accidentUnknown'))}${x.conditionNote?detailPair('conditionShort',x.conditionNote):''}${isSample(x)?`${detailPair('color',D('black'))}${detailPair('engine','VR38DETT · 3.8 l V6 Bi-Turbo')}${detailPair('drive',D('awd'))}${detailPair('seats',D('fourSeats'))}`:''}</div>${luxUI.passport(x)}${marketUI.batteryReport(x)}${isDemo(x)?'':`<section class="market-listing-section"><h3>${h(L('priceHistory'))}</h3><div id="listingPriceHistory"><p>${h(L('loading'))}</p></div></section>`}<h3>${h(T('vehicleDescription'))}</h3><p class="vehicle-description">${h(isSample(x)?D('description'):(x.description||'—'))}</p>${isSample(x)?`<div class="sample-note">${h(D('singleDemoNotice'))}</div><p class="photo-credit">${h(D('photoCredit'))} <a href="${h(GTR_PHOTO_PAGE)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons · Joshua Spence · CC BY-SA 4.0</a></p>`:''}${legacyEmail?`<a class="outline-btn" href="mailto:${h(encodeURIComponent(x.contactEmail))}?subject=${h(encodeURIComponent(x.title))}">${h(T('askSeller'))}</a>`:''}${contactBar}`);
+ modal(`<button type="button" class="detail-back outline-btn" id="detailBack">${icon('arrow_left')} ${h(D(returnTo==='swipe'?'backToSwipe':'backToListing'))}</button><div class="detail-head"><div><span class="overline">${h(T('vehicleDetails'))}</span><h2 id="modalTitle">${h(x.title)}</h2><p>${flag(x.country)} ${h(x.city)}, ${h(countryLabel(x.country))}</p></div><div class="detail-price">${h(displayPrice(x.price))}</div></div>${gallery}<div class="detail-actions" id="photoControls"><button class="outline-btn" id="photoPrev" aria-label="${h(T('photoPrevious'))}">${icon('arrow_left')}</button><button class="outline-btn" id="photoNext" aria-label="${h(T('photoNext'))}">${icon('arrow_right')}</button><button class="outline-btn" id="detailLike">${icon('heart')} ${h(T('saved'))}</button></div><h3 id="specsHeading">${h(T('technicalData'))}</h3><div class="spec-table">${detailPair('make',x.make)}${detailPair('model',x.model)}${x.modelExtension?detailPair('modelExtension',x.modelExtension):''}${detailPair('firstReg',String(x.year))}${detailPair('mileage',`${number(x.mileage)} ${T('kmUnit')}`)}${detailPair('fuel',T(x.fuel))}${detailPair('transmission',T(x.transmission))}${detailPair('body',T(x.body))}${detailPair('power',`${number(x.power)} ${T('powerUnit')}`)}${x.engineName?detailPair('engineName',x.engineName):''}${x.engineCapacity!==undefined&&x.engineCapacity!==null?detailPair('engineCapacity',String(x.engineCapacity)+' cm³'):''}${detailPair('sellerType',T(x.sellerType))}<div><span>${h(L('customsInListingCountry'))}</span><strong>${h(customsLabel(x))}</strong></div>${detailPair('carCondition',T(x.condition==='new'?'conditionNew':'conditionUsed'))}${detailPair('accidentHistory',F(x.accidentStatus==='yes'?'accidentYes':x.accidentStatus==='no'?'accidentNo':'accidentUnknown'))}${x.conditionNote?detailPair('conditionShort',x.conditionNote):''}${isSample(x)?`${detailPair('color',D('black'))}${detailPair('engine','VR38DETT · 3.8 l V6 Bi-Turbo')}${detailPair('drive',D('awd'))}${detailPair('seats',D('fourSeats'))}`:''}</div>${luxUI.passport(x)}${marketUI.batteryReport(x)}${isDemo(x)?'':`<section class="market-listing-section"><h3>${h(L('priceHistory'))}</h3><div id="listingPriceHistory"><p>${h(L('loading'))}</p></div></section>`}<h3>${h(T('vehicleDescription'))}</h3><p class="vehicle-description">${h(isSample(x)?D('description'):(x.description||'—'))}</p>${isSample(x)?`<div class="sample-note">${h(D('singleDemoNotice'))}</div><p class="photo-credit">${h(D('photoCredit'))} <a href="${h(GTR_PHOTO_PAGE)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons · Joshua Spence · CC BY-SA 4.0</a></p>`:''}${legacyEmail?`<a class="outline-btn" href="mailto:${h(encodeURIComponent(x.contactEmail))}?subject=${h(encodeURIComponent(x.title))}">${h(T('askSeller'))}</a>`:''}${contactBar}`);
  detailModalOpening=false;
  $('modal').querySelector('.modal-panel').classList.add('market-detail');
  marketUI.loadPrices(x);
@@ -4371,12 +4693,15 @@ function openSell(id=null){if(typeof id!=='string')id=null;const existing=id?sta
  const dealerApproved=dealerUI.approved();
  if(!state.user){openAuth();return}if(!state.user.isPreview&&!state.firebaseReady){openAuth();return}if(!state.user.emailVerified){toast(T('verifiedRequired'));openAuth();return}
  const mk=CAR_MAKES.map(v=>`<option value="${h(v)}"></option>`).join('');const y=Array.from({length:new Date().getFullYear()-1949},(_,i)=>new Date().getFullYear()+1-i).map(v=>`<option value="${v}">${v}</option>`).join('');const cs=COUNTRIES.map(([c,fl])=>`<option value="${c}">${fl} ${h(countryLabel(c))}</option>`).join('');const chooser=(name,values)=>`<label>${h(T(name))}<select name="${name}" required>${values.map(v=>`<option value="${v}">${h(T(v))}</option>`).join('')}</select></label>`;
- modal(`<h2 id="modalTitle">${icon('add_car')} ${h(F('vehicleProfile'))}</h2><p class="sample-note">${h(state.user.isPreview?F('previewMode'):T('uploadPhotoNote'))}</p><form id="sellForm" class="form-grid"><div class="sell-catalog-label"><label for="sellMake">${h(T('make'))}</label><div class="catalog-select"><input id="sellMake" name="make" maxlength="35" required autocomplete="off" placeholder="${h(T('makeExample'))}" role="combobox" aria-controls="sellMakeDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellMake" aria-label="${h(S('showMakes'))}">▾</button><div id="sellMakeDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellMakeOptions">${mk}</datalist></div><div class="sell-catalog-label"><label for="sellModel">${h(T('model'))}</label><div class="catalog-select"><input id="sellModel" name="model" maxlength="65" required autocomplete="off" role="combobox" aria-controls="sellModelDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellModel" aria-label="${h(S('showModels'))}">▾</button><div id="sellModelDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellModelOptions"></datalist></div><label>${h(F('modelExtension'))}<input name="modelExtension" maxlength="40" autocomplete="off" placeholder="${h(F('modelExtensionHint'))}"></label><label>${h(T('firstReg'))}<select name="year" required>${y}</select></label><label>${h(T('mileage'))}<input name="mileage" type="number" min="0" max="1500000" required></label>${chooser('fuel',['petrol','diesel','hybrid','electric'])}${chooser('transmission',['manual','automatic'])}${chooser('body',['suv','sedan','wagon','hatchback','coupe'])}<label>${h(T('power'))} (${h(T('powerUnit'))})<input name="power" type="number" min="1" max="2000" required></label><label>${h(S('engineName'))}<input name="engineName" maxlength="80" autocomplete="off" placeholder="${h(S('engineInfo'))}"></label><label>${h(S('engineCapacity'))}<input name="engineCapacity" type="number" min="0" max="12000" inputmode="numeric" placeholder="cm³"></label><label>${h(T('price'))} (€)<input name="price" type="number" min="1" max="999999999" required></label>${chooser('sellerType',dealerApproved?['privateSeller','dealer']:['privateSeller'])}${!dealerApproved&&!state.user.isPreview?`<p class="helper">${h(L('dealerListingHint'))}</p>`:''}<label>${h(T('country'))}<select name="country" required>${cs}</select></label><div class="sell-place"><label for="sellCity">${h(T('location'))}</label><input id="sellCity" name="city" maxlength="90" autocomplete="off" required aria-describedby="sellPlaceStatus"><input name="placeId" type="hidden"><div id="sellPlaces" class="place-results hidden"></div><p id="sellPlaceStatus" class="helper" role="status"></p></div><label>${h(T('carCondition'))}<select name="condition"><option value="used">${h(T('conditionUsed'))}</option><option value="new">${h(T('conditionNew'))}</option></select></label><label>${h(F('accidentCar'))}<select name="accidentStatus" required><option value="unknown">${h(F('accidentUnknown'))}</option><option value="no">${h(F('accidentNo'))}</option><option value="yes">${h(F('accidentYes'))}</option></select></label><label class="full-span">${h(F('conditionShort'))}<input name="conditionNote" maxlength="240" placeholder="${h(F('conditionShortHint'))}"></label><label class="full-span">${h(X('serviceHistory'))}<textarea name="serviceHistory" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('tuningDetails'))}<textarea name="modificationNotes" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('documentNotes'))}<textarea name="documentNotes" maxlength="240" rows="2" placeholder="${h(X('notVerified'))}"></textarea></label><label class="full-span">${h(T('vehicleDescription'))}<textarea name="description" required minlength="15" maxlength="3000"></textarea></label><label class="full-span">${icon('camera')} ${h(state.user.isPreview?F('optionalPhoto'):T('listingPhotos'))}<input id="sellImages" name="images" type="file" accept="image/jpeg,image/png,image/webp" ${state.user.isPreview||editing?'':'required'} multiple></label><fieldset class="market-listing-section full-span"><legend>${h(L('photoDetails'))}</legend><p>${h(L('photoGuide'))}</p><div class="market-photo-fields" id="marketPhotoFields"></div></fieldset>${marketUI.batteryFields(existing?.batteryReport||{})}<div class="full-span"><p class="helper" id="sellNote" role="status"></p><button id="sellSubmit" type="submit" class="primary-btn full-width">${h(state.user.isPreview?F('savePreviewCar'):T('publish'))}</button></div></form>`);const form=$('sellForm');
+ modal(`<h2 id="modalTitle">${icon('add_car')} ${h(F('vehicleProfile'))}</h2><p class="sample-note">${h(state.user.isPreview?F('previewMode'):T('uploadPhotoNote'))}</p><form id="sellForm" class="form-grid"><div class="sell-catalog-label"><label for="sellMake">${h(T('make'))}</label><div class="catalog-select"><input id="sellMake" name="make" maxlength="35" required autocomplete="off" placeholder="${h(T('makeExample'))}" role="combobox" aria-controls="sellMakeDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellMake" aria-label="${h(S('showMakes'))}">▾</button><div id="sellMakeDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellMakeOptions">${mk}</datalist></div><div class="sell-catalog-label"><label for="sellModel">${h(T('model'))}</label><div class="catalog-select"><input id="sellModel" name="model" maxlength="65" required autocomplete="off" role="combobox" aria-controls="sellModelDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="sellModel" aria-label="${h(S('showModels'))}">▾</button><div id="sellModelDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="sellModelOptions"></datalist></div><label>${h(F('modelExtension'))}<input name="modelExtension" maxlength="40" autocomplete="off" placeholder="${h(F('modelExtensionHint'))}"></label><label>${h(T('firstReg'))}<select name="year" required>${y}</select></label><label>${h(T('mileage'))}<input name="mileage" type="number" min="0" max="1500000" required></label>${chooser('fuel',['petrol','diesel','hybrid','electric'])}${chooser('transmission',['manual','automatic'])}${chooser('body',['suv','sedan','wagon','hatchback','coupe'])}<label>${h(T('power'))} (${h(T('powerUnit'))})<input name="power" type="number" min="1" max="2000" required></label><label>${h(S('engineName'))}<input name="engineName" maxlength="80" autocomplete="off" placeholder="${h(S('engineInfo'))}"></label><label>${h(S('engineCapacity'))}<input name="engineCapacity" type="number" min="0" max="12000" inputmode="numeric" placeholder="cm³"></label><label>${h(T('price'))} (€)<input name="price" type="number" min="1" max="999999999" required></label>${chooser('sellerType',dealerApproved?['privateSeller','dealer']:['privateSeller'])}${!dealerApproved&&!state.user.isPreview?`<p class="helper">${h(L('dealerListingHint'))}</p>`:''}<label>${h(T('country'))}<select name="country" required>${cs}</select></label><div class="sell-place"><label for="sellCity">${h(T('location'))}</label><input id="sellCity" name="city" maxlength="90" autocomplete="off" required aria-describedby="sellPlaceStatus"><input name="placeId" type="hidden"><div id="sellPlaces" class="place-results hidden"></div><p id="sellPlaceStatus" class="helper" role="status"></p></div><label>${h(L('customsInListingCountry'))}<select name="customsStatus">
+ <option value="unknown">${h(L('customsUnknown'))}</option><option value="cleared">${h(L('customsCleared'))}</option>
+ <option value="importRequired">${h(L('customsRequired'))}</option></select></label><label>${h(T('carCondition'))}<select name="condition"><option value="used">${h(T('conditionUsed'))}</option><option value="new">${h(T('conditionNew'))}</option></select></label><label>${h(F('accidentCar'))}<select name="accidentStatus" required><option value="unknown">${h(F('accidentUnknown'))}</option><option value="no">${h(F('accidentNo'))}</option><option value="yes">${h(F('accidentYes'))}</option></select></label><label class="full-span">${h(F('conditionShort'))}<input name="conditionNote" maxlength="240" placeholder="${h(F('conditionShortHint'))}"></label><label class="full-span">${h(X('serviceHistory'))}<textarea name="serviceHistory" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('tuningDetails'))}<textarea name="modificationNotes" maxlength="500" rows="3" placeholder="${h(X('sellerClaims'))}"></textarea></label><label class="full-span">${h(X('documentNotes'))}<textarea name="documentNotes" maxlength="240" rows="2" placeholder="${h(X('notVerified'))}"></textarea></label><label class="full-span">${h(T('vehicleDescription'))}<textarea name="description" required minlength="15" maxlength="3000"></textarea></label><label class="full-span">${icon('camera')} ${h(state.user.isPreview?F('optionalPhoto'):T('listingPhotos'))}<input id="sellImages" name="images" type="file" accept="image/jpeg,image/png,image/webp" ${state.user.isPreview||editing?'':'required'} multiple></label><fieldset class="market-listing-section full-span"><legend>${h(L('photoDetails'))}</legend><p>${h(L('photoGuide'))}</p><div class="market-photo-fields" id="marketPhotoFields"></div></fieldset>${marketUI.batteryFields(existing?.batteryReport||{})}<div class="full-span"><p class="helper" id="sellNote" role="status"></p><button id="sellSubmit" type="submit" class="primary-btn full-width">${h(state.user.isPreview?F('savePreviewCar'):T('publish'))}</button></div></form>`);const form=$('sellForm');
  if(!editing&&dealerApproved)form.elements.sellerType.value='dealer';
  if(existing){
-  for(const name of ['make','model','modelExtension','year','mileage','power','engineName','engineCapacity','price','fuel','transmission','body','sellerType','country','city','placeId','condition','accidentStatus','conditionNote','serviceHistory','modificationNotes','documentNotes','description']){
+  for(const name of ['make','model','modelExtension','year','mileage','power','engineName','engineCapacity','price','fuel','transmission','body','sellerType','country','city','placeId','customsStatus','condition','accidentStatus','conditionNote','serviceHistory','modificationNotes','documentNotes','description']){
    const el=form.elements.namedItem(name);if(el&&existing[name]!==undefined&&(name!=='sellerType'||existing.sellerType!=='dealer'||dealerApproved))el.value=String(existing[name]);
   }
+  if(existing.customsCountry!==existing.country)form.elements.customsStatus.value='unknown';
   $('sellImages').required=false;
   $('sellImages').closest('label').classList.add('hidden'); // Photos remain unchanged when editing.
   $('sellSubmit').textContent=W('editAd');
@@ -4405,7 +4730,10 @@ function openSell(id=null){if(typeof id!=='string')id=null;const existing=id?sta
  };
  const clearChoices=bindPlaces({input:$('sellCity'),results:$('sellPlaces'),status:$('sellPlaceStatus'),
   country:()=>form.elements.country.value,choose:value=>setPlace(value.id),changed:()=>setPlace('')});
- form.elements.country.addEventListener('change',()=>{setPlace('');clearChoices()});
+ form.elements.country.addEventListener('change',()=>{
+  form.elements.customsStatus.value='unknown';
+  setPlace('');clearChoices();
+ });
  if(!editing)listingWizard=mountListingWizard(form,{state,L,T,preview:state.user.isPreview,onRestored:clearChoices});
  form.addEventListener('submit',publishCar);
 }
@@ -4417,10 +4745,12 @@ async function publishCar(e){e.preventDefault();const form=e.currentTarget;const
  if(batteryReport===false)return $('sellNote').textContent=L('batteryInvalid');
  const extras={...(Object.keys(photoDetails).length?{photoDetails}:{}),...(batteryReport?{batteryReport}:{})};
  const make=resolveCarMake(fd.get('make'));const model=String(fd.get('model')||'').trim();const modelExtension=String(fd.get('modelExtension')||'').trim().replace(/\s+/g,' ');const fullTitle=[make,model,modelExtension].filter(Boolean).join(' ');if(!validCarMake(make)||!model||model.length>65||modelExtension.length>40||fullTitle.length>110){return $('sellNote').textContent=T('brandRequired')}const priceValue=Number(fd.get('price'));const year=Number(fd.get('year'));const mileage=Number(fd.get('mileage'));const power=Number(fd.get('power'));const engineName=String(fd.get('engineName')||'').trim();const rawCapacity=String(fd.get('engineCapacity')||'').trim();const engineCapacity=rawCapacity===''?null:Number(rawCapacity);if(engineName.length>80||(engineCapacity!==null&&(!Number.isInteger(engineCapacity)||engineCapacity<0||engineCapacity>12000)))return $('sellNote').textContent=T('invalidPrice');if(!Number.isInteger(priceValue)||priceValue<1||priceValue>999999999||!Number.isInteger(mileage)||mileage<0||mileage>1500000||!Number.isInteger(power)||power<1||power>2000||year<1950||year>new Date().getFullYear()+1)return $('sellNote').textContent=T('invalidPrice');const passportFields=Object.fromEntries(['serviceHistory','modificationNotes','documentNotes'].map(k=>[k,String(fd.get(k)||'').trim()]));const engineFields={engineName,engineCapacity};const submit=$('sellSubmit');submit.disabled=true;submit.textContent='…';const uploadedRefs=[];let expected,listingDocument,listingData,commitAttempted=false,publishError;try{
- if(state.user.isPreview){const photo=files[0]?await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(files[0])}):(existing?.image||'assets/limba/icons/car.png');const item={id:existing?.id||'preview-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),category:'vehicles',uid:state.user.uid,isPreview:true,isDemo:true,status:'active',createdAt:Date.now(),title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),condition:String(fd.get('condition')),contactEmail:'',image:photo,images:[photo],make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};state.listings=state.listings.filter(x=>x.id!==item.id);state.listings.unshift(item);
+ const requestedCustoms=String(fd.get('customsStatus')||'unknown');
+ const customsStatus=['cleared','importRequired'].includes(requestedCustoms)?requestedCustoms:'unknown';
+ if(state.user.isPreview){const photo=files[0]?await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(files[0])}):(existing?.image||'assets/limba/icons/car.png');const item={id:existing?.id||'preview-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),category:'vehicles',uid:state.user.uid,isPreview:true,isDemo:true,status:'active',createdAt:Date.now(),title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),customsStatus,customsCountry:String(fd.get('country')),condition:String(fd.get('condition')),contactEmail:'',image:photo,images:[photo],make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};state.listings=state.listings.filter(x=>x.id!==item.id);state.listings.unshift(item);
  persist('previewCars',state.listings.filter(x=>x.isPreview));closeModal({replaceHistory:true});toast(F('previewSaved'));showView('mine');return}
  const {db,storage,modules:m}=fb;
- const fields={title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),condition:String(fd.get('condition')),contactEmail:'',make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};
+ const fields={title:fullTitle,description:String(fd.get('description')).trim(),price:priceValue,country:String(fd.get('country')),city:String(fd.get('city')).trim(),customsStatus,customsCountry:String(fd.get('country')),condition:String(fd.get('condition')),contactEmail:'',make,model,modelExtension,year,mileage,power,...engineFields,fuel:String(fd.get('fuel')),transmission:String(fd.get('transmission')),body:String(fd.get('body')),sellerType:String(fd.get('sellerType')),accidentStatus:String(fd.get('accidentStatus')),conditionNote:String(fd.get('conditionNote')||'').trim(),...passportFields,...extras};
  const placeId=String(fd.get('placeId')||'');
  if(/^gn-\d{1,10}$/.test(placeId))fields.placeId=placeId;
  else if(existing?.placeId)fields.placeId=m.deleteField();
@@ -4613,6 +4943,10 @@ async function startFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window
   marketplaceSearch.refresh();renderRadius();mergeListings();applyTranslations();void hydrateFavorites(generation);
  });
  const collection=db.collection(state.fb.db,'listings');
+ legacyRetry=()=>{
+  stopLegacySearch?.();stopLegacySearch=null;
+  beginListingLoad();applySearchRelease(false);renderAll();
+ };
  let stopLegacySearch;
  function applySearchRelease(enabled){
   if(enabled){
@@ -4623,10 +4957,12 @@ async function startFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window
   marketplaceSearch.setEnabled(false);
   if(stopLegacySearch)return;
   const query=db.query(collection,db.where('status','==','active'),db.limit(300));
-  stopLegacySearch=db.onSnapshot(query,snapshot=>{
+  stopLegacySearch=db.onSnapshot(query,{includeMetadataChanges:true},snapshot=>{
    serverActive=snapshot.docs.map(doc=>({id:doc.id,...doc.data(),createdAt:doc.data().createdAt?.toMillis?.()||0})).filter(x=>x.category==='vehicles'&&x.make&&x.model);
+   if(snapshot.metadata.fromCache&&!serverActive.length)return;
+   clearTimeout(legacyDeadline);listingLoad='ready';
    mergeListings();
-  },error=>{console.error('cars fetch',error);toast(T('loadFailed'))});
+  },error=>{console.error('cars fetch',error);listingLoad='failed';renderAll()});
  }
  applySearchRelease(false);
  db.onSnapshot(db.doc(state.fb.db,'marketplaceRelease','v1_9'),{includeMetadataChanges:true},snapshot=>{
@@ -4638,7 +4974,42 @@ function wireMarketplace(){
  $('inboxBtn').addEventListener('click',()=>{closeAccountMenu();marketUI.openInbox()});
  $('navInbox').addEventListener('click',()=>marketUI.openInbox());
  $('navSell').addEventListener('click',()=>openSell());
- $('loadMoreSearch').addEventListener('click',marketplaceSearch.more);
+ for(const id of ['loadMoreSearch','loadMorePerformance']) $(id).addEventListener('click',marketplaceSearch.more);
+ $('retryListings').addEventListener('click',retryListingLoad);
+ $('headerSell').addEventListener('click',()=>openSell());
+ for (const id of ['menuSavedSearches','mobileSavedSearches']) $(id).addEventListener('click',()=>{
+  showView('settings');
+  $('savedSearchesList').focus();
+ });
+ $('displayCurrency').addEventListener('change',event=>void changeCurrency(event.target.value));
+ $('countryQuick').addEventListener('click',event=>{
+  const button=event.target.closest('[data-country-quick]');
+  if(!button)return;
+  const code=button.dataset.countryQuick;
+  state.countries=!code?[]:state.countries.includes(code)?state.countries.filter(value=>value!==code):[...state.countries,code];
+  void saveCountries({notify:false});
+ });
+ $('emptyResults').addEventListener('click',event=>{
+  const country=event.target.closest('[data-empty-country]')?.dataset.emptyCountry;
+  const performance=event.target.closest('#emptyPerformance');
+  if(!country&&!performance&&!event.target.closest('#resetEmpty'))return;
+  state.countries=country?[country]:[];
+  resetFilters();
+  void saveCountries({notify:false});
+  if(performance)showView('performance');
+ });
+ for (const [id, direction] of [['swipeSkip','left'],['swipeInfo','up'],['swipeSimilar','down']]) {
+  $(id).addEventListener('click',()=>swipeAction(direction));
+ }
+ $('swipeTutorial').querySelectorAll('[data-gesture]').forEach(button=>button.addEventListener('click',()=>{
+  dismissTutorial();swipeAction(button.dataset.gesture);
+ }));
+ $('swipeTutorial').addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const controls=[...$('swipeTutorial').querySelectorAll('button')];
+  if(event.shiftKey&&document.activeElement===controls[0]){event.preventDefault();controls.at(-1).focus()}
+  else if(!event.shiftKey&&document.activeElement===controls.at(-1)){event.preventDefault();controls[0].focus()}
+ });
  $('settingsTheme').addEventListener('change',event=>setTheme(event.target.value));
  const theme=restore('theme','system');
  setTheme(['light','dark'].includes(theme)?theme:'system');
@@ -4692,11 +5063,11 @@ function wire(){
   $('sellerType').value=button.dataset.sellerSegment;
   setFilter('sellerType',button.dataset.sellerSegment);
  }));
-wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu();if(!e.target.closest('#searchCountryField'))closeSearchCountries()});$('searchCountryToggle').addEventListener('click',()=>{const expanded=!$('searchCountryPanel').classList.toggle('hidden');$('searchCountryToggle').setAttribute('aria-expanded',String(expanded))});$('searchCountryField').addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearchCountries();$('searchCountryToggle').focus();e.stopPropagation()}});$('fabAdd').addEventListener('click',openSell);$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>setAdvancedFilters($('advancedFilters').classList.contains('hidden')));$('resultFilter').addEventListener('click',()=>{
+wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu();if(!e.target.closest('#searchCountryField'))closeSearchCountries()});$('searchCountryToggle').addEventListener('click',()=>{const expanded=!$('searchCountryPanel').classList.toggle('hidden');$('searchCountryToggle').setAttribute('aria-expanded',String(expanded))});$('searchCountryField').addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearchCountries();$('searchCountryToggle').focus();e.stopPropagation()}});$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>setAdvancedFilters($('advancedFilters').classList.contains('hidden')));$('resultFilter').addEventListener('click',()=>{
  setAdvancedFilters(true);
  $('advancedToggle').focus({preventScroll:true});
  $('advancedToggle').scrollIntoView({behavior:'smooth',block:'center'});
-});['clearAll','resetEmpty'].forEach(id=>$(id).addEventListener('click',resetFilters));$('sort').addEventListener('change',e=>{state.sort=e.target.value;searchChanged()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
+});$('clearAll').addEventListener('click',resetFilters);$('sort').addEventListener('change',e=>{state.sort=e.target.value;searchChanged()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
  document.addEventListener('click',e=>{const heart=e.target.closest('[data-like]');if(heart){e.preventDefault();e.stopPropagation();return toggleFavorite(heart.dataset.like)}const card=e.target.closest('[data-open]');if(card)return openListing(card.dataset.open,{guard:()=>card.isConnected});const edit=e.target.closest('[data-edit]');if(edit)return openSell(edit.dataset.edit);
  const status=e.target.closest('[data-status-id]');if(status)return updateListingStatus(status.dataset.statusId,status.dataset.status);
  const del=e.target.closest('[data-delete]');if(del)return removeListing(del.dataset.delete);const apply=e.target.closest('[data-apply]');if(apply){const item=state.searches[Number(apply.dataset.apply)];if(item){state.filters={...blankFilters,...item.filters};state.countries=item.countries||[];state.radius=validRadius(item.radius)?item.radius:null;state.radiusName='';void saveCountries({notify:false});renderInputs();renderRadius();showView('home');restoreAnchorPending=false;$('resultsSection').scrollIntoView({behavior:'smooth'})}return}const drop=e.target.closest('[data-drop]');if(drop){drop.disabled=true;void dropSearch(Number(drop.dataset.drop))}});
@@ -4734,7 +5105,11 @@ wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('languag
  showView('home',{fromHistory:true});
  handleDeepLink();
 }
-wire();void connectFirebase();
+wire();
+const storedCurrency = restore('displayCurrency', 'EUR');
+$('displayCurrency').value = displayCurrencies.includes(storedCurrency) ? storedCurrency : 'EUR';
+if ($('displayCurrency').value !== 'EUR') void changeCurrency($('displayCurrency').value);
+if (!offlinePreview) void retryListingLoad();
 
 </script>
 </body>

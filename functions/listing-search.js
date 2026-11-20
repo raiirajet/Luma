@@ -1,3 +1,4 @@
+const { listingBadges } = require('./listing-badges.mjs');
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { FieldPath, FieldValue } = require('firebase-admin/firestore');
 const { logger } = require('firebase-functions');
@@ -20,7 +21,7 @@ const MAX_CURSOR_LENGTH = 16_384;
 const LISTING_ID = /^[A-Za-z0-9_-]{1,128}$/;
 const CARD_TEXT_FIELDS = [
   'title', 'make', 'model', 'modelExtension', 'country', 'city', 'condition', 'engineName', 'fuel',
-  'transmission', 'body', 'sellerType', 'image', 'accidentStatus',
+  'transmission', 'body', 'sellerType', 'image', 'accidentStatus', 'customsStatus', 'customsCountry',
 ];
 const SORTS = {
   recent: { field: 'createdAt', order: 'desc' },
@@ -67,6 +68,7 @@ function listingCard(id, listing, radius) {
   }
   card.performance = ['modelExtension', 'modificationNotes'].some(field =>
     typeof listing[field] === 'string' && listing[field].trim() !== '');
+  card.tuningBadges = listingBadges(listing);
   if (radius) {
     const distance = listingDistanceKm(listingSearchPlace(listing), findListingPlace(radius.placeId));
     if (Number.isFinite(distance)) card.distanceKm = Math.round(distance * 10) / 10;

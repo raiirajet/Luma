@@ -35,7 +35,7 @@ try:
    page.locator('#authSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#modal').is_hidden()
-   add_listing=page.locator('#navSell' if width<500 else '#fabAdd')
+   add_listing=page.locator('#navSell' if width<500 else '#headerSell')
    add_listing.click()
    form=page.locator('#sellForm')
    next_step=form.locator('[data-wizard-action="next"]')
@@ -109,28 +109,32 @@ try:
    form.locator('[name="power"]').fill('700')
    form.locator('[name="engineName"]').fill('4.0 V8 Biturbo')
    form.locator('[name="engineCapacity"]').fill('3996')
-   form.locator('[name="modificationNotes"]').fill('MTM tuning reported by seller.')
+   form.locator('[name="modificationNotes"]').fill('MTM tuning, Stage 2, Gewindefahrwerk reported by seller.')
    next_step.click()
    next_step.click()
    form.locator('[name="price"]').fill('97000')
    form.locator('[name="city"]').fill('Zagreb')
+   form.locator('[name="customsStatus"]').select_option('cleared')
    form.locator('[name="description"]').fill('Performance estate with a declared MTM upgrade and servicing notes.')
    next_step.click()
    form.locator('#sellSubmit').click()
    page.locator('#modal').wait_for(state='hidden')
    assert page.locator('#mineGrid .car-card').count()==2
    page.locator('#mineGrid .car-card').first.click()
-   assert 'MTM tuning' in page.locator('.limba-passport').inner_text()
+   assert 'MTM tuning, Stage 2, Gewindefahrwerk' in page.locator('.limba-passport').inner_text()
    page.locator('#detailLike').click()
    page.locator('#detailBack').click()
-   if width<500:
-    page.locator('.mobile-nav [data-view="account"]').click()
-    page.locator('#accountView [data-view="discover"]').click()
-   route=('#discoverView ' if width<500 else '.main-nav ')+'[data-view="performance"]'
+   route=('.mobile-nav ' if width<500 else '.main-nav ')+'[data-view="performance"]'
    page.locator(route).click()
    assert page.locator('#performanceGrid .car-card').count()==1
-   route=('.mobile-nav ' if width<500 else '.main-nav ')+'[data-view="favorites"]'
-   page.locator(route).click()
+   assert page.locator('#performanceGrid .tuning-badge').count()==2
+   assert 'verzollt' in page.locator('#performanceGrid .customs-badge').inner_text()
+   if width<500:
+    page.locator('.mobile-nav [data-view="account"]').click()
+    page.locator('#accountView [data-view="favorites"]').click()
+   else:
+    page.locator('#loginBtn').click()
+    page.locator('#accountMenu [data-view="favorites"]').click()
    assert page.locator('#favoritesGrid .garage-pick').count()==2
    page.locator('#favoritesGrid [data-garage-pick]').nth(0).check()
    page.locator('#favoritesGrid [data-garage-pick]').nth(1).check()

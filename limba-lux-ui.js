@@ -31,7 +31,7 @@ export const createLimbaExperiences=function createLimbaExperiences(api){
   const performance=el('performanceGrid');
   if(performance){
    const cars=arr.filter(car=>car.performance===true||String(car.modelExtension||'').trim()||String(car.modificationNotes||'').trim());
-   performance.innerHTML=cars.length?cars.map(carCard).join(''):`<div class="empty-panel"><h3>${h(X('noPerformance'))}</h3><p>${h(X('performanceDesc'))}</p></div>`;
+   performance.innerHTML=cars.length?cars.map(car=>carCard(car,{performance:true})).join(''):`<div class="empty-panel"><h3>${h(X('noPerformance'))}</h3><p>${h(X('performanceDesc'))}</p></div>`;
   }
   const summary=el('garageComparison');
   if(summary)summary.innerHTML=`<div class="garage-toolbar"><p>${h(X('garageDesc'))}</p><div><button type="button" class="outline-btn" data-compare-clear>${h(X('clearCompare'))}</button><button type="button" class="primary-btn" data-compare-open ${selected.size===2?'':'disabled'}>${h(X('compare'))} (${selected.size}/2)</button></div></div>`;

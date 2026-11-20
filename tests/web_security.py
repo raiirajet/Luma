@@ -26,6 +26,12 @@ handler = partial(SimpleHTTPRequestHandler, directory=root / "dist" / "web")
 with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright() as playwright:
     threading.Thread(target=server.serve_forever, daemon=True).start()
     browser = playwright.chromium.launch()
+    loading = browser.new_page()
+    loading.route("**/app.js", lambda route: route.abort())
+    loading.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="domcontentloaded")
+    assert loading.locator("#carGrid .car-skeleton").count() == 3
+    assert loading.locator("#emptyResults").is_hidden()
+    loading.close()
     page = browser.new_page()
     page.route("**/config.js", lambda route: route.fulfill(
         content_type="text/javascript", body="window.LIMBA_FIREBASE_CONFIG = null;"
@@ -40,6 +46,8 @@ with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright()
         });
     """)
     page.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="domcontentloaded")
+    page.locator("#retryListings").wait_for(state="visible")
+    assert page.locator("#emptyResults").is_hidden()
     page.locator("#loginBtn").click()
     page.locator("#accountOpenBtn").click()
     assert page.locator("#authEmail").get_attribute("type") == "email"

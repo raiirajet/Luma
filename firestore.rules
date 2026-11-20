@@ -45,10 +45,6 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    function uidUnchanged() {
-      return request.resource.data.uid == request.auth.uid;
-    }
-
     function uidNotModified() {
       return request.resource.data.uid == resource.data.uid;
     }
@@ -85,7 +81,7 @@ service cloud.firestore {
 
     function isValidPhotoDetail(detail) {
       return detail.keys().hasOnly(['kind', 'note'])
-        && detail.kind in ['exterior', 'interior', 'odometer', 'damage', 'other']
+        && detail.kind.matches('exterior|interior|odometer|damage|other')
         && detail.note.matches('(?s).{0,160}');
     }
 
@@ -133,7 +129,7 @@ service cloud.firestore {
         'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
         'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
         'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes',
-        'engineName', 'engineCapacity', 'photoDetails', 'batteryReport', 'placeId'
+        'engineName', 'engineCapacity', 'photoDetails', 'batteryReport', 'placeId', 'customsStatus', 'customsCountry'
       ]);
     }
 
@@ -156,11 +152,19 @@ service cloud.firestore {
         && data.conditionNote.matches('(?s).{0,240}');
     }
 
+    function isValidCustomsDeclaration(data) {
+      let status = data.get('customsStatus', 'unknown');
+      let country = data.get('customsCountry', '');
+      return (status == 'unknown' && country == '')
+        || (status.matches('unknown|cleared|importRequired') && country.matches('AL|TR|GR|RS|SI|XK|MK|HR|BA|ME|BG|RO'));
+    }
+
     function hasValidListingSpecs(data) {
       return isIntegerInRange(data.price, 1, 999999999)
         && isIntegerInRange(data.get('engineCapacity', 0), 0, 12000)
         && data.category == 'vehicles'
-        && data.country in ['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']
+        && data.country.matches('AL|TR|GR|RS|SI|XK|MK|HR|BA|ME|BG|RO')
+        && (!data.keys().hasAny(['customsStatus', 'customsCountry']) || isValidCustomsDeclaration(data))
         && data.condition in ['new', 'used']
         && data.status in ['active', 'sold', 'paused']
         && data.accidentStatus in ['yes', 'no', 'unknown']
@@ -177,7 +181,7 @@ service cloud.firestore {
       return hasListingFields(data) && hasValidListingText(data) && hasValidListingSpecs(data)
         && data.createdAt is timestamp
         && isValidImages(data, listingId)
-        && isValidPhotoDetails(data.get('photoDetails', {}), data.images.size())
+        && (!('photoDetails' in data) || isValidPhotoDetails(data.photoDetails, data.images.size()))
         && (!('batteryReport' in data) || (
           data.batteryReport is map && isValidBatteryReport(data.batteryReport)
         ));
@@ -324,10 +328,11 @@ service cloud.firestore {
 
     function hasPreparedPhotos(data, listingId) {
       let path = /databases/$(database)/documents/listingUploads/$(listingId);
-      return exists(path) && get(path).data.used == false
-        && get(path).data.expiresAt > request.time
-        && get(path).data.uid == data.uid
-        && get(path).data.images == data.images
+      let before = get(path);
+      return exists(path) && before.data.used == false
+        && before.data.expiresAt > request.time
+        && before.data.uid == data.uid
+        && before.data.images == data.images
         && getAfter(path).data.used == true;
     }
 
@@ -364,7 +369,7 @@ service cloud.firestore {
         'make', 'model', 'modelExtension', 'year', 'mileage', 'fuel', 'transmission', 'body',
         'power', 'engineName', 'engineCapacity', 'price', 'sellerType', 'country', 'city',
         'condition', 'accidentStatus', 'conditionNote', 'serviceHistory', 'modificationNotes',
-        'documentNotes', 'description', 'batteryHealth', 'batteryMeasuredAt', 'batteryIssuer', 'batteryUrl', 'placeId'
+        'documentNotes', 'description', 'batteryHealth', 'batteryMeasuredAt', 'batteryIssuer', 'batteryUrl', 'placeId', 'customsStatus'
       ]) && draftText(fields, 'make', 35) && draftText(fields, 'model', 65)
         && draftText(fields, 'modelExtension', 40) && draftText(fields, 'year', 4)
         && draftText(fields, 'mileage', 12) && draftText(fields, 'fuel', 16)
@@ -378,6 +383,7 @@ service cloud.firestore {
         && draftText(fields, 'documentNotes', 240) && draftText(fields, 'description', 3000)
         && draftText(fields, 'batteryHealth', 16) && draftText(fields, 'batteryMeasuredAt', 10)
         && draftText(fields, 'batteryIssuer', 120) && draftText(fields, 'batteryUrl', 2048)
+        && fields.get('customsStatus', 'unknown') in ['unknown', 'cleared', 'importRequired']
         && (!('placeId' in fields) || fields.placeId == '' || isValidPlaceId(fields.placeId));
     }
 
@@ -471,18 +477,22 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.uid == request.auth.uid;
     }
 
+    function canCreateListing(data, listingId) {
+      return isVerified()
+        && data.uid == request.auth.uid
+        && data.status == 'active'
+        && canSetSellerType(data)
+        && data.createdAt == request.time
+        && !hasModerationHold(listingId)
+        && isValidListing(data, listingId)
+        && (hasPreparedPhotos(data, listingId)
+          || (!requiresSecureWrites() && !exists(/databases/$(database)/documents/listingUploads/$(listingId))));
+    }
+
     match /listings/{listingId} {
       // Public marketplace reads are explicitly limited to active listings.
       allow read: if canReadListing(resource.data);
-      allow create: if isVerified()
-        && uidUnchanged()
-        && request.resource.data.status == 'active'
-        && canSetSellerType(request.resource.data)
-        && request.resource.data.createdAt == request.time
-        && !hasModerationHold(listingId)
-        && isValidListing(request.resource.data, listingId)
-        && (hasPreparedPhotos(request.resource.data, listingId)
-          || (!requiresSecureWrites() && !exists(/databases/$(database)/documents/listingUploads/$(listingId))));
+      allow create: if canCreateListing(request.resource.data, listingId);
       allow update: if isVerified()
         && isOwner(resource.data.uid)
         && uidNotModified()
