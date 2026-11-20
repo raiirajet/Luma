@@ -812,9 +812,9 @@ class MainActivity : Activity() {
     }
     private fun renderPerformance() {
         val main=container();toolbar(main,t("performance"),{navigate("home")})
-        val content=col().apply{setPadding(px(17),px(22),px(17),px(22))}
-        content.addView(text("LIMBA PERFORMANCE",22f,ink,true))
-        content.addView(space(6));content.addView(text(t("performanceDesc"),13f,muted));content.addView(space(16))
+        val content=col(navy).apply{setPadding(px(17),px(22),px(17),px(22))}
+        content.addView(text("LIMBA PERFORMANCE",22f,0xffffbe63.toInt(),true))
+        content.addView(space(6));content.addView(text(t("performanceDesc"),13f,0xffc2d7e2.toInt()));content.addView(space(16))
         if (!listingsLoaded) { loadingCards(content); body(main, content); navigation(main); return }
         var found=false
         for(car in cloudCars.filter{matchesCar(it)}+previewCars.filter{matchesPreview(it)}){
@@ -1159,14 +1159,18 @@ class MainActivity : Activity() {
         val live = previewCars.none { it.optString("id") == id }
         val liked = if (live) id in cloudStars else id in previewStars
         val open = { activePreviewCar = car; openDetails(screen) }
-        val view = col(paper).apply { background = c(paper, 16, border); clipToOutline = true }
+        val isPerformance = screen == "performance"
+        val cardBackground = if (isPerformance) 0xff1b2935.toInt() else paper
+        val foreground = if (isPerformance) paper else ink
+        val subdued = if (isPerformance) 0xffc6d4dd.toInt() else muted
+        val view = col(cardBackground).apply { background = c(cardBackground, 16, if (isPerformance) 0xff456276.toInt() else border); clipToOutline = true }
         view.addView(listingImage(car.optString("image").takeIf { live }, vehicleDisplayName(car), 188).apply {
             isFocusable = true
             setOnClickListener { open() }
         }, lp(-1, 188))
         val content = col().apply { pad(this, 15, 12) }
         val priceRow = row()
-        priceRow.addView(text(euro(car.optInt("price")), 24f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        priceRow.addView(text(euro(car.optInt("price")), 24f, foreground, true), LinearLayout.LayoutParams(0, -2, 1f))
         priceRow.addView(iconButton(R.drawable.limba_favorites, t("saveFavourites"), if (liked) orange else ink) {
             if (live && cloudUser == null) {
                 showAccount()
@@ -1179,12 +1183,38 @@ class MainActivity : Activity() {
             }
         }, lp(48, 48))
         content.addView(priceRow)
-        content.addView(text(vehicleDisplayName(car), 19f, ink, true))
+        content.addView(text(vehicleDisplayName(car), 19f, foreground, true))
         content.addView(space(5))
-        content.addView(text("${car.optInt("year")} · ${number(car.optInt("mileage"))} km · ${car.optInt("power")} PS", 13f, muted))
-        val location = "${car.optString("city")} · ${car.optString("country")}"
+        content.addView(text("${car.optInt("year")} · ${number(car.optInt("mileage"))} km · ${car.optInt("power")} PS", 13f, subdued))
+        val countryFlag = countries.firstOrNull { it.first == car.optString("country") }?.second ?: "🌐"
+        val location = "$countryFlag " + car.optString("city") + " · " + car.optString("country")
         val seller = if (live) t(car.optString("sellerType", "privateSeller")) else t("previewOnly")
-        content.addView(text("$location · $seller", 13f, muted))
+        content.addView(text("$location · $seller", 13f, subdued))
+        val customs = when (car.optString("customsStatus")) {
+            "cleared" -> "✓ Verzollt"
+            "pending" -> "⚠ Import offen"
+            else -> "Zollstatus nicht angegeben"
+        }
+        content.addView(text(customs, 11f, subdued))
+        if (isPerformance) {
+            val notes = (car.optString("modificationNotes") + " " + car.optString("modelExtension")).lowercase(Locale.ROOT)
+            val tags = mutableListOf<String>()
+            if (notes.contains("stage 1")) tags.add("Stage 1")
+            if (notes.contains("stage 2")) tags.add("Stage 2")
+            if (notes.contains("gewindefahrwerk") || notes.contains("coilover")) tags.add("Gewindefahrwerk")
+            if (notes.contains("abgasanlage") || notes.contains("exhaust")) tags.add("Abgasanlage")
+            if (tags.isNotEmpty()) {
+                val tuning = row()
+                tags.take(3).forEach { tag ->
+                    tuning.addView(text(tag, 10f, 0xffffcc75.toInt(), true).apply {
+                        background = c(0xff473522.toInt(), 10)
+                        setPadding(px(7), px(6), px(7), px(6))
+                    })
+                    tuning.addView(spaceHorizontal(6))
+                }
+                content.addView(space(7)); content.addView(tuning)
+            }
+        }
         content.addView(space(9))
         content.addView(iconText(R.drawable.limba_info, t("vehicleProfile"), open))
         view.addView(content)
