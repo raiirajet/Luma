@@ -404,12 +404,10 @@ function renderSearchCountries(){
  $('searchCountryToggle').setAttribute('aria-label',L('filterCountry')+': '+label);
  const quick = $('countryQuick');
  const focusCountry = quick.contains(document.activeElement) ? document.activeElement.dataset.countryQuick : undefined;
- const order = ['','MK','XK','AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
+ const order = ['','AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
  quick.setAttribute('aria-label', L('filterCountry'));
  quick.innerHTML = order.map(code => `<button type="button" data-country-quick="${code}" aria-pressed="${code ? state.countries.includes(code) : !state.countries.length}">${code ? flag(code) + ' ' + h(countryLabel(code)) : h(L('allCountries'))}</button>`).join('');
  if (focusCountry !== undefined) quick.querySelector(`[data-country-quick="${CSS.escape(focusCountry)}"]`)?.focus({preventScroll:true});
- $('emptySuggestions').innerHTML = ['MK','XK'].map(code => `<button type="button" class="outline-btn" data-empty-country="${code}">${flag(code)} ${h(L('browseCountry').replace('{country}',countryLabel(code)))}</button>`).join('') +
-  `<button type="button" class="outline-btn" id="emptyPerformance">${h(L('browsePerformance'))}</button>`;
  $('countryChoices').innerHTML=COUNTRIES.map(([c,fl])=>'<label class="country-choice '+(state.countries.includes(c)?'is-active':'')+'"><input type="checkbox" value="'+h(c)+'" '+(state.countries.includes(c)?'checked':'')+'><span>'+fl+' '+h(countryLabel(c))+'</span></label>').join('');
 }
 function closeSearchCountries(){
@@ -1231,10 +1229,9 @@ function wireMarketplace(){
   void saveCountries({notify:false});
  });
  $('emptyResults').addEventListener('click',event=>{
-  const country=event.target.closest('[data-empty-country]')?.dataset.emptyCountry;
   const performance=event.target.closest('#emptyPerformance');
-  if(!country&&!performance&&!event.target.closest('#resetEmpty'))return;
-  state.countries=country?[country]:[];
+  if(!performance&&!event.target.closest('#resetEmpty'))return;
+  state.countries=[];
   resetFilters();
   void saveCountries({notify:false});
   if(performance)showView('performance');

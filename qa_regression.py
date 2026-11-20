@@ -179,12 +179,15 @@ with sync_playwright() as p:
   navigation(page,'favorites')
   assert page.locator('#favoritesGrid .car-card').count()==1
   navigation(page,'home')
-  # The hero filters and regional shortcuts share one state.
+  # The remaining shortcuts share the regular country selection.
   assert page.locator('.market-hero #searchForm').is_visible()
-  page.locator('#countryQuick [data-country-quick="MK"]').click()
-  assert page.locator('#countryQuick [data-country-quick="MK"]').get_attribute('aria-pressed')=='true'
+  assert not page.locator('#countryQuick [data-country-quick="MK"], #countryQuick [data-country-quick="XK"]').count()
+  page.locator('#countryQuick [data-country-quick="TR"]').click()
+  assert page.locator('#countryQuick [data-country-quick="TR"]').get_attribute('aria-pressed')=='true'
   assert page.locator('#emptyResults').is_visible()
-  assert page.locator('#emptySuggestions button').count()==3
+  assert not page.locator('#emptyResults [data-empty-country]').count()
+  assert page.locator('#emptySuggestions button').count()==1
+  assert page.locator('#emptyPerformance').is_visible()
   page.locator('#resetEmpty').click()
   assert page.locator('#countryQuick [data-country-quick=""]').get_attribute('aria-pressed')=='true'
   assert page.locator('#carGrid .car-card').count()==1
@@ -192,13 +195,28 @@ with sync_playwright() as p:
   assert page.locator('#searchCountryToggle').is_visible()
   assert page.locator('#settingsView #countryChoices').count()==0
   page.locator('#searchCountryToggle').click()
-  page.locator('#countryChoices input[value="TR"]').check()
+  for country in ('MK', 'XK'):
+   option = page.locator(f'#countryChoices input[value="{country}"]')
+   option.check()
+   assert option.is_checked()
   assert page.locator('#carGrid .car-card').count()==0
   page.locator('#allCountries').click()
   assert page.locator('#carGrid .car-card').count()==1
+  for country in ('MK', 'XK'):
+   page.locator(f'#countryChoices input[value="{country}"]').check()
+  page.locator('#saveSearchBtn').click()
+  page.locator('#resetEmpty').click()
   account_action(page,'settings')
   assert page.locator('#settingsView').is_visible()
   assert page.locator('#settingsView #countryChoices').count()==0
+  page.locator('#savedSearchesList [data-apply]').first.click()
+  assert page.locator('#emptyResults').is_visible()
+  page.locator('#searchCountryToggle').click()
+  for country in ('MK', 'XK'):
+   assert page.locator(f'#countryChoices input[value="{country}"]').is_checked()
+  page.locator('#searchCountryToggle').click()
+  page.locator('#emptyPerformance').click()
+  assert page.locator('#performanceView').is_visible()
   navigation(page,'home')
   # Search preservation and load
   page.locator('#keyword').fill('GT-R')

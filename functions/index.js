@@ -77,43 +77,46 @@ exports.deliverSearchMatchPush = onDocumentCreated({
   region, document: 'users/{uid}/notifications/{notificationId}', retry: true, maxInstances: 5,
 }, delivery.deliverSearchMatchPush);
 
-// The search functions are deployed separately after the Elastic cost review.
-const searchUrl = defineString('LIMBA_ELASTIC_URL', { default: '' });
-const searchAlias = defineString('LIMBA_ELASTIC_ALIAS', { default: 'limba-listings' });
-const searchReader = defineSecret('LIMBA_ELASTIC_READER_KEY');
-const searchWriter = defineSecret('LIMBA_ELASTIC_WRITER_KEY');
-const cursorSecret = defineSecret('LIMBA_SEARCH_CURSOR_KEY');
+// Firebase resolves the secrets of every exported function during discovery.
+// A release without the paid search endpoint must never declare those secrets.
+if (process.env.LIMBA_ELASTIC_URL) {
+  const searchUrl = defineString('LIMBA_ELASTIC_URL', { default: '' });
+  const searchAlias = defineString('LIMBA_ELASTIC_ALIAS', { default: 'limba-listings' });
+  const searchReader = defineSecret('LIMBA_ELASTIC_READER_KEY');
+  const searchWriter = defineSecret('LIMBA_ELASTIC_WRITER_KEY');
+  const cursorSecret = defineSecret('LIMBA_SEARCH_CURSOR_KEY');
 
-function elasticConfig(key) {
-  const baseUrl = searchUrl.value();
-  return baseUrl ? { baseUrl, alias: searchAlias.value(), apiKey: key.value() } : null;
-}
-
-function searchProvider() {
-  const config = elasticConfig(searchReader);
-  return config && elasticListingSearchProvider(config);
-}
-
-function indexProvider() {
-  const config = elasticConfig(searchWriter);
-  return config && elasticListingIndexProvider(config);
-}
-
-const publicListings = searchListingsHandler(db, searchProvider, () => cursorSecret.value());
-exports.searchListings = onCall({
-  ...protectedOptions, maxInstances: 5, concurrency: 10, timeoutSeconds: 20, secrets: [searchReader, cursorSecret],
-}, async request => {
-  const release = await db.doc('marketplaceRelease/v1_9').get();
-  if (release.get('searchEnabled') !== true) {
-    throw new HttpsError('failed-precondition', 'Listing search is unavailable.', { reason: 'search-disabled' });
+  function elasticConfig(key) {
+    const baseUrl = searchUrl.value();
+    return baseUrl ? { baseUrl, alias: searchAlias.value(), apiKey: key.value() } : null;
   }
-  return publicListings(request);
-});
 
-exports.syncListingSearch = onDocumentWritten({
-  region: securityRegion, document: 'listings/{listingId}', retry: true, maxInstances: 5, secrets: [searchWriter],
-}, syncListingSearchHandler(db, indexProvider));
-exports.reconcileListingSearch = onSchedule({
-  region: securityRegion, schedule: 'every 5 minutes', maxInstances: 1,
-  concurrency: 1, timeoutSeconds: 180, secrets: [searchWriter],
-}, reconcileListingSearchHandler(db, indexProvider));
+  function searchProvider() {
+    const config = elasticConfig(searchReader);
+    return config && elasticListingSearchProvider(config);
+  }
+
+  function indexProvider() {
+    const config = elasticConfig(searchWriter);
+    return config && elasticListingIndexProvider(config);
+  }
+
+  const publicListings = searchListingsHandler(db, searchProvider, () => cursorSecret.value());
+  exports.searchListings = onCall({
+    ...protectedOptions, maxInstances: 5, concurrency: 10, timeoutSeconds: 20, secrets: [searchReader, cursorSecret],
+  }, async request => {
+    const release = await db.doc('marketplaceRelease/v1_9').get();
+    if (release.get('searchEnabled') !== true) {
+      throw new HttpsError('failed-precondition', 'Listing search is unavailable.', { reason: 'search-disabled' });
+    }
+    return publicListings(request);
+  });
+
+  exports.syncListingSearch = onDocumentWritten({
+    region: securityRegion, document: 'listings/{listingId}', retry: true, maxInstances: 5, secrets: [searchWriter],
+  }, syncListingSearchHandler(db, indexProvider));
+  exports.reconcileListingSearch = onSchedule({
+    region: securityRegion, schedule: 'every 5 minutes', maxInstances: 1,
+    concurrency: 1, timeoutSeconds: 180, secrets: [searchWriter],
+  }, reconcileListingSearchHandler(db, indexProvider));
+}

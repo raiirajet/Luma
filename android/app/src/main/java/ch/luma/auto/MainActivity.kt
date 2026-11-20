@@ -989,13 +989,6 @@ class MainActivity : Activity() {
                     results.addView(btn(t("resetFilters"), false) {
                         clearFilters(); activeCountry.clear(); persistSearchCountries(); applySearch()
                     })
-                    listOf("MK", "XK").forEach { code ->
-                        val label = countries.first { it.first == code }.let { "${it.second} ${countryName(code)}" }
-                        results.addView(space(8))
-                        results.addView(btn(label, false) {
-                            clearFilters(); activeCountry = mutableSetOf(code); persistSearchCountries(); applySearch()
-                        })
-                    }
                     results.addView(space(8))
                     results.addView(btn(t("performance"), false) {
                         clearFilters(); activeCountry.clear(); persistSearchCountries(); persistSearchState()
@@ -1046,7 +1039,7 @@ class MainActivity : Activity() {
         labelRow.addView(btn(t("allCountries"), false) { activeCountry.clear(); persistSearchCountries(); applySearch() })
         parent.addView(labelRow)
         val chipRow = row()
-        countries.forEach { (code, flag, name) ->
+        countries.filterNot { (code) -> code == "MK" || code == "XK" }.forEach { (code, flag, name) ->
             val selected = code in activeCountry
             val chip = btn("$flag $name", selected) {
                 if (code in activeCountry) activeCountry.remove(code) else activeCountry.add(code)
