@@ -78,7 +78,7 @@ class LimbaFirebase(private val activity: Activity) {
         item.put("id", snapshot.id)
         for (key in listOf("uid","make","model","modelExtension","title","description","city","country","fuel",
             "transmission","body","condition","accidentStatus","conditionNote","engineName","serviceHistory","modificationNotes","documentNotes","sellerType",
-            "contactEmail","image","status","placeId")) {
+            "contactEmail","image","status","placeId","customsStatus","customsCountry")) {
             item.put(key, snapshot.getString(key) ?: "")
         }
         for (key in listOf("year","mileage","power","price")) {
