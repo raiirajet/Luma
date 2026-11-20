@@ -812,7 +812,7 @@ function wire(){
  document.querySelectorAll('[data-empty-quick]').forEach(button=>button.addEventListener('click',()=>{
   resetFilters();state.countries=button.dataset.emptyQuick==='performance'?[]:[button.dataset.emptyQuick];void saveCountries({notify:false});if(button.dataset.emptyQuick==='performance')showView('performance');else $('resultsSection').scrollIntoView({behavior:'smooth'});
  }));
- $('[data-mobile-account]').addEventListener('click',toggleAccountMenu);
+ document.querySelector('[data-mobile-account]').addEventListener('click',toggleAccountMenu);
  document.querySelectorAll('[data-swipe-action]').forEach(button=>button.addEventListener('click',()=>{
   const action=button.dataset.swipeAction;
   if(action==='favorite'){const arr=filtered();if(arr.length)void toggleFavorite(arr[state.swipeIndex].id)}
