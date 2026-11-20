@@ -32,6 +32,30 @@ function persist(name,val){try{localStorage.setItem(key(name),JSON.stringify(val
 const state={locale:restore('language','de'),view:'home',filters:{keyword:'',make:'',model:'',priceTo:'',yearFrom:'',mileageTo:'',fuel:'',transmission:'',body:'',sellerType:'',priceFrom:'',yearTo:'',mileageFrom:'',powerFrom:'',powerTo:'',engineTerm:'',capacityFrom:'',capacityTo:''},countries:restore('countries',[]),favorites:restore('favorites',[]).filter(id=>!String(id).startsWith('demo-')||(offlinePreview&&id==='demo-nissan-gtr')),searches:restore('searches',[]),listings:[...(offlinePreview?restore('previewCars',[]).filter(x=>x?.isPreview&&x?.id):[]),...DEMO],swipeIndex:0,user:null,firebaseReady:false,fb:null,photoIndex:0,swipeSeen:restore('swipeSeen',false)};
 const previewSession=offlinePreview?restore('previewSession',null):null;if(previewSession?.username&&previewSession.username!=='limba'){const username=previewSession.username;state.user={uid:'preview-'+username,email:username,isPreview:true,emailVerified:true};state.favorites=restore('user:'+state.user.uid+':favorites',[]);state.searches=restore('user:'+state.user.uid+':searches',[]);state.countries=restore('user:'+state.user.uid+':countries',[])}
 if(!LANGS.some(([c])=>c===state.locale))state.locale='de';
+state.displayCurrency=['EUR','MKD','ALL','RSD','CHF'].includes(restore('currency','EUR'))?restore('currency','EUR'):'EUR';
+state.fxRates={EUR:1};state.fxDate='';let marketLoaded=offlinePreview;
+async function loadExchangeRates(){
+ if(state.displayCurrency==='EUR'){updateFxStatus();return}
+ $('fxStatus').textContent='Referenzkurs wird geladen …';
+ try{
+  const response=await fetch('https://open.er-api.com/v6/latest/EUR',{cache:'no-store'});
+  if(!response.ok)throw Error('FX HTTP '+response.status);
+  const data=await response.json();
+  if(data.result!=='success'||!['CHF','MKD','ALL','RSD'].every(c=>Number.isFinite(data.rates?.[c])&&data.rates[c]>0))throw Error('FX incomplete');
+  state.fxRates={EUR:1,...Object.fromEntries(['CHF','MKD','ALL','RSD'].map(c=>[c,data.rates[c]]))};
+  state.fxDate=data.time_last_update_utc||'';
+  updateFxStatus();renderAll();
+ }catch(error){
+  console.warn('FX prices unavailable',error);
+  state.displayCurrency='EUR';persist('currency','EUR');$('displayCurrency').value='EUR';
+  updateFxStatus();renderAll();toast('Umrechnung derzeit nicht verfügbar – Preise in EUR.');
+ }
+}
+function updateFxStatus(){
+ const el=$('fxStatus');if(!el)return;
+ el.textContent=state.displayCurrency==='EUR'?'Basispreis in EUR':'Unverbindlicher Referenzkurs · '+(state.fxDate?new Date(state.fxDate).toLocaleDateString(state.locale):'tagesaktuell')+' · EUR bleibt Inseratspreis';
+}
+
 const T=k=>tr(k,state.locale);
 const F=k=>ft(k,state.locale);
 const W=k=>mvpText(k,state.locale);
@@ -61,7 +85,7 @@ function mergeListings(){
 }
 
 const D=k=>(GTR_COPY[state.locale]||GTR_COPY.de)[k]||GTR_COPY.de[k]||k;
-const price=x=>new Intl.NumberFormat(state.locale==='cnr'?'sr-Latn':state.locale,{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Number(x)||0);
+const price=x=>{const code=state.displayCurrency;const rate=state.fxRates[code];const active=rate>0?code:'EUR';return new Intl.NumberFormat(state.locale==='cnr'?'sr-Latn':state.locale,{style:'currency',currency:active,maximumFractionDigits:0}).format((Number(x)||0)*(active==='EUR'?1:rate))};
 const number=x=>new Intl.NumberFormat(state.locale==='cnr'?'sr-Latn':state.locale).format(Number(x)||0);
 const flag=c=>COUNTRIES.find(x=>x[0]===c)?.[1]||'🌐';
 const countryLabel=c=>{if(c==='XK')return ({de:'Kosovo',en:'Kosovo',sq:'Kosovë',tr:'Kosova',el:'Κόσοβο','sr-Cyrl':'Косово',mk:'Косово',bg:'Косово'})[state.locale]||'Kosovo';try{return new Intl.DisplayNames([state.locale==='cnr'?'sr-Latn':state.locale],{type:'region'}).of(c)||c}catch{return COUNTRIES.find(x=>x[0]===c)?.[2]||c}};
@@ -150,7 +174,13 @@ function filtered(){const f=state.filters;const term=f.keyword.trim().toLocaleLo
  if(f.capacityTo&&(!Number.isFinite(Number(x.engineCapacity))||!x.engineCapacity||Number(x.engineCapacity)>Number(f.capacityTo)))return false;return true});
  if(state.sort==='priceLow')items.sort((a,b)=>a.price-b.price);else if(state.sort==='priceHigh')items.sort((a,b)=>b.price-a.price);else items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));return items}
 function carCard(x){const liked=state.favorites.includes(x.id);return `<article class="car-card" data-open="${h(x.id)}" tabindex="0"><div class="car-img"><img loading="lazy" src="${h(safeURL(x.image)||'assets/limba/icons/car.png')}" alt="${h(x.title)}"/><span class="car-tag">${h(isDemo(x)?F('previewOnly'):T(x.sellerType||'privateSeller'))}</span><button class="card-heart ${liked?'active':''}" data-like="${h(x.id)}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button></div><div class="card-body"><strong class="car-price car-price-overview">${price(x.price)}</strong><h3 class="car-title">${h(x.title)}</h3><p class="car-sub">${h(T(x.fuel||'petrol'))} · ${h(T(x.transmission||'manual'))}${x.engineName?' · '+h(x.engineName):''}</p><div class="car-specs"><span>${h(String(x.year||'—'))}</span><span>${number(x.mileage)} ${h(T('kmUnit'))}</span><span>${number(x.power)} ${h(T('powerUnit'))}</span></div><div class="car-bottom"><div class="car-location">${icon('location')} ${flag(x.country)} ${h(x.city)}<br>${h(countryLabel(x.country))}</div></div></div></article>`}
-function renderAll(){const arr=filtered();$('carGrid').innerHTML=arr.map(carCard).join('');$('emptyResults').classList.toggle('hidden',arr.length!==0);$('resultCount').textContent=`${number(arr.length)} ${T('searchResultCount')}`;$('heroCount').textContent=number(arr.length);document.querySelectorAll('[data-body]').forEach(b=>b.classList.toggle('is-selected',b.dataset.body===state.filters.body));
+function renderAll(){const arr=filtered();if(!marketLoaded){
+ $('carGrid').setAttribute('aria-busy','true');
+ $('carGrid').innerHTML=Array.from({length:6},()=>'<div class="car-skeleton" aria-hidden="true"><div class="skeleton-photo"></div><div class="skeleton-line wide"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>').join('');
+ $('emptyResults').classList.add('hidden');$('resultCount').textContent=T('loading');$('heroCount').textContent='…';
+ renderSearchCountries();return;
+}
+$('carGrid').setAttribute('aria-busy','false');$('carGrid').innerHTML=arr.map(carCard).join('');$('emptyResults').classList.toggle('hidden',arr.length!==0);$('resultCount').textContent=`${number(arr.length)} ${T('searchResultCount')}`;$('heroCount').textContent=number(arr.length);document.querySelectorAll('[data-body]').forEach(b=>b.classList.toggle('is-selected',b.dataset.body===state.filters.body));
  document.querySelectorAll('[data-seller-segment]').forEach(button=>
   button.setAttribute('aria-pressed',String(button.dataset.sellerSegment===state.filters.sellerType)));
  renderActiveFilters();
@@ -222,7 +252,7 @@ function showView(view,{fromHistory=false}={}){
 function showTutorial(){$('swipeTutorial').classList.remove('hidden')}
 function dismissTutorial(){$('swipeTutorial').classList.add('hidden');state.swipeSeen=true;persist('swipeSeen',true)}
 function hideTutorial(){$('swipeTutorial').classList.add('hidden')}
-function renderSwipe(){const arr=filtered();if(!arr.length){$('swipeCard').innerHTML=`<div class="empty-panel swipe-empty"><h3>${h(T('emptyCars'))}</h3></div>`;$('swipeFavorite').classList.remove('active');return}state.swipeIndex=((state.swipeIndex%arr.length)+arr.length)%arr.length;const x=arr[state.swipeIndex];$('swipeCard').innerHTML=`<img src="${h(safeURL(x.image))}" alt="${h(x.title)}" draggable="false"><div class="swipe-shade"></div><div class="swipe-details"><span class="swipe-demo-badge">${h(isDemo(x)?F('previewOnly'):T('carsNav'))} · ${state.swipeIndex+1}/${arr.length}</span><h2>${h(x.title)}</h2><strong>${price(x.price)}</strong><p>${flag(x.country)} ${h(x.city)} · ${number(x.mileage)} ${h(T('kmUnit'))} · ${h(String(x.year))}</p></div>`;$('swipeFavorite').innerHTML=icon('heart');$('swipeFavorite').classList.toggle('active',state.favorites.includes(x.id))}
+function renderSwipe(){const arr=filtered();if(!marketLoaded){$('swipeCard').innerHTML='<div class="empty-panel swipe-empty">Fahrzeuge werden geladen …</div>';return}if(!arr.length){$('swipeCard').innerHTML=`<div class="empty-panel swipe-empty"><h3>${h(T('emptyCars'))}</h3></div>`;$('swipeFavorite').classList.remove('active');return}state.swipeIndex=((state.swipeIndex%arr.length)+arr.length)%arr.length;const x=arr[state.swipeIndex];$('swipeCard').innerHTML=`<img src="${h(safeURL(x.image))}" alt="${h(x.title)}" draggable="false"><div class="swipe-shade"></div><div class="swipe-details"><span class="swipe-demo-badge">${h(isDemo(x)?F('previewOnly'):T('carsNav'))} · ${state.swipeIndex+1}/${arr.length}</span><h2>${h(x.title)}</h2><strong>${price(x.price)}</strong><p>${flag(x.country)} ${h(x.city)} · ${number(x.mileage)} ${h(T('kmUnit'))} · ${h(String(x.year))}</p></div>`;$('swipeFavorite').innerHTML=icon('heart');$('swipeFavorite').classList.toggle('active',state.favorites.includes(x.id))}
 function swipeAction(dir){
  const arr=filtered();if(!arr.length)return;
  const x=arr[state.swipeIndex];
@@ -742,11 +772,11 @@ async function startFirebase(){const conf=window.LIMBA_FIREBASE_CONFIG || window
  const query=db.query(collection,db.where('status','==','active'),db.limit(300));
  db.onSnapshot(query,snapshot=>{
   serverActive=snapshot.docs.map(doc=>({id:doc.id,...doc.data(),createdAt:doc.data().createdAt?.toMillis?.()||0})).filter(x=>x.category==='vehicles'&&x.make&&x.model);
-  mergeListings();
+  marketLoaded=true;mergeListings();
   const adHash=new URLSearchParams(location.hash.slice(1)).get('ad');
   if(adHash&&$('modal').classList.contains('hidden'))
    void openListing(adHash,{fromHistory:true,guard:()=>$('modal').classList.contains('hidden')&&new URLSearchParams(location.hash.slice(1)).get('ad')===adHash});
- },error=>{console.error('cars fetch',error);toast(T('loadFailed'))});
+ },error=>{marketLoaded=true;renderAll();console.error('cars fetch',error);toast(T('loadFailed'))});
  return true;
  }catch(e){console.error('firebase init',e);state.firebaseReady=false;toast(T('firebaseFailed'));return false}}
 function wireMarketplace(){
@@ -790,4 +820,4 @@ wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('languag
   showView(e.state?.lumaView||'home',{fromHistory:true});
  });
  applyTranslations();if(initialAd)setTimeout(()=>void openListing(initialAd),150)}
-wire();connectFirebase();
+wire();connectFirebase().then(ok=>{if(!ok){marketLoaded=true;renderAll()}});
