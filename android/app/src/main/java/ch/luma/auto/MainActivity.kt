@@ -523,8 +523,8 @@ class MainActivity : Activity() {
         val routes = listOf(
             Triple("home", R.drawable.limba_search, t("carsNav")),
             Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
-            Triple("favorites", R.drawable.limba_favorites, t("garage")),
-            Triple("performance", R.drawable.limba_car, t("performance"))
+            Triple("performance", R.drawable.limba_car, t("performance")),
+            Triple("profile", R.drawable.limba_profile, "Profil")
         )
         routes.forEach { (route, icon, name) ->
             val selected = screen == route
@@ -543,7 +543,7 @@ class MainActivity : Activity() {
                 gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
-            cell.setOnClickListener { navigate(route) }
+            cell.setOnClickListener { if (route == "profile") showAccountMenu() else navigate(route) }
         }
         main.addView(nav, lp(-1, 66))
     }
@@ -815,6 +815,7 @@ class MainActivity : Activity() {
         val content=col().apply{setPadding(px(17),px(22),px(17),px(22))}
         content.addView(text("LIMBA PERFORMANCE",22f,ink,true))
         content.addView(space(6));content.addView(text(t("performanceDesc"),13f,muted));content.addView(space(16))
+        if (!listingsLoaded) { loadingCards(content); body(main, content); navigation(main); return }
         var found=false
         for(car in cloudCars.filter{matchesCar(it)}+previewCars.filter{matchesPreview(it)}){
             if(car.optString("modelExtension").isBlank()&&car.optString("modificationNotes").isBlank())continue
@@ -828,6 +829,13 @@ class MainActivity : Activity() {
         val main = container()
         toolbar(main, t("carsNav"))
         val content = col()
+        val hero = col(navy).apply { setPadding(px(19), px(17), px(19), px(17)) }
+        hero.addView(text("LIMBA SHOWROOM", 12f, 0xff88c7f6.toInt(), true))
+        hero.addView(space(6))
+        hero.addView(text("Dein nächstes Auto beginnt hier.", 23f, paper, true))
+        hero.addView(space(4))
+        hero.addView(text("Marke, Modell, Preis und Suchland direkt wählen.", 12f, 0xffd8e9f5.toInt()))
+        content.addView(hero)
         val form = col(paper).apply { setPadding(px(16), px(15), px(16), px(16)) }
         form.addView(text(t("carsNav"), 18f, ink, true))
         form.addView(space(7))
@@ -914,7 +922,7 @@ class MainActivity : Activity() {
             val total=available.size+preview.size+(if(demo)1 else 0)
             results.addView(text(t("latestCars"),21f,ink,true))
             results.addView(space(5))
-            results.addView(text(total.toString()+" "+t("searchResultCount"),12f,orange,true))
+            results.addView(text(if (listingsLoaded) total.toString()+" "+t("searchResultCount") else t("loading"),12f,orange,true))
             val sellerSegments = row()
             for ((value, label) in listOf("" to "allSeller", "privateSeller" to "privateSeller", "dealer" to "dealer")) {
                 if (sellerSegments.childCount > 0) sellerSegments.addView(spaceHorizontal(5))
@@ -924,12 +932,34 @@ class MainActivity : Activity() {
                 }, LinearLayout.LayoutParams(0, px(44), 1f))
             }
             results.addView(sellerSegments)
+            results.addView(space(9))
+            showQuickCountryChips(results)
+            results.addView(space(8))
+            results.addView(btn("Währung: " + priceCurrency + if (fxUpdated.isNotBlank() && priceCurrency != "EUR") " · Referenzkurs" else "", false) { showCurrencyPicker() })
+            if (priceCurrency != "EUR") results.addView(text("Unverbindliche Umrechnung, Inseratspreise in EUR.", 11f, muted))
             showFilterChips(results)
             results.addView(space(13))
+            if (!listingsLoaded) { loadingCards(results); return }
             available.forEach{results.addView(previewCard(it));results.addView(space(12))}
             preview.forEach{results.addView(previewCard(it));results.addView(space(12))}
             if(demo){results.addView(carCard());results.addView(space(12))}
-            if(total==0)emptyState(results,t("emptyCars"))
+            if(total==0) {
+                emptyState(results,t("emptyCars"))
+                results.addView(space(8))
+                results.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() })
+                results.addView(space(8))
+                results.addView(btn("🇲🇰 Alle Fahrzeuge in Nordmazedonien", false) {
+                    clearFilters(); activeCountry = mutableSetOf("MK"); persistSearchCountries(); renderHome()
+                })
+                results.addView(space(8))
+                results.addView(btn("🇽🇰 Fahrzeuge im Kosovo", false) {
+                    clearFilters(); activeCountry = mutableSetOf("XK"); persistSearchCountries(); renderHome()
+                })
+                results.addView(space(8))
+                results.addView(btn("✦ Performance entdecken", false) {
+                    clearFilters(); activeCountry.clear(); persistSearchCountries(); navigate("performance")
+                })
+            }
             results.addView(space(16))
             results.addView(btn(t("yourSavedSearch"),false){navigate("searches")})
             results.addView(space(9))
@@ -960,6 +990,49 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun showQuickCountryChips(parent: LinearLayout) {
+        val labelRow = row()
+        labelRow.addView(text(t("filterCountry"), 14f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        labelRow.addView(btn(t("allCountries"), false) { activeCountry.clear(); persistSearchCountries(); renderHome() })
+        parent.addView(labelRow)
+        val chipRow = row()
+        countries.forEach { (code, flag, name) ->
+            val selected = code in activeCountry
+            val chip = btn("$flag $name", selected) {
+                if (code in activeCountry) activeCountry.remove(code) else activeCountry.add(code)
+                persistSearchCountries(); renderHome()
+            }.apply {
+                minHeight = px(44)
+                setSingleLine(true)
+            }
+            chipRow.addView(chip, lp(-2, 46))
+            chipRow.addView(spaceHorizontal(6))
+        }
+        parent.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(chipRow)
+        }, lp(-1, -2))
+    }
+    private fun loadingCards(parent: LinearLayout) {
+        for (item in 0 until 3) {
+            val card = col(paper).apply { background = c(paper, 15, border); setPadding(px(10), px(10), px(10), px(15)) }
+            fun shimmer(width: Int, height: Int): View {
+                val line = View(this).apply { background = c(0xffe2e9ef.toInt(), 9) }
+                val anim = android.animation.ObjectAnimator.ofFloat(line, "alpha", .55f, 1f)
+                anim.duration = 1100L
+                anim.repeatCount = android.animation.ValueAnimator.INFINITE
+                anim.repeatMode = android.animation.ValueAnimator.REVERSE
+                anim.start()
+                line.layoutParams = lp(width, height)
+                return line
+            }
+            card.addView(shimmer(-1, 154))
+            card.addView(space(12)); card.addView(shimmer(150, 20))
+            card.addView(space(8)); card.addView(shimmer(225, 13))
+            card.addView(space(8)); card.addView(shimmer(120, 13))
+            parent.addView(card); parent.addView(space(11))
+        }
+    }
     private fun showSearchCountries() {
         val selected = countries.map { it.first in activeCountry }.toBooleanArray()
         AlertDialog.Builder(this).setTitle(t("filterCountry"))
