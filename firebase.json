@@ -21,6 +21,12 @@
       "preview.html"
     ],
     "cleanUrls": false,
+    "rewrites": [
+      {
+        "source": "/inserat/**",
+        "function": { "functionId": "renderListingShare", "region": "europe-west1" }
+      }
+    ],
     "trailingSlash": false,
     "headers": [
       {

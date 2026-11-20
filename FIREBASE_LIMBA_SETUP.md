@@ -75,3 +75,10 @@ Der Workflow veröffentlicht ohne diese vier Werte keine GitHub Release-APK mehr
 - App Check, Spam-/Rate-Limits, Moderationswerkzeug, Monitoring und rechtliche Texte vor einem offenen Marktstart ergänzen bzw. freigeben.
 
 Kontakt-E-Mails werden nicht mehr öffentlich im Inserat gespeichert. Für direkte Käufer-Verkäufer-Kommunikation ist später ein geschützter interner Nachrichtenkanal vorgesehen.
+
+## Veröffentlichung von Limba 1.9.0
+
+1. In Firebase-Staging zuerst Funktionen, Regeln und Indizes bereitstellen. Das Laufzeitkonto der Push-Funktionen benötigt `cloudmessaging.messages.create` und `firebaseauth.users.get`. Die FCM HTTP v1 API muss im Zielprojekt aktiviert sein. Den Wechsel zwischen privatem und Händlerkonto, den Foto-Upload und Push auf einem Android-Gerät testen. [FCM-Serverberechtigungen](https://firebase.google.com/docs/cloud-messaging/send-message#authorize_http_v1_send_requests)
+2. Den Suchindex mit synthetischen Daten prüfen und die gemessenen Kosten vor der kostenpflichtigen Aktivierung freigeben lassen. `deploy-search` stellt die Suchfunktionen bereit. `marketplaceRelease/v1_9.searchEnabled` erst nach dem Abgleich des Produktionsindex aktivieren. Bei einem Rückfall kann das Flag deaktiviert werden, während die bisherige Firestore-Suche verfügbar ist. [Suchindex und Lasttest](functions/ops/LISTING_SEARCH.md)
+3. `deploy-backend` und danach `deploy-web` für den freigegebenen Stand ausführen. Eine aktive `/inserat/{id}`-URL auf Vorschaudaten prüfen und nach dem Pausieren eine 404-Antwort erwarten. Den Abgleich der Regeln mit Git im Workflow kontrollieren.
+4. Die APK `1.9.0` mit dem bestehenden Limba-Release-Zertifikat signieren. Ein Upgrade über `1.8.3` auf einem Android-Gerät prüfen, einschliesslich Anmeldung, Systemberechtigungen und Hintergrund-Push. Danach die signierte APK und ihre SHA-256-Prüfsumme veröffentlichen.

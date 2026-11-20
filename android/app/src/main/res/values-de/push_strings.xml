@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="push_messages_channel">Nachrichten</string>
+    <string name="push_search_channel">Suchabos</string>
+    <string name="push_message_body">Du hast eine neue Nachricht.</string>
+    <string name="push_search_body">Ein neues Fahrzeug passt zu einem Suchabo.</string>
+</resources>

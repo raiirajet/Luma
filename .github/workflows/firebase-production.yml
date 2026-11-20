@@ -11,6 +11,7 @@ on:
         options:
           - compare-rules
           - deploy-backend
+          - deploy-search
           - deploy-web
           - lock-storage
 
@@ -23,7 +24,7 @@ concurrency:
 
 jobs:
   validate:
-    if: github.ref == 'refs/heads/main' && contains(fromJSON('["deploy-backend", "lock-storage"]'), inputs.operation)
+    if: github.ref == 'refs/heads/main' && contains(fromJSON('["deploy-backend", "deploy-search", "lock-storage"]'), inputs.operation)
     uses: ./.github/workflows/firebase-rules.yml
 
   validate-web:
@@ -35,7 +36,7 @@ jobs:
       always() && github.ref == 'refs/heads/main' &&
       (inputs.operation == 'compare-rules' ||
       (inputs.operation == 'deploy-web' && needs.validate-web.result == 'success') ||
-      (contains(fromJSON('["deploy-backend", "lock-storage"]'), inputs.operation) && needs.validate.result == 'success'))
+      (contains(fromJSON('["deploy-backend", "deploy-search", "lock-storage"]'), inputs.operation) && needs.validate.result == 'success'))
     needs: [validate, validate-web]
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -85,8 +86,14 @@ jobs:
           esac
           printf 'ENFORCE_MARKETPLACE_APP_CHECK=%s\n' "$ENFORCE_MARKETPLACE_APP_CHECK" > functions/.env.limba-auto
           npm ci --prefix functions
+          function_names=(startListingChat sendListingMessage setListingChatBlocked reportListingChat setSavedSearchAlert
+            trackListingChanges processListingSearchAlerts reserveListingUpload uploadListingPhoto submitListingReport
+            cleanupListingUploads cleanupDeletedListingPhotos lookupListingPlaces renderListingShare
+            setAndroidPushRegistration deleteAndroidPushRegistration deliverChatMessagePush deliverSearchMatchPush
+            recordDealerListingView recordDealerInquiry getDealerStatistics)
+          function_targets=$(printf ',functions:%s' "${function_names[@]}")
           npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive \
-            --only functions:startListingChat,functions:sendListingMessage,functions:setListingChatBlocked,functions:reportListingChat,functions:setSavedSearchAlert,functions:reserveListingUpload,functions:uploadListingPhoto,functions:submitListingReport,functions:cleanupListingUploads,functions:cleanupDeletedListingPhotos
+            --only "${function_targets:1}"
           npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive \
             --only firestore:rules,firestore:indexes
 
@@ -95,6 +102,25 @@ jobs:
         env:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: python3 scripts/compare_firebase_rules.py --service firestore
+
+      - name: Deploy approved Elasticsearch integration
+        if: inputs.operation == 'deploy-search'
+        env:
+          ENFORCE_MARKETPLACE_APP_CHECK: ${{ vars.LIMBA_ENFORCE_MARKETPLACE_APP_CHECK || 'false' }}
+          LIMBA_ELASTIC_URL: ${{ vars.LIMBA_ELASTIC_URL }}
+          LIMBA_ELASTIC_ALIAS: ${{ vars.LIMBA_ELASTIC_ALIAS || 'limba-listings' }}
+        run: |
+          set -euo pipefail
+          case "$ENFORCE_MARKETPLACE_APP_CHECK" in true|false) ;; *) exit 1 ;; esac
+          if [[ ! "$LIMBA_ELASTIC_URL" =~ ^https://[A-Za-z0-9.-]+$ || ! "$LIMBA_ELASTIC_ALIAS" =~ ^[a-z0-9_-]+$ ]]; then
+            echo 'Invalid or missing Elasticsearch configuration'
+            exit 1
+          fi
+          printf 'ENFORCE_MARKETPLACE_APP_CHECK=%s\nLIMBA_ELASTIC_URL=%s\nLIMBA_ELASTIC_ALIAS=%s\n' \
+            "$ENFORCE_MARKETPLACE_APP_CHECK" "$LIMBA_ELASTIC_URL" "$LIMBA_ELASTIC_ALIAS" > functions/.env.limba-auto
+          npm ci --prefix functions
+          npx -y firebase-tools@15.37.0 deploy --project limba-auto --non-interactive \
+            --only functions:searchListings,functions:syncListingSearch,functions:reconcileListingSearch
 
       - name: Lock direct uploads after the marketplace switch is required
         if: inputs.operation == 'lock-storage'

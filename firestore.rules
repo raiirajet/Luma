@@ -22,6 +22,10 @@ rules_version = '2';
 // reports/{uid_listingId}: one immutable, owner-authored report per listing.
 // dealerApplications/{uid}: private applications submitted by that account and
 // reviewed by a verified administrator with the limbaAdmin custom claim.
+// dealerProfiles/{uid}: approved business details, separately publishable.
+// users/{uid}/listingDrafts/current: versioned, owner-only listing fields or
+// a completion marker. Photos are stored only as part of the listing upload.
+// marketplaceRelease/v1_9: public rollout switches written by the backend.
 // All unspecified paths are denied.
 
 service cloud.firestore {
@@ -129,7 +133,7 @@ service cloud.firestore {
         'createdAt', 'make', 'model', 'year', 'mileage', 'power', 'fuel',
         'transmission', 'body', 'sellerType', 'accidentStatus', 'conditionNote',
         'modelExtension', 'serviceHistory', 'modificationNotes', 'documentNotes',
-        'engineName', 'engineCapacity', 'photoDetails', 'batteryReport'
+        'engineName', 'engineCapacity', 'photoDetails', 'batteryReport', 'placeId'
       ]);
     }
 
@@ -143,6 +147,7 @@ service cloud.firestore {
         && data.title == data.make + ' ' + data.model + (modelExtension == '' ? '' : ' ' + modelExtension)
         && data.description.matches('(?s).{15,1000}.{0,1000}.{0,1000}')
         && data.city.matches('(?s).{1,90}')
+        && (!('placeId' in data) || isValidPlaceId(data.placeId))
         && data.contactEmail == ''
         && data.get('serviceHistory', '').matches('(?s).{0,500}')
         && data.get('modificationNotes', '').matches('(?s).{0,500}')
@@ -223,10 +228,20 @@ service cloud.firestore {
         && filters.get('capacityTo','') is string && filters.get('capacityTo','').size() <= 10;
     }
 
+    function isValidPlaceId(value) {
+      return value is string && value.matches('gn-[1-9][0-9]{0,11}');
+    }
+
+    function isValidRadius(radius) {
+      return radius is map && radius.keys().hasOnly(['placeId', 'km'])
+        && isValidPlaceId(radius.placeId) && radius.km in [25, 50, 100, 250];
+    }
+
     function isValidSearchItem(item) {
       return item is map
         && item.keys().hasAll(['name', 'filters', 'countries'])
-        && item.keys().hasOnly(['name', 'filters', 'countries'])
+        && item.keys().hasOnly(['name', 'filters', 'countries', 'radius'])
+        && (!('radius' in item) || isValidRadius(item.radius))
         && item.name is string
         && item.name.size() >= 1
         && item.name.size() <= 120
@@ -329,6 +344,69 @@ service cloud.firestore {
       return data.sellerType != 'dealer' || hasDealerApproval(data.uid);
     }
 
+    function isValidDealerProfile(data, uid) {
+      let approval = /databases/$(database)/documents/dealerApplications/$(uid);
+      return data.keys().hasOnly(['companyName', 'country', 'city', 'website', 'published', 'updatedAt'])
+        && data.companyName == get(approval).data.companyName
+        && data.country in ['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']
+        && data.city is string && data.city.size() <= 90 && data.city.matches('(?s).*[^\\s].*')
+        && data.website is string && data.website.size() <= 300
+        && (data.website == '' || data.website.matches('https://[A-Za-z0-9]+([.-][A-Za-z0-9]+)+(:[0-9]{1,5})?([/?#][^\\s<>]*)?'))
+        && data.published is bool && data.updatedAt == request.time;
+    }
+
+    function draftText(fields, key, maxSize) {
+      return fields.get(key, '') is string && fields.get(key, '').size() <= maxSize;
+    }
+
+    function isValidListingDraftFields(fields) {
+      return fields is map && fields.keys().hasOnly([
+        'make', 'model', 'modelExtension', 'year', 'mileage', 'fuel', 'transmission', 'body',
+        'power', 'engineName', 'engineCapacity', 'price', 'sellerType', 'country', 'city',
+        'condition', 'accidentStatus', 'conditionNote', 'serviceHistory', 'modificationNotes',
+        'documentNotes', 'description', 'batteryHealth', 'batteryMeasuredAt', 'batteryIssuer', 'batteryUrl', 'placeId'
+      ]) && draftText(fields, 'make', 35) && draftText(fields, 'model', 65)
+        && draftText(fields, 'modelExtension', 40) && draftText(fields, 'year', 4)
+        && draftText(fields, 'mileage', 12) && draftText(fields, 'fuel', 16)
+        && draftText(fields, 'transmission', 16) && draftText(fields, 'body', 16)
+        && draftText(fields, 'power', 10) && draftText(fields, 'engineName', 80)
+        && draftText(fields, 'engineCapacity', 10) && draftText(fields, 'price', 12)
+        && draftText(fields, 'sellerType', 20) && draftText(fields, 'country', 2)
+        && draftText(fields, 'city', 90) && draftText(fields, 'condition', 12)
+        && draftText(fields, 'accidentStatus', 12) && draftText(fields, 'conditionNote', 240)
+        && draftText(fields, 'serviceHistory', 500) && draftText(fields, 'modificationNotes', 500)
+        && draftText(fields, 'documentNotes', 240) && draftText(fields, 'description', 3000)
+        && draftText(fields, 'batteryHealth', 16) && draftText(fields, 'batteryMeasuredAt', 10)
+        && draftText(fields, 'batteryIssuer', 120) && draftText(fields, 'batteryUrl', 2048)
+        && (!('placeId' in fields) || fields.placeId == '' || isValidPlaceId(fields.placeId));
+    }
+
+    function isValidListingDraft(draft) {
+      return draft.draftId is string && draft.draftId.matches('[A-Za-z0-9_-]{8,128}')
+        && draft.revision is int && draft.revision > 0 && draft.updatedAt == request.time
+        && ((draft.state == 'open'
+          && draft.keys().hasOnly(['draftId', 'revision', 'updatedAt', 'state', 'fields'])
+          && isValidListingDraftFields(draft.fields))
+        || (draft.state == 'discarded'
+          && draft.keys().hasOnly(['draftId', 'revision', 'updatedAt', 'state']))
+        || (draft.state == 'published'
+          && draft.keys().hasOnly(['draftId', 'revision', 'updatedAt', 'state', 'listingId'])
+          && draft.listingId is string && draft.listingId.matches('[A-Za-z0-9_-]{1,128}')));
+    }
+
+    function isDraftPublishedWithListing(draft, uid) {
+      let listing = /databases/$(database)/documents/listings/$(draft.listingId);
+      return !exists(listing) && existsAfter(listing) && getAfter(listing).data.uid == uid;
+    }
+
+    function canUpdateListingDraft(before, after, uid) {
+      return isValidListingDraft(after) && ((before.state == 'open'
+        && after.draftId == before.draftId && after.revision == before.revision + 1
+        && (after.state != 'published' || isDraftPublishedWithListing(after, uid)))
+        || (before.state in ['published', 'discarded'] && after.state == 'open'
+          && after.draftId != before.draftId && after.revision == 1));
+    }
+
     function isDealerApplicant(data) {
       return data.keys().hasOnly(['companyName', 'email', 'status', 'createdAt', 'updatedAt', 'reviewerUid'])
         && data.email is string && data.email == request.auth.token.email
@@ -363,6 +441,24 @@ service cloud.firestore {
 
     match /marketplaceSecurity/enforcement {
       allow get: if true;
+    }
+
+    match /marketplaceRelease/v1_9 {
+      allow get: if true;
+    }
+
+    match /dealerProfiles/{uid} {
+      allow get: if isOwner(uid) || (resource.data.published == true && hasDealerApproval(uid));
+      allow create, update: if isVerified() && isOwner(uid) && hasDealerApproval(uid)
+        && isValidDealerProfile(request.resource.data, uid);
+    }
+
+    match /users/{uid}/listingDrafts/current {
+      allow get: if isVerified() && isOwner(uid);
+      allow create: if isVerified() && isOwner(uid) && isValidListingDraft(request.resource.data)
+        && request.resource.data.state == 'open' && request.resource.data.revision == 1;
+      allow update: if isVerified() && isOwner(uid)
+        && canUpdateListingDraft(resource.data, request.resource.data, uid);
     }
 
     // Only the verified owner can consume a prepared upload, atomically with creation.

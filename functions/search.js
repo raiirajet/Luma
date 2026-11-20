@@ -1,7 +1,7 @@
 const { HttpsError } = require('firebase-functions/v2/https');
 const { inputObject, inputText } = require('./model');
+const { findListingPlace, isSupportedCountry, isWithinListingRadius, matchLegacyListingPlace } = require('./listing-places');
 
-const COUNTRIES = new Set(['AL', 'TR', 'GR', 'RS', 'SI', 'XK', 'MK', 'HR', 'BA', 'ME', 'BG', 'RO']);
 const FILTER_LENGTHS = {
   keyword: 120, make: 35, model: 65, priceTo: 12, yearFrom: 4, mileageTo: 12,
   fuel: 16, transmission: 16, body: 16, sellerType: 20, priceFrom: 12, yearTo: 4,
@@ -15,9 +15,14 @@ const RANGE_FILTERS = {
   engineCapacity: ['capacityFrom', 'capacityTo'],
 };
 const NUMBER_FIELDS = new Set(Object.values(RANGE_FILTERS).flat());
+const EXACT_FILTERS = ['body', 'fuel', 'transmission', 'sellerType'];
 
 function normalizeSearch(data) {
   const name = inputText(data.name, 120, 'search name');
+  return { name, ...normalizeSearchCriteria(data) };
+}
+
+function normalizeSearchCriteria(data) {
   const supplied = inputObject(data.filters);
   if (Object.keys(supplied).some(field => !Object.hasOwn(FILTER_LENGTHS, field))) {
     throw new HttpsError('invalid-argument', 'Unknown search filter.');
@@ -34,11 +39,22 @@ function normalizeSearch(data) {
     }
     filters[field] = value;
   }
-  if (!Array.isArray(data.countries) || data.countries.length > COUNTRIES.size ||
-      data.countries.some(country => !COUNTRIES.has(country))) {
+  if (!Array.isArray(data.countries) || data.countries.length > 12 ||
+      data.countries.some(country => !isSupportedCountry(country))) {
     throw new HttpsError('invalid-argument', 'Invalid search countries.');
   }
-  return { name, filters, countries: [...new Set(data.countries)].sort() };
+  const criteria = { filters, countries: [...new Set(data.countries)].sort() };
+  // Keep the saved-alert hash stable for searches that predate location filters.
+  if (data.radius != null) {
+    const radius = inputObject(data.radius);
+    const { placeId, km } = radius;
+    if (Object.keys(radius).some(key => key !== 'placeId' && key !== 'km') ||
+        !findListingPlace(placeId) || !Number.isInteger(km) || km < 1 || km > 500) {
+      throw new HttpsError('invalid-argument', 'Select a location and a radius from 1 to 500 km.');
+    }
+    criteria.radius = { placeId, km };
+  }
+  return criteria;
 }
 
 function normalizeMake(value) {
@@ -52,37 +68,58 @@ const MAKE_ALIASES = new Map([
   ['landrover', 'land rover'], ['gtr', 'nissan'], ['ssang yong', 'ssangyong'],
 ]);
 
-function matchesSearch(listing, { filters, countries }) {
+function normalizeListingMake(value) {
+  const normalized = normalizeMake(value);
+  return MAKE_ALIASES.get(normalized) ?? normalized;
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? '').toLowerCase();
+}
+
+function listingSearchText(listing) {
+  return normalizeSearchText([listing.title, listing.make, listing.model, listing.modelExtension, listing.city,
+    listing.description, listing.serviceHistory, listing.modificationNotes].join(' '));
+}
+
+function listingSearchPlace(listing) {
+  if (!listing.placeId) return matchLegacyListingPlace(listing.city, listing.country);
+  const place = findListingPlace(listing.placeId);
+  if (!place || place.country !== listing.country) return undefined;
+  const nameMatches = place.name === listing.city || matchLegacyListingPlace(listing.city, listing.country)?.id === place.id;
+  return nameMatches ? place : undefined;
+}
+
+function listingSearchNumber(listing, field) {
+  const raw = listing[field];
+  const value = typeof raw === 'number' || (typeof raw === 'string' && raw.trim()) ? Number(raw) : NaN;
+  return Number.isFinite(value) && (field !== 'engineCapacity' || value > 0) ? value : undefined;
+}
+
+function matchesSearch(listing, { filters, countries, radius }) {
   if (countries.length > 0 && !countries.includes(listing.country)) return false;
   const { keyword, make, model, engineTerm } = filters;
-  if (keyword) {
-    const haystack = [listing.title, listing.make, listing.model, listing.modelExtension, listing.city,
-      listing.description, listing.serviceHistory, listing.modificationNotes].join(' ').toLowerCase();
-    if (!haystack.includes(keyword.toLowerCase())) return false;
-  }
-  if (make) {
-    const normalizedFilter = normalizeMake(make);
-    const normalizedListing = normalizeMake(listing.make);
-    const filterMake = MAKE_ALIASES.get(normalizedFilter) ?? normalizedFilter;
-    const listingMake = MAKE_ALIASES.get(normalizedListing) ?? normalizedListing;
-    if (!listingMake.includes(filterMake)) return false;
-  }
+  if (keyword && !listingSearchText(listing).includes(normalizeSearchText(keyword))) return false;
+  if (make && !normalizeListingMake(listing.make).includes(normalizeListingMake(make))) return false;
   if (model && !normalizeMake(listing.model).includes(normalizeMake(model))) return false;
-  if (engineTerm && !String(listing.engineName ?? '').toLowerCase().includes(engineTerm.toLowerCase())) {
+  if (engineTerm && !normalizeSearchText(listing.engineName).includes(normalizeSearchText(engineTerm))) {
     return false;
   }
 
-  for (const field of ['body', 'fuel', 'transmission', 'sellerType']) {
+  for (const field of EXACT_FILTERS) {
     if (filters[field] && filters[field] !== listing[field]) return false;
   }
   for (const [field, [min, max]] of Object.entries(RANGE_FILTERS)) {
     if (!filters[min] && !filters[max]) continue;
-    const value = Number(listing[field]);
-    if (!Number.isFinite(value) || (field === 'engineCapacity' && !value)) return false;
+    const value = listingSearchNumber(listing, field);
+    if (value === undefined) return false;
     if (filters[min] && value < Number(filters[min])) return false;
     if (filters[max] && value > Number(filters[max])) return false;
   }
-  return true;
+  return !radius || isWithinListingRadius(listingSearchPlace(listing), findListingPlace(radius.placeId), radius.km);
 }
 
-module.exports = { matchesSearch, normalizeSearch };
+module.exports = {
+  EXACT_FILTERS, RANGE_FILTERS, matchesSearch, normalizeSearch, normalizeSearchCriteria, normalizeMake,
+  normalizeListingMake, normalizeSearchText, listingSearchText, listingSearchPlace, listingSearchNumber,
+};

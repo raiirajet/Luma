@@ -1,9 +1,11 @@
-export function createDealerAccountUI({ el, state, h, L, T, modal, toast, openAuth }) {
+export function createDealerAccountUI({ el, state, h, L, T, modal, toast, openAuth,
+  carCard, openListing, countryLabel, COUNTRIES, number, callSecureMarketplace }) {
   let application;
   let canReview = false;
   let stopApplication;
   let reviewingUid = null;
   let loadingVerification = false;
+  const dealerViews = new Set();
 
   function applicationRef(user) {
     const { db, modules } = state.fb;
@@ -98,10 +100,184 @@ export function createDealerAccountUI({ el, state, h, L, T, modal, toast, openAu
     panel.innerHTML = `<p role="status"><strong>${h(L('accountType'))}</strong> · ${h(label)}</p>
       <div class="detail-actions">
       ${apply ? `<button type="button" id="dealerApply" class="outline-btn">${h(L('dealerApply'))}</button>` : ''}
+      ${status === 'approved' ? `<button type="button" id="dealerEditProfile" class="outline-btn">${h(L('dealerEditProfile'))}</button>
+        <button type="button" id="dealerShowStatistics" class="outline-btn">${h(L('dealerStatistics'))}</button>` : ''}
       ${canReview ? `<button type="button" id="dealerReview" class="primary-btn">${h(L('dealerReview'))}</button>` : ''}
       </div>`;
     el('dealerApply')?.addEventListener('click', openApplication);
     el('dealerReview')?.addEventListener('click', showReview);
+    el('dealerEditProfile')?.addEventListener('click', editProfile);
+    el('dealerShowStatistics')?.addEventListener('click', showStatistics);
+  }
+
+  function profileRef(uid) {
+    const { db, modules } = state.fb;
+    return modules.doc(db, 'dealerProfiles', uid);
+  }
+
+  function validWebsite(value) {
+    try {
+      const url = new URL(value);
+      return /^https:\/\/[A-Za-z0-9]+([.-][A-Za-z0-9]+)+(:[0-9]{1,5})?([/?#][^\s<>]*)?$/.test(url.href) && !url.username && !url.password && url.href.length <= 300 ? url.href : '';
+    } catch {
+      return '';
+    }
+  }
+
+  async function editProfile() {
+    const uid = state.user?.uid;
+    const companyName = application?.companyName;
+    if (!uid || application?.status !== 'approved' || !state.fb) return;
+    modal(`<h2 id="modalTitle">${h(L('dealerEditProfile'))}</h2><p id="dealerProfileLoading" role="status">${h(L('loading'))}</p>`);
+    const anchor = el('dealerProfileLoading');
+    const { modules } = state.fb;
+    try {
+      const snapshot = await modules.getDocFromServer(profileRef(uid));
+      if (!anchor.isConnected || state.user?.uid !== uid) return;
+      const profile = snapshot.data() || {};
+      const countries = COUNTRIES.map(([code]) => `<option value="${h(code)}" ${code === profile.country ? 'selected' : ''}>${h(countryLabel(code))}</option>`).join('');
+      modal(`<h2 id="modalTitle">${h(L('dealerEditProfile'))}</h2>
+        <form class="form-stack" id="dealerProfileForm">
+         <p><strong>${h(companyName)}</strong> · ${h(L('dealerApprovedPublic'))}</p>
+         <label>${h(T('country'))}<select name="country" required>${countries}</select></label>
+         <label>${h(T('location'))}<input name="city" maxlength="90" required autocomplete="address-level2" value="${h(profile.city)}"></label>
+         <label>${h(L('dealerWebsite'))}<input type="url" name="website" maxlength="300" placeholder="https://" value="${h(profile.website)}"></label>
+         <label class="checkbox-label"><input type="checkbox" name="published" ${profile.published ? 'checked' : ''}> ${h(L('dealerPublishProfile'))}</label>
+         <button type="submit" class="primary-btn">${h(L('saveChanges'))}</button>
+         <button type="button" class="outline-btn" id="dealerSettingsBack">${h(L('accountNav'))}</button>
+         <p class="helper" role="status"></p>
+        </form>`);
+      const form = el('dealerProfileForm');
+      const status = form.querySelector('[role=status]');
+      el('dealerSettingsBack').addEventListener('click', openAuth);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (state.user?.uid !== uid) return;
+        const rawWebsite = form.elements.website.value.trim();
+        const website = rawWebsite ? validWebsite(rawWebsite) : '';
+        if (rawWebsite && !website) { status.textContent = L('dealerWebsiteInvalid'); return; }
+        const city = form.elements.city.value.trim();
+        if (!city) { status.textContent = L('dealerCityRequired'); return; }
+        const submit = form.querySelector('[type=submit]');
+        submit.disabled = true;
+        status.textContent = L('loading');
+        try {
+          await modules.setDoc(profileRef(uid), {
+            companyName, country: form.elements.country.value, city, website,
+            published: form.elements.published.checked, updatedAt: modules.serverTimestamp(),
+          });
+          status.textContent = L('dealerProfileSaved');
+        } catch {
+          status.textContent = L('dealerProfileSaveError');
+        } finally {
+          submit.disabled = false;
+        }
+      });
+    } catch {
+      if (anchor.isConnected) anchor.textContent = L('dealerProfileUnavailable');
+    }
+  }
+
+  async function showStatistics() {
+    const uid = state.user?.uid;
+    if (!uid || application?.status !== 'approved') return;
+    modal(`<h2 id="modalTitle">${h(L('dealerStatistics'))}</h2>
+      <p class="muted-copy">${h(L('dealerStatisticsNote'))}</p>
+      <label for="dealerPeriod">${h(L('dealerStatisticsWindow'))}</label>
+      <select id="dealerPeriod" class="settings-language-select"><option value="7">7 ${h(L('days'))}</option><option value="30" selected>30 ${h(L('days'))}</option></select>
+      <div id="dealerStatisticsResult" role="status"></div>`);
+    const windowSelect = el('dealerPeriod');
+    const result = el('dealerStatisticsResult');
+    let generation = 0;
+    async function load() {
+      const request = ++generation;
+      result.textContent = L('loading');
+      try {
+        const data = await callSecureMarketplace('getDealerStatistics', { days: Number(windowSelect.value) });
+        if (!result.isConnected || request !== generation || state.user?.uid !== uid) return;
+        result.innerHTML = `<dl class="dealer-stats"><div><dt>${h(L('dealerListingViews'))}</dt><dd>${h(number(data.views))}</dd></div>
+          <div><dt>${h(L('dealerInquiries'))}</dt><dd>${h(number(data.inquiries))}</dd></div></dl>`;
+      } catch {
+        if (request === generation && result.isConnected) result.textContent = L('featureUnavailable');
+      }
+    }
+    windowSelect.addEventListener('change', load);
+    void load();
+  }
+
+  async function openPublic(uid, fromAd = null) {
+    if (!state.fb || !uid || uid.length > 128 || uid.includes('/')) return;
+    modal(`<h2 id="modalTitle">${h(L('dealerProfile'))}</h2><p id="dealerPublicLoading" role="status">${h(L('loading'))}</p>`);
+    const anchor = el('dealerPublicLoading');
+    const { db, modules: m } = state.fb;
+    let profile;
+    try {
+      profile = (await m.getDocFromServer(profileRef(uid))).data();
+    } catch {
+      // The authorization check also hides unpublished profiles from visitors.
+    }
+    if (!anchor.isConnected) return;
+    if (!profile?.published) { anchor.textContent = L('dealerProfileUnavailable'); return; }
+    const website = validWebsite(profile.website);
+    modal(`${fromAd ? `<button type="button" class="detail-back outline-btn" id="dealerBackToListing">${h(L('backToAd'))}</button>` : ''}
+      <h2 id="modalTitle">${h(profile.companyName)}</h2>
+      <p class="dealer-badge">${h(L('dealerApprovedPublic'))}</p><p>${h(profile.city)}, ${h(countryLabel(profile.country))}</p>
+      <div class="detail-actions">
+       ${website ? `<a class="outline-btn" href="${h(website)}" target="_blank" rel="noopener noreferrer">${h(L('dealerWebsite'))}</a>` : ''}
+       <button type="button" class="outline-btn" id="dealerShare">${h(T('shareCar'))}</button>
+      </div>
+      <h3>${h(L('dealerStock'))}</h3><div id="dealerStockGrid" class="car-grid dealer-stock-grid"></div>
+      <p id="dealerStockStatus" role="status"></p><button type="button" id="dealerStockMore" class="outline-btn hidden">${h(L('loadMore'))}</button>`);
+    el('dealerBackToListing')?.addEventListener('click', () => openListing(fromAd, { fromHistory: true }));
+    el('dealerShare').addEventListener('click', async () => {
+      const url = `${location.origin}${location.pathname}#dealer=${encodeURIComponent(uid)}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast(T('linkCopied'));
+      } catch { toast(url); }
+    });
+    const grid = el('dealerStockGrid'), status = el('dealerStockStatus'), more = el('dealerStockMore');
+    const pageSize = 12;
+    let cursor;
+    async function load() {
+      more.disabled = true;
+      more.textContent = L('loadMore');
+      status.textContent = L('loading');
+      try {
+        const query = m.query(m.collection(db, 'listings'), m.where('uid', '==', uid), m.where('status', '==', 'active'),
+          m.where('sellerType', '==', 'dealer'), m.orderBy(m.documentId()), ...(cursor ? [m.startAfter(cursor)] : []), m.limit(pageSize));
+        const rows = await m.getDocsFromServer(query);
+        if (!grid.isConnected) return;
+        if (!rows.empty) cursor = rows.docs.at(-1);
+        grid.insertAdjacentHTML('beforeend', rows.docs.filter(row => row.data().category === 'vehicles').map(row => carCard({ ...row.data(), id: row.id })).join(''));
+        status.textContent = grid.children.length ? '' : L('dealerStockEmpty');
+        more.classList.toggle('hidden', rows.size < pageSize);
+      } catch {
+        status.textContent = L('featureUnavailable');
+        more.textContent = L('retry');
+        more.classList.remove('hidden');
+      } finally {
+        more.disabled = false;
+      }
+    }
+    more.addEventListener('click', load);
+    await load();
+  }
+
+  function attachListing(listing, panel) {
+    const uid = state.user?.uid;
+    const viewKey = `${new Date().toISOString().slice(0, 10)}:${uid}:${listing.id}`;
+    if (uid && state.user.emailVerified && !state.user.isPreview && listing.uid !== uid && !dealerViews.has(viewKey)) {
+      dealerViews.add(viewKey);
+      void callSecureMarketplace('recordDealerListingView', { listingId: listing.id }).catch(() => dealerViews.delete(viewKey));
+    }
+    if (!state.fb || !listing.uid) return;
+    void state.fb.modules.getDocFromServer(profileRef(listing.uid)).then(snapshot => {
+      const profile = snapshot.data();
+      if (!panel.isConnected || !profile?.published) return;
+      panel.innerHTML = `<button class="outline-btn" type="button">${h(profile.companyName)} · ${h(L('dealerApprovedPublic'))}</button>`;
+      panel.querySelector('button').addEventListener('click', () => void openPublic(listing.uid, listing.id));
+    }).catch(() => {});
   }
 
   function openApplication() {
@@ -183,6 +359,7 @@ export function createDealerAccountUI({ el, state, h, L, T, modal, toast, openAu
 
   return {
     connectAccount, renderAccount, refreshReviewer, saveApplication, submitVerified,
+    openPublic, attachListing,
     approved: () => application?.status === 'approved',
   };
 }

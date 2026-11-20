@@ -18,3 +18,4 @@ work-auth-export.json
 *.keystore
 *.jks
 android/keystore.properties
+/android/.kotlin/

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="push_messages_channel">Mesazhet</string>
+    <string name="push_search_channel">Kërkimet e ruajtura</string>
+    <string name="push_message_body">Ke një mesazh të ri.</string>
+    <string name="push_search_body">Një automjet i ri përputhet me një kërkim të ruajtur.</string>
+</resources>
