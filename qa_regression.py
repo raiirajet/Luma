@@ -148,10 +148,9 @@ with sync_playwright() as p:
   assert page.locator('#homeView').is_visible()
   # heart and favorite page
   page.locator('.car-card .card-heart').first.click()
-  fav_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="favorites"]'
-  if width<500:
-   print('NAV_HITTEST',page.evaluate("""() => { const n=document.querySelector('.mobile-nav [data-view="favorites"]');const r=n.getBoundingClientRect();const x=r.x+r.width/2,y=r.y+r.height/2;const el=document.elementFromPoint(x,y);return {rect:[r.x,r.y,r.width,r.height],viewport:[innerWidth,innerHeight],visual:[visualViewport.width,visualViewport.height,visualViewport.offsetTop],hit:el?.outerHTML?.slice(0,160),z:getComputedStyle(n.closest('nav')).zIndex,navDisplay:getComputedStyle(n.closest('nav')).display};}"""),flush=True)
-  page.locator(fav_nav).click()
+  # Personal areas are now in the profile menu on desktop and mobile.
+  page.locator('#loginBtn').click()
+  page.locator('#accountMenu [data-view="favorites"]').click()
   assert page.locator('#favoritesGrid .car-card').count()==1
   home_nav=('.mobile-nav ' if width<500 else '.main-nav ')+ '[data-view="home"]'
   page.locator(home_nav).click()
@@ -212,9 +211,9 @@ with sync_playwright() as p:
   page.locator('#detailBack').click()
   assert page.locator('#modal').is_hidden()
   assert page.locator('#swipeView').is_visible()
-  page.locator('#swipeFavorite').click()
+  page.locator('#swipeActions [data-swipe-action="favorite"]').click()
   assert not page.locator('#swipeFavorite').evaluate('(e) => e.classList.contains("active")')
-  page.locator('#swipeFavorite').click()
+  page.locator('#swipeActions [data-swipe-action="favorite"]').click()
   assert page.locator('#swipeFavorite').evaluate('(e) => e.classList.contains("active")')
   # Escape modal closes modal and retains swipe
   page.locator('#swipeCard').focus()

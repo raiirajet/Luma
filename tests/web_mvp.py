@@ -110,8 +110,8 @@ try:
    route=('.mobile-nav ' if width<500 else '.main-nav ')+'[data-view="performance"]'
    page.locator(route).click()
    assert page.locator('#performanceGrid .car-card').count()==1
-   route=('.mobile-nav ' if width<500 else '.main-nav ')+'[data-view="favorites"]'
-   page.locator(route).click()
+   page.locator('#loginBtn').click()
+   page.locator('#accountMenu [data-view="favorites"]').click()
    assert page.locator('#favoritesGrid .garage-pick').count()==2
    page.locator('#favoritesGrid [data-garage-pick]').nth(0).check()
    page.locator('#favoritesGrid [data-garage-pick]').nth(1).check()

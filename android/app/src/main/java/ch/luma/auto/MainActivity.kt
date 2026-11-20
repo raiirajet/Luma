@@ -93,6 +93,11 @@ class MainActivity : Activity() {
     private var starred = false
     private val compareVehicleIds = linkedSetOf<String>()
     private var swipeSeen = false
+    private var swipeGuideView: View? = null
+    private var listingsLoaded = false
+    private var priceCurrency = "EUR"
+    private val exchangeRates = mutableMapOf("EUR" to 1.0)
+    private var fxUpdated = ""
     private var activeCountry = mutableSetOf<String>()
     private var keyword = ""
     private var make = ""
@@ -200,8 +205,11 @@ class MainActivity : Activity() {
         if (locale !in codes) locale = "de"
         starred = prefs.getBoolean("favorite", false)
         swipeSeen = prefs.getBoolean("swipeSeen", false)
+        priceCurrency = prefs.getString("displayCurrency", "EUR").orEmpty().takeIf { it in listOf("EUR", "MKD", "ALL", "RSD", "CHF") } ?: "EUR"
         activeCountry = (prefs.getStringSet("countries", emptySet()) ?: emptySet()).toMutableSet()
         backend = LimbaFirebase(this)
+        listingsLoaded = !backend.ready
+        if (priceCurrency != "EUR") loadExchangeRates()
         if (BuildConfig.DEBUG && !backend.ready) {
             previewUser = prefs.getString("previewUser", "").orEmpty().takeUnless { it == "limba" }.orEmpty()
             val stored = runCatching { JSONArray(prefs.getString("previewCars", "[]")) }.getOrDefault(JSONArray())
@@ -284,8 +292,9 @@ class MainActivity : Activity() {
                 render()
             }
             backend.watchPublic({ cars ->
+                listingsLoaded = true
                 cloudCars.clear();cloudCars.addAll(cars);render()
-            }, { error -> toast(error) })
+            }, { error -> listingsLoaded = true; toast(error); render() })
         }
         render()
         if (!prefs.contains("language")) root.post { chooseFirstLanguage() }
@@ -386,7 +395,56 @@ class MainActivity : Activity() {
     private fun space(height: Int) = View(this).apply { layoutParams = lp(-1, height) }
     private fun pad(v: View, x: Int = 18, y: Int = 16) { v.setPadding(px(x), px(y), px(x), px(y)) }
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
-    private fun euro(n: Int) = NumberFormat.getNumberInstance(Locale.GERMANY).format(n) + " €"
+    private fun euro(n: Int): String {
+        val rate = exchangeRates[priceCurrency]
+        val currency = if (rate != null && rate > 0.0) priceCurrency else "EUR"
+        val value = n.toDouble() * (if (currency == "EUR") 1.0 else rate!!)
+        val formatted = NumberFormat.getNumberInstance(Locale.GERMANY).apply { maximumFractionDigits = 0 }.format(value)
+        return formatted + if (currency == "EUR") " €" else " " + currency + " ≈"
+    }
+    private fun loadExchangeRates() {
+        Thread {
+            val values = runCatching {
+                val connection = java.net.URL("https://open.er-api.com/v6/latest/EUR").openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 6000
+                connection.readTimeout = 6000
+                connection.setRequestProperty("Accept", "application/json")
+                try {
+                    if (connection.responseCode != 200) throw IllegalStateException("FX network")
+                    val payload = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                    if (payload.optString("result") != "success") throw IllegalStateException("FX response")
+                    val data = payload.getJSONObject("rates")
+                    val rates = listOf("MKD", "ALL", "RSD", "CHF").associateWith { data.optDouble(it, 0.0) }
+                    if (rates.values.any { !it.isFinite() || it <= 0.0 }) throw IllegalStateException("FX incomplete")
+                    rates to payload.optString("time_last_update_utc")
+                } finally { connection.disconnect() }
+            }
+            runOnUiThread {
+                values.onSuccess { (rates, date) ->
+                    exchangeRates.putAll(rates)
+                    fxUpdated = date
+                    if (screen in listOf("home","details","favorites","performance","mine","swipe")) render()
+                }.onFailure {
+                    priceCurrency = "EUR"
+                    prefs.edit().putString("displayCurrency", "EUR").apply()
+                    toast("Wechselkurs nicht verfügbar – Anzeige in EUR")
+                    if (screen == "home") renderHome()
+                }
+            }
+        }.start()
+    }
+    private fun showCurrencyPicker() {
+        val currencies = listOf("EUR", "MKD", "ALL", "RSD", "CHF")
+        AlertDialog.Builder(this).setTitle("Währung anzeigen (Basispreis EUR)")
+            .setSingleChoiceItems(currencies.toTypedArray(), currencies.indexOf(priceCurrency)) { dialog, index ->
+                priceCurrency = currencies[index]
+                prefs.edit().putString("displayCurrency", priceCurrency).apply()
+                dialog.dismiss()
+                if (priceCurrency != "EUR" && exchangeRates[priceCurrency] == null) loadExchangeRates()
+                render()
+            }
+            .setNegativeButton(t("cancel"), null).show()
+    }
     private fun number(n: Int) = NumberFormat.getIntegerInstance(Locale.GERMANY).format(n)
     private fun navigate(next: String) {
         if (next != screen) navigationHistory.addLast(screen)
@@ -466,8 +524,8 @@ class MainActivity : Activity() {
         val routes = listOf(
             Triple("home", R.drawable.limba_search, t("carsNav")),
             Triple("swipe", R.drawable.limba_vehicle_cards, "Swipe"),
-            Triple("favorites", R.drawable.limba_favorites, t("garage")),
-            Triple("performance", R.drawable.limba_car, t("performance"))
+            Triple("performance", R.drawable.limba_car, t("performance")),
+            Triple("profile", R.drawable.limba_profile, "Profil")
         )
         routes.forEach { (route, icon, name) ->
             val selected = screen == route
@@ -486,7 +544,7 @@ class MainActivity : Activity() {
                 gravity = Gravity.CENTER; maxLines = 1
             })
             nav.addView(cell, LinearLayout.LayoutParams(0, px(66), 1f))
-            cell.setOnClickListener { navigate(route) }
+            cell.setOnClickListener { if (route == "profile") showAccountMenu() else navigate(route) }
         }
         main.addView(nav, lp(-1, 66))
     }
@@ -755,9 +813,10 @@ class MainActivity : Activity() {
     }
     private fun renderPerformance() {
         val main=container();toolbar(main,t("performance"),{navigate("home")})
-        val content=col().apply{setPadding(px(17),px(22),px(17),px(22))}
-        content.addView(text("LIMBA PERFORMANCE",22f,ink,true))
-        content.addView(space(6));content.addView(text(t("performanceDesc"),13f,muted));content.addView(space(16))
+        val content=col(navy).apply{setPadding(px(17),px(22),px(17),px(22))}
+        content.addView(text("LIMBA PERFORMANCE",22f,0xffffbe63.toInt(),true))
+        content.addView(space(6));content.addView(text(t("performanceDesc"),13f,0xffc2d7e2.toInt()));content.addView(space(16))
+        if (!listingsLoaded) { loadingCards(content); body(main, content); navigation(main); return }
         var found=false
         for(car in cloudCars.filter{matchesCar(it)}+previewCars.filter{matchesPreview(it)}){
             if(car.optString("modelExtension").isBlank()&&car.optString("modificationNotes").isBlank())continue
@@ -771,6 +830,13 @@ class MainActivity : Activity() {
         val main = container()
         toolbar(main, t("carsNav"))
         val content = col()
+        val hero = col(navy).apply { setPadding(px(19), px(17), px(19), px(17)) }
+        hero.addView(text("LIMBA SHOWROOM", 12f, 0xff88c7f6.toInt(), true))
+        hero.addView(space(6))
+        hero.addView(text("Dein nächstes Auto beginnt hier.", 23f, paper, true))
+        hero.addView(space(4))
+        hero.addView(text("Marke, Modell, Preis und Suchland direkt wählen.", 12f, 0xffd8e9f5.toInt()))
+        content.addView(hero)
         val form = col(paper).apply { setPadding(px(16), px(15), px(16), px(16)) }
         form.addView(text(t("carsNav"), 18f, ink, true))
         form.addView(space(7))
@@ -857,7 +923,7 @@ class MainActivity : Activity() {
             val total=available.size+preview.size+(if(demo)1 else 0)
             results.addView(text(t("latestCars"),21f,ink,true))
             results.addView(space(5))
-            results.addView(text(total.toString()+" "+t("searchResultCount"),12f,orange,true))
+            results.addView(text(if (listingsLoaded) total.toString()+" "+t("searchResultCount") else t("loading"),12f,orange,true))
             val sellerSegments = row()
             for ((value, label) in listOf("" to "allSeller", "privateSeller" to "privateSeller", "dealer" to "dealer")) {
                 if (sellerSegments.childCount > 0) sellerSegments.addView(spaceHorizontal(5))
@@ -867,12 +933,34 @@ class MainActivity : Activity() {
                 }, LinearLayout.LayoutParams(0, px(44), 1f))
             }
             results.addView(sellerSegments)
+            results.addView(space(9))
+            showQuickCountryChips(results)
+            results.addView(space(8))
+            results.addView(btn("Währung: " + priceCurrency + if (fxUpdated.isNotBlank() && priceCurrency != "EUR") " · Referenzkurs" else "", false) { showCurrencyPicker() })
+            if (priceCurrency != "EUR") results.addView(text("Unverbindliche Umrechnung, Inseratspreise in EUR.", 11f, muted))
             showFilterChips(results)
             results.addView(space(13))
+            if (!listingsLoaded) { loadingCards(results); return }
             available.forEach{results.addView(previewCard(it));results.addView(space(12))}
             preview.forEach{results.addView(previewCard(it));results.addView(space(12))}
             if(demo){results.addView(carCard());results.addView(space(12))}
-            if(total==0)emptyState(results,t("emptyCars"))
+            if(total==0) {
+                emptyState(results,t("emptyCars"))
+                results.addView(space(8))
+                results.addView(btn(t("resetFilters"), false) { clearFilters(); renderHome() })
+                results.addView(space(8))
+                results.addView(btn("🇲🇰 Alle Fahrzeuge in Nordmazedonien", false) {
+                    clearFilters(); activeCountry = mutableSetOf("MK"); persistSearchCountries(); renderHome()
+                })
+                results.addView(space(8))
+                results.addView(btn("🇽🇰 Fahrzeuge im Kosovo", false) {
+                    clearFilters(); activeCountry = mutableSetOf("XK"); persistSearchCountries(); renderHome()
+                })
+                results.addView(space(8))
+                results.addView(btn("✦ Performance entdecken", false) {
+                    clearFilters(); activeCountry.clear(); persistSearchCountries(); navigate("performance")
+                })
+            }
             results.addView(space(16))
             results.addView(btn(t("yourSavedSearch"),false){navigate("searches")})
             results.addView(space(9))
@@ -903,6 +991,49 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun showQuickCountryChips(parent: LinearLayout) {
+        val labelRow = row()
+        labelRow.addView(text(t("filterCountry"), 14f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        labelRow.addView(btn(t("allCountries"), false) { activeCountry.clear(); persistSearchCountries(); renderHome() })
+        parent.addView(labelRow)
+        val chipRow = row()
+        countries.forEach { (code, flag, name) ->
+            val selected = code in activeCountry
+            val chip = btn("$flag $name", selected) {
+                if (code in activeCountry) activeCountry.remove(code) else activeCountry.add(code)
+                persistSearchCountries(); renderHome()
+            }.apply {
+                minHeight = px(44)
+                setSingleLine(true)
+            }
+            chipRow.addView(chip, lp(-2, 46))
+            chipRow.addView(spaceHorizontal(6))
+        }
+        parent.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(chipRow)
+        }, lp(-1, -2))
+    }
+    private fun loadingCards(parent: LinearLayout) {
+        for (item in 0 until 3) {
+            val card = col(paper).apply { background = c(paper, 15, border); setPadding(px(10), px(10), px(10), px(15)) }
+            fun shimmer(width: Int, height: Int): View {
+                val line = View(this).apply { background = c(0xffe2e9ef.toInt(), 9) }
+                val anim = android.animation.ObjectAnimator.ofFloat(line, "alpha", .55f, 1f)
+                anim.duration = 1100L
+                anim.repeatCount = android.animation.ValueAnimator.INFINITE
+                anim.repeatMode = android.animation.ValueAnimator.REVERSE
+                anim.start()
+                line.layoutParams = lp(width, height)
+                return line
+            }
+            card.addView(shimmer(-1, 154))
+            card.addView(space(12)); card.addView(shimmer(150, 20))
+            card.addView(space(8)); card.addView(shimmer(225, 13))
+            card.addView(space(8)); card.addView(shimmer(120, 13))
+            parent.addView(card); parent.addView(space(11))
+        }
+    }
     private fun showSearchCountries() {
         val selected = countries.map { it.first in activeCountry }.toBooleanArray()
         AlertDialog.Builder(this).setTitle(t("filterCountry"))
@@ -1029,14 +1160,18 @@ class MainActivity : Activity() {
         val live = previewCars.none { it.optString("id") == id }
         val liked = if (live) id in cloudStars else id in previewStars
         val open = { activePreviewCar = car; openDetails(screen) }
-        val view = col(paper).apply { background = c(paper, 16, border); clipToOutline = true }
+        val isPerformance = screen == "performance"
+        val cardBackground = if (isPerformance) 0xff1b2935.toInt() else paper
+        val foreground = if (isPerformance) paper else ink
+        val subdued = if (isPerformance) 0xffc6d4dd.toInt() else muted
+        val view = col(cardBackground).apply { background = c(cardBackground, 16, if (isPerformance) 0xff456276.toInt() else border); clipToOutline = true }
         view.addView(listingImage(car.optString("image").takeIf { live }, vehicleDisplayName(car), 188).apply {
             isFocusable = true
             setOnClickListener { open() }
         }, lp(-1, 188))
         val content = col().apply { pad(this, 15, 12) }
         val priceRow = row()
-        priceRow.addView(text(euro(car.optInt("price")), 24f, ink, true), LinearLayout.LayoutParams(0, -2, 1f))
+        priceRow.addView(text(euro(car.optInt("price")), 24f, foreground, true), LinearLayout.LayoutParams(0, -2, 1f))
         priceRow.addView(iconButton(R.drawable.limba_favorites, t("saveFavourites"), if (liked) orange else ink) {
             if (live && cloudUser == null) {
                 showAccount()
@@ -1049,12 +1184,38 @@ class MainActivity : Activity() {
             }
         }, lp(48, 48))
         content.addView(priceRow)
-        content.addView(text(vehicleDisplayName(car), 19f, ink, true))
+        content.addView(text(vehicleDisplayName(car), 19f, foreground, true))
         content.addView(space(5))
-        content.addView(text("${car.optInt("year")} · ${number(car.optInt("mileage"))} km · ${car.optInt("power")} PS", 13f, muted))
-        val location = "${car.optString("city")} · ${car.optString("country")}"
+        content.addView(text("${car.optInt("year")} · ${number(car.optInt("mileage"))} km · ${car.optInt("power")} PS", 13f, subdued))
+        val countryFlag = countries.firstOrNull { it.first == car.optString("country") }?.second ?: "🌐"
+        val location = "$countryFlag " + car.optString("city") + " · " + car.optString("country")
         val seller = if (live) t(car.optString("sellerType", "privateSeller")) else t("previewOnly")
-        content.addView(text("$location · $seller", 13f, muted))
+        content.addView(text("$location · $seller", 13f, subdued))
+        val customs = when (car.optString("customsStatus")) {
+            "cleared" -> "✓ Verzollt"
+            "pending" -> "⚠ Import offen"
+            else -> "Zollstatus nicht angegeben"
+        }
+        content.addView(text(customs, 11f, subdued))
+        if (isPerformance) {
+            val notes = (car.optString("modificationNotes") + " " + car.optString("modelExtension")).lowercase(Locale.ROOT)
+            val tags = mutableListOf<String>()
+            if (notes.contains("stage 1")) tags.add("Stage 1")
+            if (notes.contains("stage 2")) tags.add("Stage 2")
+            if (notes.contains("gewindefahrwerk") || notes.contains("coilover")) tags.add("Gewindefahrwerk")
+            if (notes.contains("abgasanlage") || notes.contains("exhaust")) tags.add("Abgasanlage")
+            if (tags.isNotEmpty()) {
+                val tuning = row()
+                tags.take(3).forEach { tag ->
+                    tuning.addView(text(tag, 10f, 0xffffcc75.toInt(), true).apply {
+                        background = c(0xff473522.toInt(), 10)
+                        setPadding(px(7), px(6), px(7), px(6))
+                    })
+                    tuning.addView(spaceHorizontal(6))
+                }
+                content.addView(space(7)); content.addView(tuning)
+            }
+        }
         content.addView(space(9))
         content.addView(iconText(R.drawable.limba_info, t("vehicleProfile"), open))
         view.addView(content)
@@ -1677,7 +1838,7 @@ class MainActivity : Activity() {
         val all=swipeCandidates()
         if (all.isEmpty()) {
             val empty=col().apply {gravity=Gravity.CENTER;setPadding(px(20),px(20),px(20),px(20))}
-            empty.addView(text(t("emptyCars"),20f,paper,true))
+            empty.addView(text(if (listingsLoaded) t("emptyCars") else t("loading"),20f,paper,true))
             empty.addView(space(20));empty.addView(btn(t("backToMarket"),true){navigate("home")})
             root.addView(empty,fp())
             return
@@ -1739,11 +1900,14 @@ class MainActivity : Activity() {
         val info=if(current==null)"2013 · 49.500 km · 550 PS · 🇭🇷 Zagreb"
            else current.optString("year")+" · "+number(current.optInt("mileage"))+" km · "+current.optString("power")+" PS · "+current.optString("city")
         overlay.addView(text(info,13f,paper));overlay.addView(space(16))
-        val buttons=row()
-        buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"),{details()}),LinearLayout.LayoutParams(0,px(50),1f))
-        buttons.addView(spaceHorizontal(10))
+
         val liked=if(current==null)starred else if(live)current.optString("id") in cloudStars else current.optString("id") in previewStars
-        buttons.addView(iconButton(R.drawable.limba_favorites,t("saveFavourites"),if(liked)orange else ink){
+        val buttons=row().apply { gravity=Gravity.CENTER }
+        val next=btn("✕",false) {
+            if(swipeIndex+1<all.size){swipeIndex++;renderSwipe()} else toast(t("onlyCar"))
+        }.apply { background=c(0xff833a49.toInt(),29);setTextColor(paper);textSize=23f;contentDescription=t("swipeNext") }
+        buttons.addView(next,lp(52,52));buttons.addView(spaceHorizontal(9))
+        val favorite=iconButton(R.drawable.limba_favorites,t("saveFavourites"),paper,0xffa54d77.toInt()){
             if(current==null)setFavorite(!starred)else {
                 val id=current.optString("id")
                 if(live){
@@ -1753,37 +1917,68 @@ class MainActivity : Activity() {
                     if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
                     prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply()
                 }
-            };renderSwipe()
-        },lp(56,52))
+            }
+            renderSwipe()
+        }.apply { background=c(if(liked)0xffba5a81.toInt() else 0xffa54d77.toInt(),29) }
+        buttons.addView(favorite,lp(52,52));buttons.addView(spaceHorizontal(9))
+        buttons.addView(iconButton(R.drawable.limba_info,t("swipeDetails"),paper,0xff255977.toInt()){
+            details()
+        }.apply {background=c(0xff255977.toInt(),29)},lp(52,52));buttons.addView(spaceHorizontal(9))
+        buttons.addView(btn("⚡",false) {
+            val target=all.indices.firstOrNull { it!=swipeIndex && all[it]?.optString("make")==(current?.optString("make")?:"Nissan") }
+            if(target!=null){swipeIndex=target;renderSwipe()}else toast(t("noSimilar"))
+        }.apply {background=c(0xffa16d21.toInt(),29);setTextColor(paper);textSize=22f;contentDescription=t("swipeSimilar")},lp(52,52))
         overlay.addView(buttons)
         full.addView(overlay,fp(-1,-2,Gravity.BOTTOM))
         if(!swipeSeen)root.post {if(screen=="swipe"&&!swipeSeen)showSwipeTutorial()}
     }
+
     private fun showSwipeTutorial() {
-        val tutorial=col().apply {setPadding(px(20),px(10),px(20),px(10))}
-        val intro = row()
-        intro.addView(drawableIcon(R.drawable.limba_info, orange, 30), lp(30,30))
-        intro.addView(spaceHorizontal(10))
-        intro.addView(text(t("swipeTeach"), 14f, ink, true))
-        tutorial.addView(intro);tutorial.addView(space(8))
-        val items=listOf(
-            Triple(R.drawable.limba_back,"swipeNext","swipeNextSub"),
+        if (screen != "swipe" || swipeGuideView?.parent != null) return
+        val mask = FrameLayout(this).apply {
+            setBackgroundColor(0x99051c2c.toInt())
+            isClickable = true
+        }
+        swipeGuideView = mask
+        val tutorial = col(0xffeff8fe.toInt()).apply {
+            setPadding(px(17),px(18),px(17),px(16))
+            background=c(0xffeff8fe.toInt(),20)
+            elevation=px(14).toFloat()
+        }
+        tutorial.addView(text("LIMBA DRIVE",12f,orange,true))
+        tutorial.addView(space(5))
+        tutorial.addView(text(t("swipeTeach"),19f,ink,true))
+        tutorial.addView(space(9))
+        val hints=listOf(
+            Triple(R.drawable.ic_arrow_left,"swipeNext","swipeNextSub"),
             Triple(R.drawable.ic_arrow_right,"swipeOpen","swipeOpenSub"),
             Triple(R.drawable.ic_arrow_up,"swipeDetails","swipeDetailsSub"),
             Triple(R.drawable.ic_arrow_down,"swipeSimilar","swipeSimilarSub")
         )
-        items.forEach { (glyph,title,detail) ->
-            val line=row()
-            line.addView(drawableIcon(glyph,orange,26),lp(28,28))
-            line.addView(spaceHorizontal(14))
-            line.addView(text(t(title)+" · "+t(detail),13f,ink,true))
-            tutorial.addView(line,lp(-1,58))
+        hints.forEachIndexed { index,(drawable,title,subtitle) ->
+            val line=row().apply {setPadding(px(8),px(5),px(8),px(5));background=c(paper,10)}
+            line.addView(drawableIcon(drawable,orange,28),lp(28,28))
+            line.addView(spaceHorizontal(12))
+            line.addView(text(t(title)+" · "+t(subtitle),12f,ink,true))
+            tutorial.addView(line,lp(-1,50));tutorial.addView(space(5))
+            android.animation.ObjectAnimator.ofFloat(line,"translationY",0f,-px(7).toFloat(),0f).apply {
+                duration=900;startDelay=index*140L;start()
+            }
         }
-        AlertDialog.Builder(this).setTitle(t("swipeTeach"))
-            .setView(tutorial)
-            .setPositiveButton(t("swipeStart")) { _,_-> swipeSeen=true;prefs.edit().putBoolean("swipeSeen",true).apply() }
-            .setNegativeButton(t("backToCar")) { _,_->swipeSeen=true;prefs.edit().putBoolean("swipeSeen",true).apply() }
-            .show()
+        fun closeGuide() {
+            swipeSeen=true
+            prefs.edit().putBoolean("swipeSeen",true).apply()
+            root.removeView(mask)
+            swipeGuideView=null
+        }
+        tutorial.addView(space(4))
+        tutorial.addView(btn(t("swipeStart"),true){closeGuide()})
+        tutorial.addView(space(6))
+        tutorial.addView(btn(t("backToCar"),false){closeGuide()})
+        val pos=fp(-1,-2,Gravity.CENTER).apply {setMargins(px(14),px(8),px(14),px(8))}
+        mask.addView(tutorial,pos)
+        mask.setOnClickListener { closeGuide() }
+        root.addView(mask,fp())
     }
 
     private fun renderPreviewDetails() {
