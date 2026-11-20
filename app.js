@@ -173,7 +173,12 @@ function filtered(){const f=state.filters;const term=f.keyword.trim().toLocaleLo
  if(f.capacityFrom&&(!Number.isFinite(Number(x.engineCapacity))||!x.engineCapacity||Number(x.engineCapacity)<Number(f.capacityFrom)))return false;
  if(f.capacityTo&&(!Number.isFinite(Number(x.engineCapacity))||!x.engineCapacity||Number(x.engineCapacity)>Number(f.capacityTo)))return false;return true});
  if(state.sort==='priceLow')items.sort((a,b)=>a.price-b.price);else if(state.sort==='priceHigh')items.sort((a,b)=>b.price-a.price);else items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));return items}
-function carCard(x){const liked=state.favorites.includes(x.id);return `<article class="car-card" data-open="${h(x.id)}" tabindex="0"><div class="car-img"><img loading="lazy" src="${h(safeURL(x.image)||'assets/limba/icons/car.png')}" alt="${h(x.title)}"/><span class="car-tag">${h(isDemo(x)?F('previewOnly'):T(x.sellerType||'privateSeller'))}</span><button class="card-heart ${liked?'active':''}" data-like="${h(x.id)}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button></div><div class="card-body"><strong class="car-price car-price-overview">${price(x.price)}</strong><h3 class="car-title">${h(x.title)}</h3><p class="car-sub">${h(T(x.fuel||'petrol'))} · ${h(T(x.transmission||'manual'))}${x.engineName?' · '+h(x.engineName):''}</p><div class="car-specs"><span>${h(String(x.year||'—'))}</span><span>${number(x.mileage)} ${h(T('kmUnit'))}</span><span>${number(x.power)} ${h(T('powerUnit'))}</span></div><div class="car-bottom"><div class="car-location">${icon('location')} ${flag(x.country)} ${h(x.city)}<br>${h(countryLabel(x.country))}</div></div></div></article>`}
+function carCard(x){const liked=state.favorites.includes(x.id);
+ const notes=String(x.modificationNotes||'')+' '+String(x.modelExtension||'');
+ const tags=[/stage\s*1/i.test(notes)?'Stage 1':null,/stage\s*2/i.test(notes)?'Stage 2':null,/gewindefahrwerk|coilover/i.test(notes)?'Gewindefahrwerk':null,/abgasanlage|exhaust/i.test(notes)?'Abgasanlage':null].filter(Boolean);
+ const tuneBadges=tags.length?'<div class="tuning-badges">'+tags.map(t=>'<span>'+h(t)+'</span>').join('')+'</div>':'';
+ const customs=x.customsStatus==='cleared'?'✓ Verzollt':x.customsStatus==='pending'?'⚠ Import offen':'Zollstatus nicht angegeben';
+ return `<article class="car-card" data-open="${h(x.id)}" tabindex="0"><div class="car-img"><img loading="lazy" src="${h(safeURL(x.image)||'assets/limba/icons/car.png')}" alt="${h(x.title)}"/><span class="car-tag">${h(isDemo(x)?F('previewOnly'):T(x.sellerType||'privateSeller'))}</span><button class="card-heart ${liked?'active':''}" data-like="${h(x.id)}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button></div><div class="card-body"><strong class="car-price car-price-overview">${price(x.price)}</strong><h3 class="car-title">${h(x.title)}</h3><p class="car-sub">${h(T(x.fuel||'petrol'))} · ${h(T(x.transmission||'manual'))}${x.engineName?' · '+h(x.engineName):''}</p><div class="car-specs"><span>${h(String(x.year||'—'))}</span><span>${number(x.mileage)} ${h(T('kmUnit'))}</span><span>${number(x.power)} ${h(T('powerUnit'))}</span></div><div class="car-bottom"><div class="car-location">${icon('location')} ${flag(x.country)} ${h(x.city)}<br>${h(countryLabel(x.country))}</div><small class="car-customs">${h(customs)}</small></div>${tuneBadges}</div></article>`}
 function renderAll(){const arr=filtered();if(!marketLoaded){
  $('carGrid').setAttribute('aria-busy','true');
  $('carGrid').innerHTML=Array.from({length:6},()=>'<div class="car-skeleton" aria-hidden="true"><div class="skeleton-photo"></div><div class="skeleton-line wide"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>').join('');
@@ -223,6 +228,7 @@ function renderSearchCountries(){
  $('searchCountryToggle').innerHTML='<span>'+h(label)+'</span>';
  $('searchCountryToggle').setAttribute('aria-label',L('filterCountry')+': '+label);
  $('countryChoices').innerHTML=COUNTRIES.map(([c,fl])=>'<label class="country-choice '+(state.countries.includes(c)?'is-active':'')+'"><input type="checkbox" value="'+h(c)+'" '+(state.countries.includes(c)?'checked':'')+'><span>'+fl+' '+h(countryLabel(c))+'</span></label>').join('');
+ const quick=$('quickCountries');if(quick)quick.innerHTML=COUNTRIES.map(([code,em])=>'<button type="button" class="country-quickchip '+(state.countries.includes(code)?'selected':'')+'" data-country-quick="'+h(code)+'" aria-pressed="'+String(state.countries.includes(code))+'">'+em+' '+h(countryLabel(code))+'</button>').join('');
 }
 function closeSearchCountries(){
  $('searchCountryPanel').classList.add('hidden');
@@ -798,6 +804,20 @@ function wireMarketplace(){
  });
 }
 function wire(){
+ $('displayCurrency').value=state.displayCurrency;
+ $('displayCurrency').addEventListener('change',e=>{state.displayCurrency=e.target.value;persist('currency',state.displayCurrency);updateFxStatus();renderAll();if(state.displayCurrency!=='EUR'&&!state.fxRates[state.displayCurrency])void loadExchangeRates()});
+ updateFxStatus();if(state.displayCurrency!=='EUR')void loadExchangeRates();
+ $('quickCountries').addEventListener('click',event=>{const button=event.target.closest('[data-country-quick]');if(!button)return;const code=button.dataset.countryQuick;state.countries=state.countries.includes(code)?state.countries.filter(c=>c!==code):[...state.countries,code];void saveCountries({notify:false})});
+ $('quickCountryClear').addEventListener('click',()=>{state.countries=[];void saveCountries({notify:false})});
+ document.querySelectorAll('[data-empty-quick]').forEach(button=>button.addEventListener('click',()=>{
+  resetFilters();state.countries=button.dataset.emptyQuick==='performance'?[]:[button.dataset.emptyQuick];void saveCountries({notify:false});if(button.dataset.emptyQuick==='performance')showView('performance');else $('resultsSection').scrollIntoView({behavior:'smooth'});
+ }));
+ $('[data-mobile-account]').addEventListener('click',toggleAccountMenu);
+ document.querySelectorAll('[data-swipe-action]').forEach(button=>button.addEventListener('click',()=>{
+  const action=button.dataset.swipeAction;
+  if(action==='favorite'){const arr=filtered();if(arr.length)void toggleFavorite(arr[state.swipeIndex].id)}
+  else swipeAction(action);
+ }));
  document.querySelectorAll('[data-seller-segment]').forEach(button=>button.addEventListener('click',()=>{
   $('sellerType').value=button.dataset.sellerSegment;
   setFilter('sellerType',button.dataset.sellerSegment);
