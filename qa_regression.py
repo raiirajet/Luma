@@ -58,6 +58,24 @@ def assert_header_available(page):
  assert not page.locator('#settingsBtn').count()
  assert not page.locator('#sellBtn').count()
 
+
+def assert_country_strip(page):
+ bounds=page.locator('#countryQuick').evaluate("""strip => {
+  const bar=document.getElementById('countryBar').getBoundingClientRect();
+  const rect=strip.getBoundingClientRect();
+  const chips=[...strip.querySelectorAll('[data-country-quick]')].map(chip => chip.getBoundingClientRect());
+  return {viewport:window.innerWidth, document:document.documentElement.scrollWidth,
+    barLeft:bar.left, barRight:bar.right, stripLeft:rect.left, stripRight:rect.right,
+    width:strip.clientWidth, content:strip.scrollWidth, overflow:getComputedStyle(strip).overflowX, chips:chips.length,
+    rows:new Set(chips.map(chip => Math.round(chip.top))).size};
+ }""")
+ assert bounds['barLeft']>=-1 and bounds['barRight']<=bounds['viewport']+1, bounds
+ assert bounds['stripLeft']>=bounds['barLeft']-1 and bounds['stripRight']<=bounds['barRight']+1, bounds
+ assert bounds['chips']>1 and bounds['rows']==1, bounds
+ assert bounds['content']>bounds['width'] and bounds['overflow'] in ('auto','scroll'), bounds
+ assert bounds['document']<=bounds['viewport']+2, bounds
+
+
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
  for width,height in [(1440,970),(390,844)]:
@@ -76,11 +94,12 @@ with sync_playwright() as p:
   assert 'Nissan GT-R' in page.locator('.car-card').first.inner_text()
 
   # Main make, model and price controls remain visible; advanced fields remain available.
-  for field in ['yearFrom', 'mileageTo', 'fuel', 'transmission']:
+  for field in ['yearFrom', 'mileageTo', 'fuel', 'transmission', 'body']:
    assert page.locator(f'#advancedFilters #{field}').count()==1
    assert page.locator(f'#advancedFilters #{field}').is_hidden()
-  for field in ['make', 'model', 'priceTo']:
+  for field in ['make', 'model', 'priceTo', 'keyword']:
    assert page.locator(f'#searchForm #{field}').is_visible()
+  assert not page.locator('#advancedFilters #keyword, #bodyQuick, #heroCount').count()
   if width < 500:
    positions=page.evaluate("""() => {
      const fields=['make','model'];
@@ -91,6 +110,7 @@ with sync_playwright() as p:
     assert positions[left]['right']<=positions[right]['x']+2, (left,right,positions)
     assert positions[left]['w']>=125 and positions[right]['w']>=125, positions
    assert page.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2'), 'horizontal overflow'
+   assert_country_strip(page)
   assert page.locator('#makeOptions option[value="Nissan"]').count()==1
   assert page.locator('#makeOptions option').count()>=400
   assert page.locator('#makeOptions option[value="Togg"]').count()==1
@@ -128,6 +148,9 @@ with sync_playwright() as p:
   page.locator('#clearAll').click()
   # Exact search ranges (not just fixed coarse mileage tiers).
   page.locator('#advancedToggle').click()
+  page.locator('#body').select_option('suv')
+  assert page.locator('#carGrid .car-card').count()==0
+  page.locator('#clearAll').click()
   page.locator('#powerFrom').fill('551')
   assert page.locator('#carGrid .car-card').count()==0
   page.locator('#clearAll').click()
@@ -164,7 +187,7 @@ with sync_playwright() as p:
   page.locator('#resetEmpty').click()
   assert page.locator('#carGrid .car-card').count()==1
   # Main card detail and browser back
-  page.locator('#carGrid .car-card').click(position={'x':50,'y':160})
+  page.locator('#carGrid .card-details').click()
   assert page.locator('#modal').is_visible()
   assert 'Nissan GT-R R35' in page.locator('#modalTitle').inner_text()
   assert page.locator('.vehicle-description').inner_text().__len__()>550
@@ -175,12 +198,14 @@ with sync_playwright() as p:
   assert page.locator('#modal').is_hidden()
   assert page.locator('#homeView').is_visible()
   # heart and favorite page
-  page.locator('.car-card .card-heart').first.click()
+  favorite = page.locator('#carGrid .card-heart')
+  favorite.evaluate("button => button.scrollIntoView({block:'center',behavior:'instant'})")
+  favorite.click()
   navigation(page,'favorites')
   assert page.locator('#favoritesGrid .car-card').count()==1
   navigation(page,'home')
   # The remaining shortcuts share the regular country selection.
-  assert page.locator('.market-hero #searchForm').is_visible()
+  assert page.locator('#homeView #searchForm').is_visible()
   assert not page.locator('#countryQuick [data-country-quick="MK"], #countryQuick [data-country-quick="XK"]').count()
   page.locator('#countryQuick [data-country-quick="TR"]').click()
   assert page.locator('#countryQuick [data-country-quick="TR"]').get_attribute('aria-pressed')=='true'
@@ -188,33 +213,50 @@ with sync_playwright() as p:
   assert not page.locator('#emptyResults [data-empty-country]').count()
   assert page.locator('#emptySuggestions button').count()==1
   assert page.locator('#emptyPerformance').is_visible()
-  page.locator('#resetEmpty').click()
-  assert page.locator('#countryQuick [data-country-quick=""]').get_attribute('aria-pressed')=='true'
+  page.locator('#quickAllCountries').click()
+  assert page.locator('#countryQuick [data-country-quick="TR"]').get_attribute('aria-pressed')=='false'
   assert page.locator('#carGrid .car-card').count()==1
-  # Countries can only be selected on the homepage.
-  assert page.locator('#searchCountryToggle').is_visible()
-  assert page.locator('#settingsView #countryChoices').count()==0
-  page.locator('#searchCountryToggle').click()
-  for country in ('MK', 'XK'):
-   option = page.locator(f'#countryChoices input[value="{country}"]')
-   option.check()
-   assert option.is_checked()
-  assert page.locator('#carGrid .car-card').count()==0
-  page.locator('#allCountries').click()
+  # Both entry points open the same dialog, with changes staged until apply.
+  dialog = page.locator('dialog#searchCountryPanel')
+  form_countries = page.locator('#searchCountryToggle')
+  result_countries = page.locator('#resultCountries')
+  form_countries.press('Enter')
+  assert dialog.is_visible()
+  page.locator('#countryChoices input[value="MK"]').check()
   assert page.locator('#carGrid .car-card').count()==1
+  page.keyboard.press('Escape')
+  dialog.wait_for(state='hidden')
+  assert form_countries.evaluate('(button) => button === document.activeElement')
+  assert page.locator('#carGrid .car-card').count()==1
+  result_countries.click()
+  assert dialog.is_visible()
+  assert not page.locator('#countryChoices input:checked').count()
+  page.locator('#countryChoices input[value="XK"]').check()
+  page.locator('#cancelCountries').click()
+  assert dialog.is_hidden()
+  assert page.locator('#carGrid .car-card').count()==1
+  form_countries.click()
+  assert not page.locator('#countryChoices input:checked').count()
   for country in ('MK', 'XK'):
    page.locator(f'#countryChoices input[value="{country}"]').check()
+  assert page.locator('#carGrid .car-card').count()==1
+  page.locator('#applyCountries').click()
+  assert dialog.is_hidden()
+  assert page.locator('#carGrid .car-card').count()==0
   page.locator('#saveSearchBtn').click()
-  page.locator('#resetEmpty').click()
+  result_countries.click()
+  page.locator('#allCountries').click()
+  assert dialog.is_hidden()
+  assert page.locator('#carGrid .car-card').count()==1
   account_action(page,'settings')
   assert page.locator('#settingsView').is_visible()
   assert page.locator('#settingsView #countryChoices').count()==0
   page.locator('#savedSearchesList [data-apply]').first.click()
   assert page.locator('#emptyResults').is_visible()
-  page.locator('#searchCountryToggle').click()
+  form_countries.click()
   for country in ('MK', 'XK'):
    assert page.locator(f'#countryChoices input[value="{country}"]').is_checked()
-  page.locator('#searchCountryToggle').click()
+  page.locator('#cancelCountries').click()
   page.locator('#emptyPerformance').click()
   assert page.locator('#performanceView').is_visible()
   navigation(page,'home')
@@ -332,6 +374,9 @@ with sync_playwright() as p:
    for responsive_width in [1181,1024,768,600,360,320]:
     page.set_viewport_size({'width':responsive_width,'height':844})
     assert_header_available(page)
+    if responsive_width<=390:
+     navigation(page,'home')
+     assert_country_strip(page)
    page.locator('#navSell').click()
    assert page.locator('#modal').is_visible()
    page.locator('#modalClose').click()

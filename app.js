@@ -308,17 +308,21 @@ function carCard(car, {performance = false} = {}) {
  const liked = state.favorites.includes(car.id);
  const badges = performance ? listingBadges(car) : [];
  return `<article class="car-card" data-open="${h(car.id)}" tabindex="0" aria-label="${h(car.title)}">
-  <div class="car-img"><img loading="lazy" src="${h(safeURL(car.image) || 'assets/limba/icons/car.png')}" alt="${h(car.title)}">
-   <span class="car-tag">${h(isDemo(car) ? F('previewOnly') : T(car.sellerType || 'privateSeller'))}</span>
-   <button class="card-heart ${liked ? 'active' : ''}" type="button" data-like="${h(car.id)}" aria-pressed="${liked}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button>
-  </div>
+  <div class="car-img"><img loading="lazy" src="${h(safeURL(car.image) || 'assets/limba/icons/car.png')}" alt="${h(car.title)}"></div>
   <div class="car-body">
-   <strong class="car-price car-price-overview">${h(displayPrice(car.price))}</strong>
+   <div class="car-price-row">
+    <strong class="car-price car-price-overview">${h(displayPrice(car.price))}</strong>
+    <button class="card-heart ${liked ? 'active' : ''}" type="button" data-like="${h(car.id)}" aria-pressed="${liked}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button>
+   </div>
    <h3 class="car-title">${h(car.title)}</h3>
-   <div class="car-specs"><span aria-label="${h(T('firstReg'))}">${h(car.year || '—')}</span><span>${number(car.mileage)} ${h(T('kmUnit'))}</span></div>
-   <div class="car-location">${flag(car.country)} ${h(car.city)}, ${h(countryLabel(car.country))}${Number.isFinite(car.distanceKm) ? ' · ' + h(number(car.distanceKm)) + ' ' + h(T('kmUnit')) : ''}</div>
+   <div class="car-specs">
+    <span aria-label="${h(T('firstReg'))}">${h(car.year || '—')}</span><span>${number(car.mileage)} ${h(T('kmUnit'))}</span>
+    ${Number(car.power) > 0 ? `<span>${number(car.power)} ${h(T('powerUnit'))}</span>` : ''}
+   </div>
+   <div class="car-location">${flag(car.country)} ${h(car.city)}, ${h(countryLabel(car.country))} · ${h(isDemo(car) ? F('previewOnly') : T(car.sellerType || 'privateSeller'))}${Number.isFinite(car.distanceKm) ? ' · ' + h(number(car.distanceKm)) + ' ' + h(T('kmUnit')) : ''}</div>
    <div class="card-badges"><span class="customs-badge">${h(customsLabel(car))}</span>
    ${badges.map(badge => `<span class="tuning-badge" title="${h(X('sellerClaims'))}">${h(L(badge))}</span>`).join('')}</div>
+   <button type="button" class="outline-btn card-details">${icon('info')} ${h(T('vehicleDetails'))}</button>
   </div></article>`;
 }
 
@@ -334,23 +338,22 @@ function renderAll(){
  renderCurrencyStatus();
  const focus=document.activeElement;
  const focusedGrid=$('carGrid').contains(focus)?focus.closest('[data-open]')?.dataset.open:null;
+ const focusControl=focus.matches('[data-like]')?' [data-like]':focus.matches('.card-details')?' .card-details':'';
  const nextCards=arr.length ? arr.map(car=>carCard(car)).join('') : pending ? skeletonCards() : '';
  if(lastResultMarkup!==nextCards){
   $('carGrid').innerHTML=nextCards;
   lastResultMarkup=nextCards;
-  if(focusedGrid)$('carGrid').querySelector(`[data-open="${CSS.escape(focusedGrid)}"]${focus.matches('[data-like]')?' [data-like]':''}`)?.focus({preventScroll:true});
+  if(focusedGrid)$('carGrid').querySelector(`[data-open="${CSS.escape(focusedGrid)}"]${focusControl}`)?.focus({preventScroll:true});
  }
  $('emptyResults').classList.toggle('hidden',arr.length!==0||pending||failed||marketplaceSearch.hasMore);
  const resultTotal=searching&&marketplaceSearch.hasMore?L('loadedResults'):T('searchResultCount');
  $('resultCount').textContent=arr.length||(!pending&&!failed)?`${number(arr.length)} ${resultTotal}`:'';
- $('heroCount').textContent=pending?'':number(arr.length);
  $('searchProgress').textContent=failed?L('searchLoadError'):pending?L('loading'):'';
  $('searchProgress').classList.toggle('hidden',!pending&&!failed);
  $('loadMoreSearch').classList.toggle('hidden',!searching||(!marketplaceSearch.hasMore&&!failed));
  $('loadMoreSearch').disabled=pending;
  $('loadMoreSearch').textContent=L(failed?'retry':'loadMore');
  $('radiusControls').classList.toggle('hidden',!searching);
- document.querySelectorAll('[data-body]').forEach(b=>b.classList.toggle('is-selected',b.dataset.body===state.filters.body));
  document.querySelectorAll('[data-seller-segment]').forEach(button=>
   button.setAttribute('aria-pressed',String(button.dataset.sellerSegment===state.filters.sellerType)));
  renderActiveFilters();
@@ -399,20 +402,34 @@ function renderActiveFilters(){
   aria-label="${h(L('removeFilter')+': '+label)}">${h(label)}<span aria-hidden="true">×</span></button>`).join('');
 }
 function renderSearchCountries(){
- const label=state.countries.length?(state.countries.length<=2?state.countries.map(c=>flag(c)+' '+countryLabel(c)).join(', '):state.countries.length+' '+L('filterCountry')):L('allCountries');
+ const label=state.countries.length?(state.countries.length<=2?state.countries.map(code=>flag(code)+' '+countryLabel(code)).join(', '):state.countries.length+' '+L('filterCountry')):L('allCountries');
  $('searchCountryToggle').innerHTML='<span>'+h(label)+'</span>';
  $('searchCountryToggle').setAttribute('aria-label',L('filterCountry')+': '+label);
- const quick = $('countryQuick');
- const focusCountry = quick.contains(document.activeElement) ? document.activeElement.dataset.countryQuick : undefined;
- const order = ['','AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
- quick.setAttribute('aria-label', L('filterCountry'));
- quick.innerHTML = order.map(code => `<button type="button" data-country-quick="${code}" aria-pressed="${code ? state.countries.includes(code) : !state.countries.length}">${code ? flag(code) + ' ' + h(countryLabel(code)) : h(L('allCountries'))}</button>`).join('');
- if (focusCountry !== undefined) quick.querySelector(`[data-country-quick="${CSS.escape(focusCountry)}"]`)?.focus({preventScroll:true});
- $('countryChoices').innerHTML=COUNTRIES.map(([c,fl])=>'<label class="country-choice '+(state.countries.includes(c)?'is-active':'')+'"><input type="checkbox" value="'+h(c)+'" '+(state.countries.includes(c)?'checked':'')+'><span>'+fl+' '+h(countryLabel(c))+'</span></label>').join('');
+ const quick=$('countryQuick');
+ const focused=quick.contains(document.activeElement)?document.activeElement.dataset.countryQuick:null;
+ const order=['AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
+ quick.setAttribute('aria-label',L('filterCountry'));
+ quick.innerHTML=order.map(code=>`<button type="button" data-country-quick="${code}" aria-pressed="${state.countries.includes(code)}"><span>${flag(code)} ${h(countryLabel(code))}</span></button>`).join('');
+ if(focused)quick.querySelector(`[data-country-quick="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
+ $('quickAllCountries').setAttribute('aria-pressed',String(!state.countries.length));
+ if(!$('searchCountryPanel').open)renderCountryChoices();
+}
+function renderCountryChoices(){
+ $('countryChoices').innerHTML=COUNTRIES.map(([code,emoji])=>`<label class="country-choice">
+  <input type="checkbox" value="${code}" ${state.countries.includes(code)?'checked':''}><span>${emoji} ${h(countryLabel(code))}</span>
+ </label>`).join('');
+}
+function openSearchCountries(trigger){
+ const dialog=$('searchCountryPanel');
+ if(dialog.open)return;
+ renderCountryChoices();
+ trigger.setAttribute('aria-expanded','true');
+ dialog.showModal();
 }
 function closeSearchCountries(){
- $('searchCountryPanel').classList.add('hidden');
- $('searchCountryToggle').setAttribute('aria-expanded','false');
+ const dialog=$('searchCountryPanel');
+ if(dialog.open)dialog.close();
+ for(const id of ['searchCountryToggle','resultCountries'])$(id).setAttribute('aria-expanded','false');
 }
 function closeAccountMenu(){
  $('accountMenu').classList.add('hidden');$('loginBtn').setAttribute('aria-expanded','false');
@@ -1225,7 +1242,25 @@ function wireMarketplace(){
   const button=event.target.closest('[data-country-quick]');
   if(!button)return;
   const code=button.dataset.countryQuick;
-  state.countries=!code?[]:state.countries.includes(code)?state.countries.filter(value=>value!==code):[...state.countries,code];
+  state.countries=state.countries.includes(code)?state.countries.filter(value=>value!==code):[...state.countries,code];
+  void saveCountries({notify:false});
+ });
+ for(const id of ['searchCountryToggle','resultCountries']){
+  $(id).addEventListener('click',()=>openSearchCountries($(id)));
+ }
+ $('searchCountryPanel').addEventListener('cancel',event=>{event.preventDefault();closeSearchCountries()});
+ $('searchCountryPanel').addEventListener('click',event=>{
+  if(event.target===$('searchCountryPanel'))closeSearchCountries();
+ });
+ $('cancelCountries').addEventListener('click',closeSearchCountries);
+ $('applyCountries').addEventListener('click',()=>{
+  state.countries=[...$('countryChoices').querySelectorAll('input:checked')].map(input=>input.value);
+  closeSearchCountries();
+  void saveCountries({notify:false});
+ });
+ for(const id of ['allCountries','quickAllCountries'])$(id).addEventListener('click',()=>{
+  state.countries=[];
+  closeSearchCountries();
   void saveCountries({notify:false});
  });
  $('emptyResults').addEventListener('click',event=>{
@@ -1301,16 +1336,15 @@ function wire(){
   $('sellerType').value=button.dataset.sellerSegment;
   setFilter('sellerType',button.dataset.sellerSegment);
  }));
-wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu();if(!e.target.closest('#searchCountryField'))closeSearchCountries()});$('searchCountryToggle').addEventListener('click',()=>{const expanded=!$('searchCountryPanel').classList.toggle('hidden');$('searchCountryToggle').setAttribute('aria-expanded',String(expanded))});$('searchCountryField').addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearchCountries();$('searchCountryToggle').focus();e.stopPropagation()}});$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>setAdvancedFilters($('advancedFilters').classList.contains('hidden')));$('resultFilter').addEventListener('click',()=>{
+wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu()});$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>setAdvancedFilters($('advancedFilters').classList.contains('hidden')));$('resultFilter').addEventListener('click',()=>{
  setAdvancedFilters(true);
  $('advancedToggle').focus({preventScroll:true});
  $('advancedToggle').scrollIntoView({behavior:'smooth',block:'center'});
-});$('clearAll').addEventListener('click',resetFilters);$('sort').addEventListener('change',e=>{state.sort=e.target.value;searchChanged()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
+});$('clearAll').addEventListener('click',resetFilters);$('sort').addEventListener('change',e=>{state.sort=e.target.value;searchChanged()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));
  document.addEventListener('click',e=>{const heart=e.target.closest('[data-like]');if(heart){e.preventDefault();e.stopPropagation();return toggleFavorite(heart.dataset.like)}const card=e.target.closest('[data-open]');if(card)return openListing(card.dataset.open,{guard:()=>card.isConnected});const edit=e.target.closest('[data-edit]');if(edit)return openSell(edit.dataset.edit);
  const status=e.target.closest('[data-status-id]');if(status)return updateListingStatus(status.dataset.statusId,status.dataset.status);
  const del=e.target.closest('[data-delete]');if(del)return removeListing(del.dataset.delete);const apply=e.target.closest('[data-apply]');if(apply){const item=state.searches[Number(apply.dataset.apply)];if(item){state.filters={...blankFilters,...item.filters};state.countries=item.countries||[];state.radius=validRadius(item.radius)?item.radius:null;state.radiusName='';void saveCountries({notify:false});renderInputs();renderRadius();showView('home');restoreAnchorPending=false;$('resultsSection').scrollIntoView({behavior:'smooth'})}return}const drop=e.target.closest('[data-drop]');if(drop){drop.disabled=true;void dropSearch(Number(drop.dataset.drop))}});
  document.addEventListener('keydown',e=>{const card=e.target.closest?.('[data-open]');if(card&&(e.key==='Enter'||e.key===' ')&&!e.target.closest('button,a,input,select,textarea')){e.preventDefault();void openListing(card.dataset.open,{guard:()=>card.isConnected})}});
- $('countryChoices').addEventListener('change',e=>{if(e.target.matches('input[type=checkbox]')){const code=e.target.value;state.countries=e.target.checked?[...new Set([...state.countries,code])]:state.countries.filter(x=>x!==code);void saveCountries({notify:false})}});$('allCountries').addEventListener('click',()=>{state.countries=[];void saveCountries({notify:false})});
  $('swipeHome').addEventListener('click',()=>showView('home'));$('swipeFavorite').addEventListener('click',()=>{const arr=filtered();if(arr.length)toggleFavorite(arr[state.swipeIndex].id)});$('swipeHelp').addEventListener('click',showTutorial);$('swipeDone').addEventListener('click',dismissTutorial);$('swipeTutorialBack').addEventListener('click',hideTutorial);
  let pointer=null;const swipe=$('swipeCard');swipe.addEventListener('pointerdown',e=>{if(!$('swipeTutorial').classList.contains('hidden'))return;e.preventDefault();pointer={x:e.clientX,y:e.clientY};swipe.setPointerCapture(e.pointerId)});swipe.addEventListener('pointerup',e=>{if(!pointer)return;e.preventDefault();const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.max(Math.abs(dx),Math.abs(dy))<48)return;swipeAction(Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down')});
  swipe.addEventListener('pointercancel',()=>{pointer=null});

@@ -696,34 +696,7 @@ body { overflow-x:clip; }
   .car-card .car-specs span { font-size:.72rem; }
 }
 
-/* Marketplace entry, regional filters and card hierarchy */
-.market-hero {
-  padding: clamp(25px, 4.5vw, 62px) 0 clamp(20px, 3vw, 38px);
-  background: linear-gradient(120deg, #0d2e3b 3%, #153d50 64%, #20586c);
-  color: #f5fbff;
-}
-.market-hero-heading h1 {margin: 0; font-size: clamp(29px, 4.2vw, 58px); letter-spacing: -.04em; line-height: 1.07}
-.market-hero-heading p {margin: 9px 0 0; color: #d4e7ef; font-size: clamp(14px, 1.6vw, 17px)}
-.market-hero .search-wrap {margin: clamp(16px, 2.8vw, 26px) auto 0; color: var(--ink)}
-.market-hero .search-panel {margin: 0; padding: clamp(14px, 2.4vw, 23px)}
-.market-hero .search-top h2 {font-size: clamp(17px, 2vw, 22px)}
-.marketplace-sell {min-height: 44px; white-space: nowrap}
-.header-right .marketplace-sell span:first-child {font-size: 1.3em}
-.country-bar {display: grid; gap: 7px; margin: 15px 0 10px}
-.country-bar h3 {margin: 0; font-size: 15px}
-.country-quick {display: flex; gap: 8px; overflow-x: auto; padding: 3px 3px 9px; scrollbar-width: thin}
-.country-quick button {
-  color: var(--ink); background: var(--paper); border: 1px solid var(--border);
-  border-radius: 999px; flex: none; min-height: 44px; padding: 0 14px; font-weight: 700;
-}
-.country-quick button[aria-pressed="true"] {background: var(--accent2); border-color: var(--accent2); color: #fff}
-.price-toolbar {display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; margin: 6px 0 13px}
-.price-toolbar label {display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 750}
-.price-toolbar select {min-height: 44px; padding: 5px 10px; color: var(--ink); background: var(--paper); border: 1px solid var(--border); border-radius: 9px}
-.price-toolbar small {color: var(--muted)}
-.card-badges {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px}
-.customs-badge, .tuning-badge {border-radius: 6px; padding: 4px 7px; background: var(--soft); color: var(--ink); font-size: 12px; font-weight: 650}
-.car-card .car-location {margin-top: 10px}
+/* Marketplace layout shared with the native app. */
 .empty-actions, .empty-suggestions {display: flex; flex-wrap: wrap; justify-content: center; gap: 9px}
 #emptyResults > .empty-actions {margin-top: 17px}
 #retryListings, #loadMorePerformance {margin: 12px 0}
@@ -733,16 +706,6 @@ body { overflow-x:clip; }
 .car-skeleton > span:nth-child(2) {height: 21px; width: 37%; margin-top: 19px}
 .car-skeleton > span:nth-child(3) {width: 71%}
 @keyframes cards-loading {from {opacity: 1} to {opacity: .46}}
-@media (min-width: 900px) {.country-quick {flex-wrap: wrap}}
-@media (max-width: 760px) {
-  .marketplace-sell {display: none}
-  .mobile-nav #navSell {background: var(--selection); color: var(--accent-ink)}
-  .market-hero .search-top {margin-bottom: 8px}
-  .market-hero .search-grid {gap: 9px}
-  .market-hero .search-top .compact-btn {max-width: 50%; min-height: 44px}
-  .mobile-nav small {overflow-wrap: anywhere}
-}
-
 /* Limba Drive stages the photograph, controls and first-use hints together. */
 .swipe-full {display: grid; place-items: center; padding: 64px 16px max(16px, env(safe-area-inset-bottom)); grid-template-rows: minmax(0, 1fr) auto; row-gap: 12px}
 .swipe-photo {position: relative; inset: auto; width: min(100%, 880px); height: 100%; border-radius: 24px; background: #102835}
@@ -791,6 +754,165 @@ body { overflow-x:clip; }
 #performanceView :is(.outline-btn,.empty-panel) {color: var(--ink); background: #32363e; border-color: var(--border)}
 #performanceView .tuning-badge {color: #ffdd9b; background: #4b3719}
 
+.brand-limba .brand-mobile-section {display: none}
+.market-hero {
+  background: #0c2838;
+  color: #f4faff;
+  padding-block: clamp(17px, 2.5vw, 29px);
+}
+.market-hero-heading .market-hero-brand {
+  margin: 0 0 6px;
+  color: #88c7f6;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .07em;
+}
+.market-hero-heading h1 {margin: 0; font-size: clamp(23px, 3.1vw, 38px); letter-spacing: -.025em; line-height: 1.15}
+.market-hero-heading p {margin: 5px 0 0; color: #d8e9f5; font-size: clamp(13px, 1.4vw, 15px)}
+
+#searchForm .search-top {margin-bottom: 8px}
+#searchForm .search-top h2 {margin: 0; font-size: 18px}
+#searchForm .search-grid {grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px 10px}
+#searchForm .search-keyword {grid-column: 1 / 4}
+#searchForm .search-main {grid-column: 4; grid-row: auto; min-height: 44px; padding-block: 8px}
+#searchForm .search-grid :is(input,.search-country-toggle) {min-height: 46px}
+#searchForm .search-grid .search-country-toggle span {min-width: 0; overflow: hidden; text-overflow: ellipsis}
+#searchForm .filter-ext {margin: 8px 0 0}
+#advancedToggle {border: 1px solid var(--border); border-radius: 10px; padding-inline: 11px; min-height: 44px}
+.search-form-actions {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 8px}
+.search-form-actions button {min-height: 44px; padding: 7px 10px; text-align: center}
+.search-form-actions .ui-icon {width: 19px; height: 19px}
+.marketplace-sell {min-height: 44px; white-space: nowrap}
+.header-right .marketplace-sell span:first-child {font-size: 1.3em}
+
+.market-result-heading {display: flex; align-items: center; justify-content: space-between; gap: 10px}
+.market-result-heading h2 {font-size: clamp(20px, 2.4vw, 28px); line-height: 1.15; margin: 0; overflow-wrap: anywhere}
+.market-result-heading .sort-select {
+  width: fit-content; max-width: min(45%, 12rem); flex: none; min-height: 44px;
+  padding: 7px 9px; font-size: 13px;
+}
+.market-result-meta {display: flex; gap: 10px; align-items: center; justify-content: space-between; margin: 1px 0 5px}
+.market-result-meta .result-count {flex: 1; color: var(--accent-ink); font-weight: 700; font-size: 12px}
+.market-result-meta button {min-height: 44px; padding-inline: 7px; font-size: 13px}
+#resultsSection .seller-segments {display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin: 0 0 5px}
+#resultsSection .seller-segments button {min-height: 44px; padding: 6px 7px; border-radius: 10px; font-size: 13px; overflow-wrap: anywhere}
+#resultsSection .seller-segments button[aria-pressed="true"] {
+  color: var(--accent-ink); background: var(--selection); border-color: var(--accent-ink); box-shadow: none;
+}
+
+.country-bar {min-width: 0; max-width: 100%; margin-bottom: 5px}
+.country-bar-heading {display: flex; align-items: center; justify-content: space-between; gap: 4px}
+.country-control {min-height: 44px; padding: 3px 0; font-size: 13px; text-align: start}
+#resultCountries {color: var(--ink)}
+#resultCountries span:last-child {color: var(--accent-ink)}
+#quickAllCountries {padding-left: 8px; text-align: end}
+.country-quick {
+  display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.country-quick::-webkit-scrollbar {display: none}
+.country-quick button {
+  flex: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0;
+  color: var(--ink); background: transparent; border: 0; font-size: 12px; font-weight: 650; white-space: nowrap;
+}
+.country-quick button span {
+  padding: 6px 9px; line-height: 16px; border-radius: 9px;
+  background: var(--paper); border: 1px solid var(--border);
+}
+.country-quick button[aria-pressed="true"] span {color: var(--accent-ink); background: var(--selection); border-color: var(--accent-ink)}
+.country-quick button:focus-visible {outline-offset: -2px}
+.country-dialog {
+  position: fixed; inset: 0; width: min(400px, calc(100% - 24px)); max-height: min(80dvh, 600px); padding: 0;
+  border: 1px solid var(--border); border-radius: 15px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow);
+}
+.country-dialog::backdrop {background: #06182399}
+.country-dialog-content {display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; max-height: min(80dvh, 600px); padding: 12px; gap: 6px; overflow: hidden}
+.country-dialog h2 {margin: 2px 5px; font-size: 19px}
+.country-dialog .country-choices {display: block; overflow-y: auto; min-height: 0; margin: 0; overscroll-behavior: contain}
+.country-dialog .country-choice {
+  min-height: 44px; padding: 5px 7px; border: 0; border-bottom: 1px solid var(--border);
+  border-radius: 0; font-size: 14px; gap: 9px; overflow-wrap: anywhere;
+}
+.country-dialog .country-choice input {width: 18px; height: 18px; flex: none; accent-color: var(--accent2)}
+.country-dialog #prefsStatus {margin: 1px 4px; font-size: 11px}
+.country-dialog #prefsStatus:empty {display: none}
+.country-dialog-actions {display: flex; flex-wrap: wrap; justify-content: end; gap: 5px}
+.country-dialog-actions button {min-height: 44px; padding: 5px 9px; font-size: 13px}
+.country-dialog #allCountries {margin-inline-end: auto}
+
+.price-toolbar {display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; margin: 2px 0 9px}
+.price-toolbar label {display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 650}
+.price-toolbar select {min-height: 44px; padding: 5px 10px; color: var(--ink); background: var(--paper); border: 1px solid var(--border); border-radius: 9px}
+.price-toolbar small {color: var(--muted)}
+
+.car-card {box-shadow: none}
+.car-card .card-body {padding: 12px 15px}
+.car-price-row {display: flex; align-items: center; justify-content: space-between; gap: 8px}
+.car-price-row .car-price {min-width: 0; overflow-wrap: anywhere; color: var(--ink); margin: 0}
+.car-price-row .card-heart {
+  position: static; flex: none; width: 44px; height: 44px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--paper); color: var(--accent-ink);
+}
+.car-price-row .card-heart.active {background: var(--selection); border-color: var(--accent-ink)}
+.car-card .car-title {margin: 3px 0 5px; min-height: 0; font-size: 19px; line-height: 1.2}
+.car-card .car-specs {display: flex; gap: 0; flex-wrap: wrap; margin: 0}
+.car-card .car-specs span {padding: 0; min-width: 0; border: 0; background: none; color: var(--muted); font-size: 13px}
+.car-card .car-specs span + span::before {content: "·"; display: inline-block; margin-inline: 6px}
+.car-card .car-location {margin-top: 5px; font-size: 13px; overflow-wrap: anywhere}
+.card-badges {display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 7px}
+.customs-badge {font-size: 12px; color: var(--muted)}
+.tuning-badge {border-radius: 6px; padding: 4px 7px; background: var(--soft); color: var(--ink); font-size: 12px; font-weight: 650}
+.card-details {width: 100%; min-height: 44px; margin-top: 9px; text-align: center; font-size: 13px}
+.card-details .ui-icon {width: 19px; height: 19px}
+#performanceView .car-price-row .car-price {color: #ffbe68}
+
+@media (max-width: 760px) {
+  .site-header {height: 65px; box-shadow: none}
+  .head-row {width: calc(100% - 24px)}
+  .brand-limba {flex-direction: column; align-items: flex-start; gap: 0}
+  .brand-limba .limba-wordmark {width: 135px; height: 36px; object-fit: contain; object-position: left center}
+  .brand-limba .brand-desktop-label {display: none}
+  .brand-limba .brand-mobile-section {display: block; background: none; padding: 0; margin: 0; color: var(--muted); font-size: 10px; letter-spacing: normal}
+  .marketplace-sell {display: none}
+  .market-hero .wrap {width: calc(100% - 32px)}
+  #searchAnchor {margin: 0; width: 100%}
+  #searchForm {padding: 15px 16px 16px; border: 0; border-radius: 0; box-shadow: none}
+  #searchForm .search-grid {grid-template-columns: repeat(2,minmax(0,1fr))}
+  #searchForm :is(.search-keyword,.search-main) {grid-column: 1 / -1}
+  #searchForm .search-grid input {font-size: 16px}
+  #advancedToggle {width: 100%; justify-content: flex-start}
+  #filterChevron {margin-inline-start: auto}
+  #resultsSection {margin-top: 0; padding: 16px 0 20px}
+  #resultsSection .price-toolbar label {flex: 1 1 100%}
+  #resultsSection .price-toolbar small {flex-basis: 100%}
+  .mobile-nav {box-shadow: none; min-height: calc(64px + env(safe-area-inset-bottom))}
+  .mobile-nav button {min-height: 64px}
+  .mobile-nav button[aria-current="page"] {border-radius: 11px}
+  .mobile-nav button .ui-icon {width: 23px; height: 23px}
+  .mobile-nav small {font-size: 10px}
+  .account-actions {display: grid; gap: 8px}
+  .account-actions button {min-height: 44px}
+  :is(#carGrid,#performanceGrid,#favoritesGrid,#mineGrid) {grid-template-columns: minmax(0,1fr)}
+  .car-card .car-img {height: 208px; aspect-ratio: auto}
+  .car-price-row .car-price {font-size: 24px}
+  #performanceView {
+    width: 100%; margin-top: 0; margin-bottom: 0; padding: 22px 17px;
+    border-radius: 0; background: #0c2838;
+    --paper: #1b2935; --border: #456276;
+  }
+  #performanceView .section-intro {margin-bottom: 16px}
+  .swipe-full {padding: 0}
+  .swipe-photo {position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0}
+  .swipe-details {left: 18px; right: 18px; bottom: calc(88px + env(safe-area-inset-bottom))}
+  .swipe-actions {position: absolute; bottom: calc(20px + env(safe-area-inset-bottom)); gap: 9px}
+  .swipe-action {width: 52px; border: 0; color: #fff}
+  .swipe-skip, .swipe-skip:hover {background: #833a49}
+  .swipe-save, .swipe-save:hover {background: #a54d77}
+  .swipe-save.active {background: #ba5a81; color: #fff}
+  .swipe-info, .swipe-info:hover {background: #255977}
+  .swipe-similar, .swipe-similar:hover {background: #89601f}
+}
+
 </style>
 <script>window.LIMBA_OFFLINE_PREVIEW=true;window.LIMBA_FIREBASE_CONFIG=null;window.LUMA_FIREBASE_CONFIG=null;</script>
 
@@ -799,7 +921,7 @@ body { overflow-x:clip; }
 <svg class="luma-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="luma-icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3,10.5 L12,3 L21,10.5"/><path d="M5,9.5 V20 H19 V9.5"/><path d="M9,20 V14 H15 V20"/></symbol><symbol id="luma-icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5,20.5 L16,16"/><path d="M18,10.5 A7.5,7.5 0,1 1,3 10.5 A7.5,7.5 0,1 1,18 10.5"/></symbol><symbol id="luma-icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84,4.61 A5.5,5.5 0,0 0,13.06 4.61 L12,5.67 L10.94,4.61 A5.5,5.5 0,0 0,3.16 12.39 L12,21 L20.84,12.39 A5.5,5.5 0,0 0,20.84 4.61 Z"/></symbol><symbol id="luma-icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,8 A4,4 0,1 0,12 16 A4,4 0,1 0,12 8"/><path d="M19.4,15 A1.7,1.7 0,0 0,19.74 16.87 L19.67,16.94 L17.44,19.17 A1.7,1.7 0,0 0,15.57 19.51 L15.35,19.42 A1.7,1.7 0,0 0,13.75 20.5 V20.7 A1.7,1.7 0,0 0,12.05 22.4 H11.95 A1.7,1.7 0,0 0,10.25 20.7 V20.5 A1.7,1.7 0,0 0,8.65 19.42 L8.43,19.51 A1.7,1.7 0,0 0,6.56 19.17 L4.33,16.94 A1.7,1.7 0,0 0,4 15.07 L4.09,14.85 A1.7,1.7 0,0 0,3.01 13.25 H2.8 A1.7,1.7 0,0 0,1.1 11.55 V11.45 A1.7,1.7 0,0 0,2.8 9.75 H3.01 A1.7,1.7 0,0 0,4.09 8.15 L4,7.93 A1.7,1.7 0,0 0,4.33 6.06 L6.56,3.83 A1.7,1.7 0,0 0,8.43 3.49 L8.65,3.58 A1.7,1.7 0,0 0,10.25 2.5 V2.3 A1.7,1.7 0,0 0,11.95 .6 H12.05 A1.7,1.7 0,0 0,13.75 2.3 V2.5 A1.7,1.7 0,0 0,15.35 3.58 L15.57,3.49 A1.7,1.7 0,0 0,17.44 3.83 L19.67,6.06 A1.7,1.7 0,0 0,20.01 7.93 L19.92,8.15 A1.7,1.7 0,0 0,21 9.75 H21.2 A1.7,1.7 0,0 0,22.9 11.45 V11.55 A1.7,1.7 0,0 0,21.2 13.25 H21 A1.7,1.7 0,0 0,19.92 14.85 Z"/></symbol><symbol id="luma-icon-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,3 L21,8 L12,13 L3,8 Z"/><path d="M3,12 L12,17 L21,12"/><path d="M3,16 L12,21 L21,16"/></symbol><symbol id="luma-icon-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5,17 H4 A2,2 0,0 1,2 15 V11 A2,2 0,0 1,4 9 H20 A2,2 0,0 1,22 11 V15 A2,2 0,0 1,20 17 H19"/><path d="M5,17 H19"/><path d="M5,17 V19 A1,1 0,0 0,7 19 V17"/><path d="M17,17 V19 A1,1 0,0 0,19 19 V17"/><path d="M5,9 L7,4 H17 L19,9"/><path d="M6,13 H7"/><path d="M17,13 H18"/></symbol><symbol id="luma-icon-arrow_left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20,12 H4"/><path d="M11,19 L4,12 L11,5"/></symbol><symbol id="luma-icon-arrow_right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4,12 H20"/><path d="M13,5 L20,12 L13,19"/></symbol><symbol id="luma-icon-arrow_up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,20 V4"/><path d="M5,11 L12,4 L19,11"/></symbol><symbol id="luma-icon-arrow_down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,4 V20"/><path d="M19,13 L12,20 L5,13"/></symbol><symbol id="luma-icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,3 A9,9 0,1 0,12 21 A9,9 0,1 0,12 3"/><path d="M12,11 V16"/><path d="M12,8 V8.1"/></symbol><symbol id="luma-icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7,11 L17,6"/><path d="M7,13 L17,18"/><path d="M19,3 A3,3 0,1 0,19 9 A3,3 0,1 0,19 3"/><path d="M5,9 A3,3 0,1 0,5 15 A3,3 0,1 0,5 9"/><path d="M19,15 A3,3 0,1 0,19 21 A3,3 0,1 0,19 15"/></symbol><symbol id="luma-icon-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4,7 H20"/><path d="M4,17 H20"/><path d="M9,4 V10"/><path d="M15,14 V20"/></symbol><symbol id="luma-icon-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5,3 H19 V21 L12,16 L5,21 Z"/></symbol><symbol id="luma-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,5 V19"/><path d="M5,12 H19"/><path d="M12,2 A10,10 0,1 0,12 22 A10,10 0,1 0,12 2"/></symbol><symbol id="luma-icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,2 A10,10 0,1 0,12 22 A10,10 0,1 0,12 2"/><path d="M2,12 H22"/><path d="M12,2 C7,6 7,18 12,22"/><path d="M12,2 C17,6 17,18 12,22"/></symbol><symbol id="luma-icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12,4 A4,4 0,1 0,12 12 A4,4 0,1 0,12 4"/><path d="M4,21 V19 C4,12 20,12 20,19 V21"/></symbol><symbol id="luma-icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5,4 H19 A2,2 0,0 1,21 6 V20 H3 V6 A2,2 0,0 1,5 4 Z"/><path d="M7,2 V7"/><path d="M17,2 V7"/><path d="M3,10 H21"/></symbol><symbol id="luma-icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9,6 H20"/><path d="M9,12 H20"/><path d="M9,18 H20"/><path d="M4,6 V6.1"/><path d="M4,12 V12.1"/><path d="M4,18 V18.1"/></symbol><symbol id="luma-icon-suv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3,17 V12 L5,8 H19 L21,12 V17 Z"/><path d="M5,8 L7,5 H17 L19,8"/><path d="M7,17 V19"/><path d="M17,17 V19"/><path d="M6,13 H7"/><path d="M17,13 H18"/></symbol><symbol id="luma-icon-coupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3,16 L4,12 L7,11 L10,6 H17 L20,11 L21,12 L21,16 Z"/><path d="M6,17 V19"/><path d="M18,17 V19"/><path d="M7,11 H19"/><path d="M5,15 H6"/><path d="M18,15 H19"/></symbol><symbol id="luma-icon-wagon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3,16 V10 L5,6 H19 L21,10 V16 Z"/><path d="M6,17 V19"/><path d="M18,17 V19"/><path d="M8,6 V10"/><path d="M16,6 V10"/><path d="M5,14 H6"/><path d="M18,14 H19"/></symbol><symbol id="luma-icon-hatchback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3,16 V11 L6,7 H16 L21,11 V16 Z"/><path d="M6,17 V19"/><path d="M18,17 V19"/><path d="M8,7 V11"/><path d="M6,13 H7"/><path d="M18,13 H19"/></symbol><symbol id="luma-icon-sedan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3,16 V11 L5,10 L8,6 H16 L19,10 L21,11 V16 Z"/><path d="M6,17 V19"/><path d="M18,17 V19"/><path d="M5,13 H7"/><path d="M17,13 H19"/><path d="M5,10 H19"/></symbol><symbol id="luma-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5,5 L19,19"/><path d="M19,5 L5,19"/></symbol><symbol id="luma-icon-chevron_down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6,9 L12,15 L18,9"/></symbol></defs></svg>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <header class="site-header" id="siteHeader"><div class="wrap head-row">
-<button class="brand brand-limba" id="brandBtn" aria-label="Limba Auto"><img class="limba-wordmark" src="assets/limba/logos/wordmark.png" alt="Limba"><small>AUTO</small></button>
+<button class="brand brand-limba" id="brandBtn" aria-label="Limba Auto"><img class="limba-wordmark" src="assets/limba/logos/wordmark.png" alt="Limba"><small class="brand-desktop-label">AUTO</small><small class="brand-mobile-section" data-i18n="carsNav">Autos finden</small></button>
 <nav class="main-nav" aria-label="Navigation">
 <button class="nav-link is-active" data-view="home"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"> <span data-release="marketNav">Marktplatz</span></button>
 <button class="nav-link" data-view="swipe"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true" draggable="false"> <span>Limba Drive</span></button>
@@ -808,39 +930,75 @@ body { overflow-x:clip; }
 <div class="header-right"><button class="primary-btn marketplace-sell" id="headerSell" type="button"><span aria-hidden="true">+</span> <span data-release="sellNav">Inserieren</span></button><div class="account-area" id="accountArea"><button id="loginBtn" type="button" class="signin-btn account-toggle" aria-haspopup="menu" aria-controls="accountMenu" aria-expanded="false" aria-label="Benutzerkonto"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt="" aria-hidden="true"><span id="loginText" data-i18n="login">Anmelden</span></button><div id="accountMenu" class="account-menu hidden" role="menu" aria-label="Benutzerkonto"><button id="accountOpenBtn" type="button" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/profile.png" alt="" aria-hidden="true"><span data-i18n="login">Mein Konto</span></button><button type="button" data-view="favorites" role="menuitem"><span data-lux="garage">Meine Garage</span></button><button id="menuSavedSearches" type="button" role="menuitem"><span data-i18n="savedSearches">Gespeicherte Suchen</span></button><button id="accountPreferencesBtn" type="button" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/settings.png" alt="" aria-hidden="true"><span data-i18n="settings">Einstellungen</span></button><button id="inboxBtn" type="button" class="market-inbox-button" role="menuitem" aria-label="Nachrichten"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/notifications.png" alt="" aria-hidden="true"><span data-release="messages">Nachrichten</span><span id="inboxCount" class="market-inbox-count hidden"></span></button><button type="button" data-view="mine" role="menuitem"><img class="ui-icon limba-3d-icon" src="assets/limba/icons/vehicle_cards.png" alt="" aria-hidden="true"><span data-i18n="myAds">Meine Inserate</span></button></div></div><label for="language" class="sr-only" data-i18n="language">Sprache</label><select id="language" class="sr-only" aria-label="Sprache"></select></div>
 </div></header>
 <main>
-<section id="homeView"><section class="market-hero" aria-labelledby="marketHeroTitle"><div class="wrap market-hero-heading"><h1 id="marketHeroTitle" data-release="marketHeroTitle">Finde dein nächstes Auto</h1><p data-release="marketHeroText">Fahrzeuge aus Südosteuropa entdecken.</p></div>
+<section id="homeView">
+<section class="market-hero" aria-labelledby="marketHeroTitle">
+ <div class="wrap market-hero-heading">
+  <p class="market-hero-brand">LIMBA SHOWROOM</p>
+  <h1 id="marketHeroTitle" data-release="marketHeroTitle">Dein nächstes Auto beginnt hier.</h1>
+  <p data-release="marketHeroText">Marke, Modell, Preis und Suchland direkt wählen.</p>
+ </div>
+</section>
 
-<div class="wrap search-wrap" id="searchAnchor"><form class="search-panel" id="searchForm" role="search"><div class="search-top"><div><h2 data-release="quickSearch">Schnellsuche</h2></div><button type="button" id="saveSearchBtn" class="outline-btn compact-btn"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/notifications.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="saveSearch">Suche speichern</span></button></div>
+<div class="wrap search-wrap" id="searchAnchor"><form class="search-panel" id="searchForm" role="search"><div class="search-top"><h2 data-i18n="carsNav">Autos finden</h2></div>
 <div class="search-grid">
 
 <div class="search-field"><label for="make" data-i18n="make">Marke</label><div class="catalog-select"><input id="make" type="search" autocomplete="off" maxlength="35" data-i18n-placeholder="allMakes" placeholder="Alle Marken" role="combobox" aria-controls="makeDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="make" aria-label="Markenliste öffnen" data-filter-aria="showMakes">▾</button><div id="makeDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="makeOptions"></datalist></div>
 <div class="search-field"><label for="model" data-i18n="model">Modell</label><div class="catalog-select"><input id="model" type="search" autocomplete="off" maxlength="65" data-i18n-placeholder="allModels" placeholder="Alle Modelle" role="combobox" aria-controls="modelDropdown" aria-expanded="false" aria-autocomplete="list"><button type="button" class="catalog-trigger" data-catalog-toggle="model" aria-label="Modellliste öffnen" data-filter-aria="showModels">▾</button><div id="modelDropdown" class="catalog-options hidden" role="listbox"></div></div><datalist id="modelOptions"></datalist></div>
 <label class="search-field"><span data-i18n="priceTo">Preis bis (€)</span><input id="priceTo" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Max. €"></label>
-<div class="search-field search-country" id="searchCountryField"><span data-release="filterCountry">Suchländer</span><button id="searchCountryToggle" class="search-country-toggle" type="button" aria-expanded="false" aria-controls="searchCountryPanel" aria-label="Suchländer wählen"></button><div id="searchCountryPanel" class="search-country-panel hidden"><div id="countryChoices" class="country-choices"></div><button id="allCountries" class="link-btn" type="button" data-release="allCountries">Alle Länder</button><p class="muted-copy" id="prefsStatus" aria-live="polite"></p></div></div>
-
-
-<button class="primary-btn search-main" type="submit"><span class="magnify"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><span data-i18n="showResults">Fahrzeuge anzeigen</span><b id="heroCount"></b></button>
+<div class="search-field search-country" id="searchCountryField">
+ <span data-release="filterCountry">Suchländer</span>
+ <button id="searchCountryToggle" class="search-country-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="searchCountryPanel"></button>
 </div>
-<div class="filter-ext"><button type="button" class="link-btn" id="advancedToggle" aria-expanded="false" aria-controls="advancedFilters"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/filter.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="moreFilters">Weitere Filter</span><span id="filterChevron"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-chevron_down"></use></svg></span></button><button type="button" class="link-btn faint" id="clearAll" data-i18n="resetFilters">Filter zurücksetzen</button></div>
+<label class="search-field search-keyword"><span data-i18n="searchTerms">Suche nach Marke oder Modell</span><input id="keyword" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Golf, A4, BMW" data-i18n-placeholder="keywordExample"></label>
+<button class="primary-btn search-main" type="submit"><span class="magnify"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><span data-i18n="showResults">Fahrzeuge anzeigen</span></button>
+</div>
+<div class="filter-ext"><button type="button" class="link-btn" id="advancedToggle" aria-expanded="false" aria-controls="advancedFilters"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/filter.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="moreFilters">Weitere Filter</span><span id="filterChevron"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-chevron_down"></use></svg></span></button></div>
 <div class="advanced hidden" id="advancedFilters"><label class="search-field"><span data-i18n="yearFrom">Erstzulassung ab</span><select id="yearFrom"></select></label>
 <label class="search-field"><span data-i18n="mileageTo">Kilometer bis</span><input id="mileageTo" type="number" min="0" max="1500000" inputmode="numeric" placeholder="Max. km"></label>
-<label class="search-field"><span data-i18n="fuel">Kraftstoff</span><select id="fuel"></select></label><label class="search-field"><span data-i18n="transmission">Getriebe</span><select id="transmission"></select></label><label class="search-field"><span data-i18n="body">Karosserie</span><select id="body"></select></label><label class="search-field"><span data-i18n="sellerType">Anbieter</span><select id="sellerType"></select></label><label class="search-field"><span data-i18n="priceFrom">Preis ab (€)</span><input id="priceFrom" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Min. €"></label><label class="search-field"><span data-i18n="yearTo">Erstzulassung bis</span><select id="yearTo"></select></label><label class="search-field"><span data-filter="mileageFrom">Kilometer ab</span><input id="mileageFrom" type="number" min="0" max="1500000" inputmode="numeric" placeholder="Min. km"></label><label class="search-field"><span data-filter="powerFrom">Leistung ab (PS)</span><input id="powerFrom" type="number" min="0" max="2000" inputmode="numeric" placeholder="Min. PS"></label><label class="search-field"><span data-filter="powerTo">Leistung bis (PS)</span><input id="powerTo" type="number" min="0" max="2000" inputmode="numeric" placeholder="Max. PS"></label><label class="search-field"><span data-filter="engineTerm">Motorbezeichnung</span><input id="engineTerm" type="search" autocomplete="off" maxlength="80" placeholder="z. B. V6, TDI"></label><label class="search-field"><span data-filter="capacityFrom">Hubraum ab (cm³)</span><input id="capacityFrom" type="number" min="0" max="12000" inputmode="numeric" placeholder="Min. cm³"></label><label class="search-field"><span data-filter="capacityTo">Hubraum bis (cm³)</span><input id="capacityTo" type="number" min="0" max="12000" inputmode="numeric" placeholder="Max. cm³"></label><label class="search-field"><span data-i18n="searchTerms">Suche nach Marke oder Modell</span><input id="keyword" type="search" autocomplete="off" maxlength="100" placeholder="z. B. Golf, A4, BMW" data-i18n-placeholder="keywordExample"></label></div>
+<label class="search-field"><span data-i18n="fuel">Kraftstoff</span><select id="fuel"></select></label><label class="search-field"><span data-i18n="transmission">Getriebe</span><select id="transmission"></select></label><label class="search-field"><span data-i18n="body">Karosserie</span><select id="body"></select></label><label class="search-field"><span data-i18n="sellerType">Anbieter</span><select id="sellerType"></select></label><label class="search-field"><span data-i18n="priceFrom">Preis ab (€)</span><input id="priceFrom" type="number" min="0" max="999999999" inputmode="numeric" placeholder="Min. €"></label><label class="search-field"><span data-i18n="yearTo">Erstzulassung bis</span><select id="yearTo"></select></label><label class="search-field"><span data-filter="mileageFrom">Kilometer ab</span><input id="mileageFrom" type="number" min="0" max="1500000" inputmode="numeric" placeholder="Min. km"></label><label class="search-field"><span data-filter="powerFrom">Leistung ab (PS)</span><input id="powerFrom" type="number" min="0" max="2000" inputmode="numeric" placeholder="Min. PS"></label><label class="search-field"><span data-filter="powerTo">Leistung bis (PS)</span><input id="powerTo" type="number" min="0" max="2000" inputmode="numeric" placeholder="Max. PS"></label><label class="search-field"><span data-filter="engineTerm">Motorbezeichnung</span><input id="engineTerm" type="search" autocomplete="off" maxlength="80" placeholder="z. B. V6, TDI"></label><label class="search-field"><span data-filter="capacityFrom">Hubraum ab (cm³)</span><input id="capacityFrom" type="number" min="0" max="12000" inputmode="numeric" placeholder="Min. cm³"></label><label class="search-field"><span data-filter="capacityTo">Hubraum bis (cm³)</span><input id="capacityTo" type="number" min="0" max="12000" inputmode="numeric" placeholder="Max. cm³"></label></div>
 <div id="radiusControls" class="radius-controls hidden">
 <div class="search-field"><label for="radiusPlace" data-release="radiusPlace">Ort für die Umkreissuche</label><input id="radiusPlace" type="search" maxlength="100" autocomplete="off" aria-describedby="radiusStatus"><div id="radiusPlaces" class="place-results hidden"></div></div>
 <label class="search-field"><span data-release="radiusDistance">Umkreis</span><select id="radiusDistance"><option value="25">25 km</option><option value="50" selected>50 km</option><option value="100">100 km</option><option value="250">250 km</option></select></label>
 <p id="radiusStatus" class="helper" role="status"></p>
-</div></form></div></section>
-<section class="wrap main-content" id="resultsSection"><div class="section-intro"><div><div class="overline dark-overline" data-i18n="featuredCars">FAHRZEUGE ENTDECKEN</div><h2 data-i18n="latestCars">Aktuelle Fahrzeugangebote</h2></div></div>
-<div class="country-bar"><h3 data-release="filterCountry">Suchländer</h3><div id="countryQuick" class="country-quick" role="group" aria-label="Suchländer"></div></div>
-<div class="result-ops market-result-toolbar"><button id="resultFilter" class="outline-btn compact-btn" type="button" aria-controls="advancedFilters" aria-expanded="false" data-release="filters">Filter</button><span id="resultCount" class="result-count" role="status"></span><label for="sort" class="sr-only" data-i18n="sort">Sortieren</label><select id="sort" class="sort-select"></select></div>
+</div>
+<div class="search-form-actions"><button type="button" class="outline-btn" id="clearAll" data-i18n="resetFilters">Filter zurücksetzen</button><button type="button" id="saveSearchBtn" class="outline-btn compact-btn"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/notifications.png" alt="" aria-hidden="true" draggable="false"> <span data-i18n="saveSearch">Suche speichern</span></button></div>
+</form></div>
+<dialog id="searchCountryPanel" class="country-dialog" aria-labelledby="countryDialogTitle">
+ <div class="country-dialog-content">
+  <h2 id="countryDialogTitle" data-release="filterCountry">Suchländer</h2>
+  <div id="countryChoices" class="country-choices"></div>
+  <p class="muted-copy" id="prefsStatus" aria-live="polite"></p>
+  <div class="country-dialog-actions">
+   <button id="allCountries" type="button" class="outline-btn" data-release="allCountries">Alle Länder</button>
+   <button id="cancelCountries" type="button" class="outline-btn" data-i18n="cancel">Abbrechen</button>
+   <button id="applyCountries" type="button" class="primary-btn" data-release="applyCountrySelection">Übernehmen</button>
+  </div>
+ </div>
+</dialog>
+<section class="wrap main-content" id="resultsSection" aria-labelledby="resultsTitle">
+ <div class="market-result-heading">
+  <h2 id="resultsTitle" data-i18n="latestCars">Aktuelle Fahrzeugangebote</h2>
+  <label for="sort" class="sr-only" data-i18n="sort">Sortieren</label>
+  <select id="sort" class="sort-select"></select>
+ </div>
+ <div class="market-result-meta">
+  <span id="resultCount" class="result-count" role="status"></span>
+  <button id="resultFilter" class="link-btn" type="button" aria-controls="advancedFilters" aria-expanded="false" data-release="filters">Filter</button>
+ </div>
 <div class="detail-actions seller-segments" role="group" aria-label="Anbieter" data-i18n-aria="sellerType">
 <button type="button" class="outline-btn" data-seller-segment="" aria-pressed="true" data-i18n="allSeller">Alle</button>
 <button type="button" class="outline-btn" data-seller-segment="privateSeller" aria-pressed="false" data-i18n="privateSeller">Privat</button>
 <button type="button" class="outline-btn" data-seller-segment="dealer" aria-pressed="false" data-i18n="dealer">Händler</button>
 </div>
-<div class="active-filters hidden" id="activeFilters" aria-label="Aktive Filter"></div>
-<div class="body-quick" id="bodyQuick"><button data-body="" class="quick-card is-selected"><span class="quick-icon"><img class="ui-icon limba-3d-icon " src="assets/limba/icons/car.png" alt="" aria-hidden="true" draggable="false"></span><b data-i18n="allCars">Alle Autos</b></button><button data-body="suv" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-suv"></use></svg></span><b data-i18n="suv">SUV</b></button><button data-body="sedan" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-sedan"></use></svg></span><b data-i18n="sedan">Limousine</b></button><button data-body="wagon" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-wagon"></use></svg></span><b data-i18n="wagon">Kombi</b></button><button data-body="hatchback" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-hatchback"></use></svg></span><b data-i18n="hatchback">Kompakt</b></button><button data-body="coupe" class="quick-card"><span class="quick-icon"><svg class="ui-icon " aria-hidden="true" focusable="false"><use href="#luma-icon-coupe"></use></svg></span><b data-i18n="coupe">Coupé</b></button></div>
+<div class="country-bar" id="countryBar">
+ <div class="country-bar-heading">
+  <button id="resultCountries" type="button" class="link-btn country-control" aria-haspopup="dialog" aria-expanded="false" aria-controls="searchCountryPanel"><span data-release="filterCountry">Suchländer</span><span aria-hidden="true">⌄</span></button>
+  <button id="quickAllCountries" class="link-btn country-control" type="button" data-release="allCountries">Alle Länder</button>
+ </div>
+ <div id="countryQuick" class="country-quick" role="group" aria-label="Suchländer"></div>
+</div>
 <div class="price-toolbar"><label><span data-release="displayCurrency">Anzeigewährung</span><select id="displayCurrency"><option>EUR</option><option>MKD</option><option>ALL</option><option>RSD</option><option>CHF</option></select></label><small id="exchangeRateStatus" role="status"></small></div>
+<div class="active-filters hidden" id="activeFilters" aria-label="Aktive Filter"></div>
 <div id="carGrid" class="car-grid" aria-busy="true"><div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div><div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div><div class="car-skeleton" aria-hidden="true"><div></div><span></span><span></span><span></span></div></div><div id="searchProgress" class="search-progress hidden" role="status"></div><button id="retryListings" type="button" class="outline-btn hidden" data-release="retry">Erneut versuchen</button><div class="search-more"><button id="loadMoreSearch" type="button" class="outline-btn hidden" data-release="loadMore">Mehr Fahrzeuge laden</button></div><div id="emptyResults" class="empty-panel hidden"><span><img class="ui-icon limba-3d-icon " src="assets/limba/icons/search.png" alt="" aria-hidden="true" draggable="false"></span><h3 data-i18n="emptyCars">Keine passenden Fahrzeuge gefunden.</h3><p data-release="emptySearchHint">Starte eine neue Suche oder wähle einen Vorschlag.</p><div class="empty-actions"><button type="button" class="primary-btn" id="resetEmpty" data-i18n="resetFilters">Filter zurücksetzen</button><div id="emptySuggestions" class="empty-suggestions"><button type="button" class="outline-btn" id="emptyPerformance" data-release="browsePerformance">Performance-Modelle entdecken</button></div></div></div></section>
 
 <section class="wrap showroom-spotlight" id="showroomSpotlight" aria-label="Limba Showroom"></section>
@@ -860,9 +1018,9 @@ body { overflow-x:clip; }
 <div class="account-actions">
 <button class="primary-btn" type="button" id="accountSignIn" data-i18n="login">Anmelden</button>
 <button class="outline-btn" type="button" data-view="favorites" data-lux="garage">Meine Garage</button>
-<button class="outline-btn" type="button" id="mobileSavedSearches" data-i18n="savedSearches">Gespeicherte Suchen</button>
 <button class="outline-btn" type="button" id="navInbox"><span data-release="messages">Nachrichten</span><span id="navInboxCount" class="market-inbox-count hidden"></span></button>
 <button class="outline-btn" type="button" data-view="mine" data-i18n="myAds">Meine Inserate</button>
+<button class="outline-btn" type="button" id="mobileSavedSearches" data-i18n="savedSearches">Gespeicherte Suchen</button>
 <button class="outline-btn" type="button" data-view="settings" data-i18n="settings">Einstellungen</button>
 </div></section>
 <section class="wrap subpage hidden" id="settingsView">
@@ -2273,8 +2431,8 @@ const marketplace19Translations = {
 
 const marketplaceUiTranslations = {
   en: {
-    marketNav: 'Marketplace', marketHeroTitle: 'Find your next car', marketHeroText: 'Discover vehicles across Southeastern Europe.',
-    quickSearch: 'Quick search', displayCurrency: 'Display currency', rateReference: 'Reference rate',
+    marketNav: 'Marketplace', marketHeroTitle: 'Your next car starts here', marketHeroText: 'Choose a make, model, price and country.',
+    applyCountrySelection: 'Apply', displayCurrency: 'Display currency', rateReference: 'Reference rate',
     rateUnavailable: 'Exchange rate unavailable. Prices shown in EUR.', emptySearchHint: 'Start a new search or try one of these options.',
     browsePerformance: 'Explore performance models',
     customsInListingCountry: 'Customs in the listing country (seller’s statement)', customsUnknown: 'Customs status unknown',
@@ -2282,8 +2440,8 @@ const marketplaceUiTranslations = {
     stage1: 'Stage 1', stage2: 'Stage 2', suspension: 'Coilovers', exhaust: 'Exhaust system',
   },
   de: {
-    marketNav: 'Marktplatz', marketHeroTitle: 'Finde dein nächstes Auto', marketHeroText: 'Fahrzeuge aus Südosteuropa entdecken.',
-    quickSearch: 'Schnellsuche', displayCurrency: 'Anzeigewährung', rateReference: 'Referenzkurs vom',
+    marketNav: 'Marktplatz', marketHeroTitle: 'Dein nächstes Auto beginnt hier.', marketHeroText: 'Marke, Modell, Preis und Suchland direkt wählen.',
+    applyCountrySelection: 'Übernehmen', displayCurrency: 'Anzeigewährung', rateReference: 'Referenzkurs vom',
     rateUnavailable: 'Kurs nicht verfügbar. Preise in EUR.', emptySearchHint: 'Starte eine neue Suche oder wähle einen Vorschlag.',
     browsePerformance: 'Performance-Modelle entdecken',
     customsInListingCountry: 'Zollstatus im Inseratsland laut Verkäufer', customsUnknown: 'Zollstatus unbekannt',
@@ -2291,19 +2449,19 @@ const marketplaceUiTranslations = {
     suspension: 'Gewindefahrwerk', exhaust: 'Abgasanlage',
   },
   sq: {
-    marketNav: 'Tregu', marketHeroTitle: 'Gjej makinën tënde të radhës', marketHeroText: 'Zbulo automjete në Europën Juglindore.',
-    quickSearch: 'Kërkim i shpejtë', displayCurrency: 'Monedha e shfaqur', rateReference: 'Kursi i referencës',
+    marketNav: 'Tregu', marketHeroTitle: 'Gjej makinën tënde të radhës', marketHeroText: 'Zgjidh markën, modelin, çmimin dhe shtetin.',
+    applyCountrySelection: 'Zbato', displayCurrency: 'Monedha e shfaqur', rateReference: 'Kursi i referencës',
     rateUnavailable: 'Kursi nuk është i disponueshëm. Çmimet shfaqen në EUR.', emptySearchHint: 'Fillo një kërkim të ri ose zgjidh një sugjerim.',
     browsePerformance: 'Zbulo modelet Performance',
     customsInListingCountry: 'Statusi doganor në vendin e shpalljes sipas shitësit', customsUnknown: 'Statusi doganor i panjohur',
     customsCleared: 'Zhdoganuar në vendin e shpalljes', customsRequired: 'Kërkohet import në vendin e shpalljes',
     suspension: 'Amortizatorë të rregullueshëm', exhaust: 'Sistemi i shkarkimit',
   },
-  mk: {marketNav: 'Пазар', quickSearch: 'Брзо пребарување'},
-  'sr-Latn': {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
-  'sr-Cyrl': {marketNav: 'Огласи', quickSearch: 'Брза претрага'},
-  hr: {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
-  bs: {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
+  mk: {marketNav: 'Пазар'},
+  'sr-Latn': {marketNav: 'Oglasi'},
+  'sr-Cyrl': {marketNav: 'Огласи'},
+  hr: {marketNav: 'Oglasi'},
+  bs: {marketNav: 'Oglasi'},
 };
 
 const RELEASE_TRANSLATIONS = Object.fromEntries(
@@ -4067,17 +4225,21 @@ function carCard(car, {performance = false} = {}) {
  const liked = state.favorites.includes(car.id);
  const badges = performance ? listingBadges(car) : [];
  return `<article class="car-card" data-open="${h(car.id)}" tabindex="0" aria-label="${h(car.title)}">
-  <div class="car-img"><img loading="lazy" src="${h(safeURL(car.image) || 'assets/limba/icons/car.png')}" alt="${h(car.title)}">
-   <span class="car-tag">${h(isDemo(car) ? F('previewOnly') : T(car.sellerType || 'privateSeller'))}</span>
-   <button class="card-heart ${liked ? 'active' : ''}" type="button" data-like="${h(car.id)}" aria-pressed="${liked}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button>
-  </div>
+  <div class="car-img"><img loading="lazy" src="${h(safeURL(car.image) || 'assets/limba/icons/car.png')}" alt="${h(car.title)}"></div>
   <div class="car-body">
-   <strong class="car-price car-price-overview">${h(displayPrice(car.price))}</strong>
+   <div class="car-price-row">
+    <strong class="car-price car-price-overview">${h(displayPrice(car.price))}</strong>
+    <button class="card-heart ${liked ? 'active' : ''}" type="button" data-like="${h(car.id)}" aria-pressed="${liked}" aria-label="${h(T('saveFavourites'))}">${icon('heart')}</button>
+   </div>
    <h3 class="car-title">${h(car.title)}</h3>
-   <div class="car-specs"><span aria-label="${h(T('firstReg'))}">${h(car.year || '—')}</span><span>${number(car.mileage)} ${h(T('kmUnit'))}</span></div>
-   <div class="car-location">${flag(car.country)} ${h(car.city)}, ${h(countryLabel(car.country))}${Number.isFinite(car.distanceKm) ? ' · ' + h(number(car.distanceKm)) + ' ' + h(T('kmUnit')) : ''}</div>
+   <div class="car-specs">
+    <span aria-label="${h(T('firstReg'))}">${h(car.year || '—')}</span><span>${number(car.mileage)} ${h(T('kmUnit'))}</span>
+    ${Number(car.power) > 0 ? `<span>${number(car.power)} ${h(T('powerUnit'))}</span>` : ''}
+   </div>
+   <div class="car-location">${flag(car.country)} ${h(car.city)}, ${h(countryLabel(car.country))} · ${h(isDemo(car) ? F('previewOnly') : T(car.sellerType || 'privateSeller'))}${Number.isFinite(car.distanceKm) ? ' · ' + h(number(car.distanceKm)) + ' ' + h(T('kmUnit')) : ''}</div>
    <div class="card-badges"><span class="customs-badge">${h(customsLabel(car))}</span>
    ${badges.map(badge => `<span class="tuning-badge" title="${h(X('sellerClaims'))}">${h(L(badge))}</span>`).join('')}</div>
+   <button type="button" class="outline-btn card-details">${icon('info')} ${h(T('vehicleDetails'))}</button>
   </div></article>`;
 }
 
@@ -4093,23 +4255,22 @@ function renderAll(){
  renderCurrencyStatus();
  const focus=document.activeElement;
  const focusedGrid=$('carGrid').contains(focus)?focus.closest('[data-open]')?.dataset.open:null;
+ const focusControl=focus.matches('[data-like]')?' [data-like]':focus.matches('.card-details')?' .card-details':'';
  const nextCards=arr.length ? arr.map(car=>carCard(car)).join('') : pending ? skeletonCards() : '';
  if(lastResultMarkup!==nextCards){
   $('carGrid').innerHTML=nextCards;
   lastResultMarkup=nextCards;
-  if(focusedGrid)$('carGrid').querySelector(`[data-open="${CSS.escape(focusedGrid)}"]${focus.matches('[data-like]')?' [data-like]':''}`)?.focus({preventScroll:true});
+  if(focusedGrid)$('carGrid').querySelector(`[data-open="${CSS.escape(focusedGrid)}"]${focusControl}`)?.focus({preventScroll:true});
  }
  $('emptyResults').classList.toggle('hidden',arr.length!==0||pending||failed||marketplaceSearch.hasMore);
  const resultTotal=searching&&marketplaceSearch.hasMore?L('loadedResults'):T('searchResultCount');
  $('resultCount').textContent=arr.length||(!pending&&!failed)?`${number(arr.length)} ${resultTotal}`:'';
- $('heroCount').textContent=pending?'':number(arr.length);
  $('searchProgress').textContent=failed?L('searchLoadError'):pending?L('loading'):'';
  $('searchProgress').classList.toggle('hidden',!pending&&!failed);
  $('loadMoreSearch').classList.toggle('hidden',!searching||(!marketplaceSearch.hasMore&&!failed));
  $('loadMoreSearch').disabled=pending;
  $('loadMoreSearch').textContent=L(failed?'retry':'loadMore');
  $('radiusControls').classList.toggle('hidden',!searching);
- document.querySelectorAll('[data-body]').forEach(b=>b.classList.toggle('is-selected',b.dataset.body===state.filters.body));
  document.querySelectorAll('[data-seller-segment]').forEach(button=>
   button.setAttribute('aria-pressed',String(button.dataset.sellerSegment===state.filters.sellerType)));
  renderActiveFilters();
@@ -4158,20 +4319,34 @@ function renderActiveFilters(){
   aria-label="${h(L('removeFilter')+': '+label)}">${h(label)}<span aria-hidden="true">×</span></button>`).join('');
 }
 function renderSearchCountries(){
- const label=state.countries.length?(state.countries.length<=2?state.countries.map(c=>flag(c)+' '+countryLabel(c)).join(', '):state.countries.length+' '+L('filterCountry')):L('allCountries');
+ const label=state.countries.length?(state.countries.length<=2?state.countries.map(code=>flag(code)+' '+countryLabel(code)).join(', '):state.countries.length+' '+L('filterCountry')):L('allCountries');
  $('searchCountryToggle').innerHTML='<span>'+h(label)+'</span>';
  $('searchCountryToggle').setAttribute('aria-label',L('filterCountry')+': '+label);
- const quick = $('countryQuick');
- const focusCountry = quick.contains(document.activeElement) ? document.activeElement.dataset.countryQuick : undefined;
- const order = ['','AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
- quick.setAttribute('aria-label', L('filterCountry'));
- quick.innerHTML = order.map(code => `<button type="button" data-country-quick="${code}" aria-pressed="${code ? state.countries.includes(code) : !state.countries.length}">${code ? flag(code) + ' ' + h(countryLabel(code)) : h(L('allCountries'))}</button>`).join('');
- if (focusCountry !== undefined) quick.querySelector(`[data-country-quick="${CSS.escape(focusCountry)}"]`)?.focus({preventScroll:true});
- $('countryChoices').innerHTML=COUNTRIES.map(([c,fl])=>'<label class="country-choice '+(state.countries.includes(c)?'is-active':'')+'"><input type="checkbox" value="'+h(c)+'" '+(state.countries.includes(c)?'checked':'')+'><span>'+fl+' '+h(countryLabel(c))+'</span></label>').join('');
+ const quick=$('countryQuick');
+ const focused=quick.contains(document.activeElement)?document.activeElement.dataset.countryQuick:null;
+ const order=['AL','RS','HR','BA','ME','SI','GR','BG','RO','TR'];
+ quick.setAttribute('aria-label',L('filterCountry'));
+ quick.innerHTML=order.map(code=>`<button type="button" data-country-quick="${code}" aria-pressed="${state.countries.includes(code)}"><span>${flag(code)} ${h(countryLabel(code))}</span></button>`).join('');
+ if(focused)quick.querySelector(`[data-country-quick="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
+ $('quickAllCountries').setAttribute('aria-pressed',String(!state.countries.length));
+ if(!$('searchCountryPanel').open)renderCountryChoices();
+}
+function renderCountryChoices(){
+ $('countryChoices').innerHTML=COUNTRIES.map(([code,emoji])=>`<label class="country-choice">
+  <input type="checkbox" value="${code}" ${state.countries.includes(code)?'checked':''}><span>${emoji} ${h(countryLabel(code))}</span>
+ </label>`).join('');
+}
+function openSearchCountries(trigger){
+ const dialog=$('searchCountryPanel');
+ if(dialog.open)return;
+ renderCountryChoices();
+ trigger.setAttribute('aria-expanded','true');
+ dialog.showModal();
 }
 function closeSearchCountries(){
- $('searchCountryPanel').classList.add('hidden');
- $('searchCountryToggle').setAttribute('aria-expanded','false');
+ const dialog=$('searchCountryPanel');
+ if(dialog.open)dialog.close();
+ for(const id of ['searchCountryToggle','resultCountries'])$(id).setAttribute('aria-expanded','false');
 }
 function closeAccountMenu(){
  $('accountMenu').classList.add('hidden');$('loginBtn').setAttribute('aria-expanded','false');
@@ -4984,7 +5159,25 @@ function wireMarketplace(){
   const button=event.target.closest('[data-country-quick]');
   if(!button)return;
   const code=button.dataset.countryQuick;
-  state.countries=!code?[]:state.countries.includes(code)?state.countries.filter(value=>value!==code):[...state.countries,code];
+  state.countries=state.countries.includes(code)?state.countries.filter(value=>value!==code):[...state.countries,code];
+  void saveCountries({notify:false});
+ });
+ for(const id of ['searchCountryToggle','resultCountries']){
+  $(id).addEventListener('click',()=>openSearchCountries($(id)));
+ }
+ $('searchCountryPanel').addEventListener('cancel',event=>{event.preventDefault();closeSearchCountries()});
+ $('searchCountryPanel').addEventListener('click',event=>{
+  if(event.target===$('searchCountryPanel'))closeSearchCountries();
+ });
+ $('cancelCountries').addEventListener('click',closeSearchCountries);
+ $('applyCountries').addEventListener('click',()=>{
+  state.countries=[...$('countryChoices').querySelectorAll('input:checked')].map(input=>input.value);
+  closeSearchCountries();
+  void saveCountries({notify:false});
+ });
+ for(const id of ['allCountries','quickAllCountries'])$(id).addEventListener('click',()=>{
+  state.countries=[];
+  closeSearchCountries();
   void saveCountries({notify:false});
  });
  $('emptyResults').addEventListener('click',event=>{
@@ -5060,16 +5253,15 @@ function wire(){
   $('sellerType').value=button.dataset.sellerSegment;
   setFilter('sellerType',button.dataset.sellerSegment);
  }));
-wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu();if(!e.target.closest('#searchCountryField'))closeSearchCountries()});$('searchCountryToggle').addEventListener('click',()=>{const expanded=!$('searchCountryPanel').classList.toggle('hidden');$('searchCountryToggle').setAttribute('aria-expanded',String(expanded))});$('searchCountryField').addEventListener('keydown',e=>{if(e.key==='Escape'){closeSearchCountries();$('searchCountryToggle').focus();e.stopPropagation()}});$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>setAdvancedFilters($('advancedFilters').classList.contains('hidden')));$('resultFilter').addEventListener('click',()=>{
+wireMarketplace();catalogChooser=setupCatalogChooser();const language=$('language');language.innerHTML=LANGS.map(([c,label])=>`<option value="${h(c)}">${h(label)}</option>`).join('');language.value=state.locale;language.addEventListener('change',e=>{state.locale=e.target.value;persist('language',state.locale);$('settingsLanguage').value=state.locale;applyTranslations()});document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>showView(el.dataset.view)));$('brandBtn').addEventListener('click',()=>showView('home'));$('loginBtn').addEventListener('click',toggleAccountMenu);$('accountOpenBtn').addEventListener('click',()=>{closeAccountMenu();openAuth()});$('accountPreferencesBtn').addEventListener('click',()=>showView('settings'));document.addEventListener('click',e=>{if(!e.target.closest('#accountArea'))closeAccountMenu()});$('settingsLanguage').innerHTML=LANGS.map(([c,l])=>`<option value="${h(c)}">${h(l)}</option>`).join('');$('settingsLanguage').value=state.locale;$('settingsLanguage').addEventListener('change',e=>{state.locale=e.target.value;$('language').value=state.locale;persist('language',state.locale);applyTranslations()});$('saveSearchBtn').addEventListener('click',saveSearch);$('searchForm').addEventListener('submit',e=>{e.preventDefault();renderAll();$('resultsSection').scrollIntoView({behavior:'smooth'})});$('advancedToggle').addEventListener('click',()=>setAdvancedFilters($('advancedFilters').classList.contains('hidden')));$('resultFilter').addEventListener('click',()=>{
  setAdvancedFilters(true);
  $('advancedToggle').focus({preventScroll:true});
  $('advancedToggle').scrollIntoView({behavior:'smooth',block:'center'});
-});$('clearAll').addEventListener('click',resetFilters);$('sort').addEventListener('change',e=>{state.sort=e.target.value;searchChanged()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));document.querySelectorAll('[data-body]').forEach(btn=>btn.addEventListener('click',()=>setFilter('body',btn.dataset.body)));
+});$('clearAll').addEventListener('click',resetFilters);$('sort').addEventListener('change',e=>{state.sort=e.target.value;searchChanged()});Object.keys(state.filters).forEach(id=>$(id)?.addEventListener(['keyword','priceTo','priceFrom','mileageFrom','mileageTo','powerFrom','powerTo','engineTerm','capacityFrom','capacityTo','make','model'].includes(id)?'input':'change',e=>setFilter(id,e.target.value)));
  document.addEventListener('click',e=>{const heart=e.target.closest('[data-like]');if(heart){e.preventDefault();e.stopPropagation();return toggleFavorite(heart.dataset.like)}const card=e.target.closest('[data-open]');if(card)return openListing(card.dataset.open,{guard:()=>card.isConnected});const edit=e.target.closest('[data-edit]');if(edit)return openSell(edit.dataset.edit);
  const status=e.target.closest('[data-status-id]');if(status)return updateListingStatus(status.dataset.statusId,status.dataset.status);
  const del=e.target.closest('[data-delete]');if(del)return removeListing(del.dataset.delete);const apply=e.target.closest('[data-apply]');if(apply){const item=state.searches[Number(apply.dataset.apply)];if(item){state.filters={...blankFilters,...item.filters};state.countries=item.countries||[];state.radius=validRadius(item.radius)?item.radius:null;state.radiusName='';void saveCountries({notify:false});renderInputs();renderRadius();showView('home');restoreAnchorPending=false;$('resultsSection').scrollIntoView({behavior:'smooth'})}return}const drop=e.target.closest('[data-drop]');if(drop){drop.disabled=true;void dropSearch(Number(drop.dataset.drop))}});
  document.addEventListener('keydown',e=>{const card=e.target.closest?.('[data-open]');if(card&&(e.key==='Enter'||e.key===' ')&&!e.target.closest('button,a,input,select,textarea')){e.preventDefault();void openListing(card.dataset.open,{guard:()=>card.isConnected})}});
- $('countryChoices').addEventListener('change',e=>{if(e.target.matches('input[type=checkbox]')){const code=e.target.value;state.countries=e.target.checked?[...new Set([...state.countries,code])]:state.countries.filter(x=>x!==code);void saveCountries({notify:false})}});$('allCountries').addEventListener('click',()=>{state.countries=[];void saveCountries({notify:false})});
  $('swipeHome').addEventListener('click',()=>showView('home'));$('swipeFavorite').addEventListener('click',()=>{const arr=filtered();if(arr.length)toggleFavorite(arr[state.swipeIndex].id)});$('swipeHelp').addEventListener('click',showTutorial);$('swipeDone').addEventListener('click',dismissTutorial);$('swipeTutorialBack').addEventListener('click',hideTutorial);
  let pointer=null;const swipe=$('swipeCard');swipe.addEventListener('pointerdown',e=>{if(!$('swipeTutorial').classList.contains('hidden'))return;e.preventDefault();pointer={x:e.clientX,y:e.clientY};swipe.setPointerCapture(e.pointerId)});swipe.addEventListener('pointerup',e=>{if(!pointer)return;e.preventDefault();const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y;pointer=null;if(Math.max(Math.abs(dx),Math.abs(dy))<48)return;swipeAction(Math.abs(dx)>Math.abs(dy)?dx<0?'left':'right':dy<0?'up':'down')});
  swipe.addEventListener('pointercancel',()=>{pointer=null});
