@@ -2,6 +2,7 @@
 """Build the public Limba static site for GitHub Pages and Firebase Hosting."""
 
 import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -79,6 +80,25 @@ def apply_public_config(output_dir: Path) -> None:
             )
 
 
+def version_client_assets(output_dir: Path, html: str) -> str:
+    assets = [name for name in PUBLIC_FILES if Path(name).suffix in {".css", ".js", ".mjs"}]
+    version = hashlib.sha256()
+    for name in assets:
+        version.update(name.encode("utf-8") + b"\0")
+        version.update(hashlib.sha256((output_dir / name).read_bytes()).digest())
+
+    # Keep the module graph together so relative imports share the entry script's version.
+    directory = Path("web-assets") / version.hexdigest()[:16]
+    for name in assets:
+        destination = output_dir / directory / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(output_dir / name, destination)
+
+    for name in ("styles.css", "limba-theme.js", "config.js", "app.js"):
+        html = html.replace(f'="{name}"', f'="{(directory / name).as_posix()}"')
+    return html
+
+
 def main() -> None:
     OUTPUT_DIR.parent.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="web-", dir=OUTPUT_DIR.parent) as temp:
@@ -103,7 +123,7 @@ def main() -> None:
         policy = next(header["value"] for header in headers if header["key"] == "Content-Security-Policy")
         meta_policy = policy.partition("; frame-ancestors")[0]
         index = staged / "index.html"
-        html = index.read_text(encoding="utf-8")
+        html = version_client_assets(staged, index.read_text(encoding="utf-8"))
         index.write_text(html.replace(
             '<meta charset="utf-8">',
             '<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="' + meta_policy + '">',

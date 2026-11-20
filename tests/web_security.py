@@ -5,6 +5,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import threading
+from urllib.parse import urlsplit
 
 from playwright.sync_api import sync_playwright
 
@@ -25,14 +26,20 @@ assert headers["X-Frame-Options"] == "DENY"
 handler = partial(SimpleHTTPRequestHandler, directory=root / "dist" / "web")
 with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright() as playwright:
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    site = f"http://127.0.0.1:{server.server_port}/"
     browser = playwright.chromium.launch()
     loading = browser.new_page()
     loading.route("**/app.js", lambda route: route.abort())
-    loading.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="domcontentloaded")
+    loading.goto(site, wait_until="domcontentloaded")
     assert loading.locator("#carGrid .car-skeleton").count() == 3
     assert loading.locator("#emptyResults").is_hidden()
     loading.close()
-    page = browser.new_page()
+    page = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    requests = []
+    page.on("request", lambda request: requests.append(urlsplit(request.url).path))
+    # Model a browser holding incompatible responses at the former stable URLs.
+    for asset in ("app.js", "styles.css", "release-i18n.js"):
+        page.route(site + asset, lambda route: route.abort())
     page.route("**/config.js", lambda route: route.fulfill(
         content_type="text/javascript", body="window.LIMBA_FIREBASE_CONFIG = null;"
     ))
@@ -45,9 +52,38 @@ with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright()
           window.violations.push(event.effectiveDirective);
         });
     """)
-    page.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="domcontentloaded")
+    page.goto(site, wait_until="domcontentloaded")
     page.locator("#retryListings").wait_for(state="visible")
     assert page.locator("#emptyResults").is_hidden()
+
+    release_paths = []
+    for asset in ("app.js", "styles.css", "release-i18n.js"):
+        assert f"/{asset}" not in requests, requests
+        loaded = [path for path in requests if path.endswith(f"/{asset}")]
+        assert len(loaded) == 1 and loaded[0].startswith("/web-assets/"), loaded
+        release_paths.append(loaded[0].rsplit("/", 1)[0])
+    assert len(set(release_paths)) == 1, release_paths
+
+    advanced = page.locator("#advancedFilters")
+    page.locator("#advancedToggle").tap()
+    assert advanced.is_visible()
+    page.locator("#advancedToggle").tap()
+    assert advanced.is_hidden()
+    page.locator("#resultFilter").tap()
+    assert advanced.is_visible()
+    page.locator("#fuel").select_option("electric")
+    assert page.locator("#activeFilters [data-filter-remove=fuel]").is_visible()
+    page.locator("#clearAll").tap()
+    assert page.locator("#fuel").input_value() == ""
+    assert page.locator("#activeFilters").is_hidden()
+    page.locator("#keyword").fill("Golf")
+    page.locator("#saveSearchBtn").tap()
+    page.locator("#savedSearchesList [data-apply]").wait_for(state="attached")
+    sort = page.locator("#sort")
+    assert sort.locator("option").count() >= 2
+    sort.select_option("priceLow")
+    assert sort.input_value() == "priceLow"
+
     page.locator("#loginBtn").click()
     page.locator("#accountOpenBtn").click()
     assert page.locator("#authEmail").get_attribute("type") == "email"
