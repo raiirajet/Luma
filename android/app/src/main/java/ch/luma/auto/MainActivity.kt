@@ -93,6 +93,7 @@ class MainActivity : Activity() {
     private var starred = false
     private val compareVehicleIds = linkedSetOf<String>()
     private var swipeSeen = false
+    private var swipeGuideView: View? = null
     private var listingsLoaded = false
     private var priceCurrency = "EUR"
     private val exchangeRates = mutableMapOf("EUR" to 1.0)
@@ -1837,7 +1838,7 @@ class MainActivity : Activity() {
         val all=swipeCandidates()
         if (all.isEmpty()) {
             val empty=col().apply {gravity=Gravity.CENTER;setPadding(px(20),px(20),px(20),px(20))}
-            empty.addView(text(t("emptyCars"),20f,paper,true))
+            empty.addView(text(if (listingsLoaded) t("emptyCars") else t("loading"),20f,paper,true))
             empty.addView(space(20));empty.addView(btn(t("backToMarket"),true){navigate("home")})
             root.addView(empty,fp())
             return
@@ -1899,11 +1900,14 @@ class MainActivity : Activity() {
         val info=if(current==null)"2013 · 49.500 km · 550 PS · 🇭🇷 Zagreb"
            else current.optString("year")+" · "+number(current.optInt("mileage"))+" km · "+current.optString("power")+" PS · "+current.optString("city")
         overlay.addView(text(info,13f,paper));overlay.addView(space(16))
-        val buttons=row()
-        buttons.addView(iconText(R.drawable.limba_info,t("swipeDetails"),{details()}),LinearLayout.LayoutParams(0,px(50),1f))
-        buttons.addView(spaceHorizontal(10))
+
         val liked=if(current==null)starred else if(live)current.optString("id") in cloudStars else current.optString("id") in previewStars
-        buttons.addView(iconButton(R.drawable.limba_favorites,t("saveFavourites"),if(liked)orange else ink){
+        val buttons=row().apply { gravity=Gravity.CENTER }
+        val next=btn("✕",false) {
+            if(swipeIndex+1<all.size){swipeIndex++;renderSwipe()} else toast(t("onlyCar"))
+        }.apply { background=c(0xff833a49.toInt(),29);setTextColor(paper);textSize=23f;contentDescription=t("swipeNext") }
+        buttons.addView(next,lp(52,52));buttons.addView(spaceHorizontal(9))
+        val favorite=iconButton(R.drawable.limba_favorites,t("saveFavourites"),paper,0xffa54d77.toInt()){
             if(current==null)setFavorite(!starred)else {
                 val id=current.optString("id")
                 if(live){
@@ -1913,37 +1917,68 @@ class MainActivity : Activity() {
                     if(id in previewStars)previewStars.remove(id)else previewStars.add(id)
                     prefs.edit().putStringSet("previewStars",previewStars.toSet()).apply()
                 }
-            };renderSwipe()
-        },lp(56,52))
+            }
+            renderSwipe()
+        }.apply { background=c(if(liked)0xffba5a81.toInt() else 0xffa54d77.toInt(),29) }
+        buttons.addView(favorite,lp(52,52));buttons.addView(spaceHorizontal(9))
+        buttons.addView(iconButton(R.drawable.limba_info,t("swipeDetails"),paper,0xff255977.toInt()){
+            details()
+        }.apply {background=c(0xff255977.toInt(),29)},lp(52,52));buttons.addView(spaceHorizontal(9))
+        buttons.addView(btn("⚡",false) {
+            val target=all.indices.firstOrNull { it!=swipeIndex && all[it]?.optString("make")==(current?.optString("make")?:"Nissan") }
+            if(target!=null){swipeIndex=target;renderSwipe()}else toast(t("noSimilar"))
+        }.apply {background=c(0xffa16d21.toInt(),29);setTextColor(paper);textSize=22f;contentDescription=t("swipeSimilar")},lp(52,52))
         overlay.addView(buttons)
         full.addView(overlay,fp(-1,-2,Gravity.BOTTOM))
         if(!swipeSeen)root.post {if(screen=="swipe"&&!swipeSeen)showSwipeTutorial()}
     }
+
     private fun showSwipeTutorial() {
-        val tutorial=col().apply {setPadding(px(20),px(10),px(20),px(10))}
-        val intro = row()
-        intro.addView(drawableIcon(R.drawable.limba_info, orange, 30), lp(30,30))
-        intro.addView(spaceHorizontal(10))
-        intro.addView(text(t("swipeTeach"), 14f, ink, true))
-        tutorial.addView(intro);tutorial.addView(space(8))
-        val items=listOf(
-            Triple(R.drawable.limba_back,"swipeNext","swipeNextSub"),
+        if (screen != "swipe" || swipeGuideView?.parent != null) return
+        val mask = FrameLayout(this).apply {
+            setBackgroundColor(0x99051c2c.toInt())
+            isClickable = true
+        }
+        swipeGuideView = mask
+        val tutorial = col(0xffeff8fe.toInt()).apply {
+            setPadding(px(17),px(18),px(17),px(16))
+            background=c(0xffeff8fe.toInt(),20)
+            elevation=px(14).toFloat()
+        }
+        tutorial.addView(text("LIMBA DRIVE",12f,orange,true))
+        tutorial.addView(space(5))
+        tutorial.addView(text(t("swipeTeach"),19f,ink,true))
+        tutorial.addView(space(9))
+        val hints=listOf(
+            Triple(R.drawable.ic_arrow_left,"swipeNext","swipeNextSub"),
             Triple(R.drawable.ic_arrow_right,"swipeOpen","swipeOpenSub"),
             Triple(R.drawable.ic_arrow_up,"swipeDetails","swipeDetailsSub"),
             Triple(R.drawable.ic_arrow_down,"swipeSimilar","swipeSimilarSub")
         )
-        items.forEach { (glyph,title,detail) ->
-            val line=row()
-            line.addView(drawableIcon(glyph,orange,26),lp(28,28))
-            line.addView(spaceHorizontal(14))
-            line.addView(text(t(title)+" · "+t(detail),13f,ink,true))
-            tutorial.addView(line,lp(-1,58))
+        hints.forEachIndexed { index,(drawable,title,subtitle) ->
+            val line=row().apply {setPadding(px(8),px(5),px(8),px(5));background=c(paper,10)}
+            line.addView(drawableIcon(drawable,orange,28),lp(28,28))
+            line.addView(spaceHorizontal(12))
+            line.addView(text(t(title)+" · "+t(subtitle),12f,ink,true))
+            tutorial.addView(line,lp(-1,50));tutorial.addView(space(5))
+            android.animation.ObjectAnimator.ofFloat(line,"translationY",0f,-px(7).toFloat(),0f).apply {
+                duration=900;startDelay=index*140L;start()
+            }
         }
-        AlertDialog.Builder(this).setTitle(t("swipeTeach"))
-            .setView(tutorial)
-            .setPositiveButton(t("swipeStart")) { _,_-> swipeSeen=true;prefs.edit().putBoolean("swipeSeen",true).apply() }
-            .setNegativeButton(t("backToCar")) { _,_->swipeSeen=true;prefs.edit().putBoolean("swipeSeen",true).apply() }
-            .show()
+        fun closeGuide() {
+            swipeSeen=true
+            prefs.edit().putBoolean("swipeSeen",true).apply()
+            root.removeView(mask)
+            swipeGuideView=null
+        }
+        tutorial.addView(space(4))
+        tutorial.addView(btn(t("swipeStart"),true){closeGuide()})
+        tutorial.addView(space(6))
+        tutorial.addView(btn(t("backToCar"),false){closeGuide()})
+        val pos=fp(-1,-2,Gravity.CENTER).apply {setMargins(px(14),px(8),px(14),px(8))}
+        mask.addView(tutorial,pos)
+        mask.setOnClickListener { closeGuide() }
+        root.addView(mask,fp())
     }
 
     private fun renderPreviewDetails() {
