@@ -93,6 +93,10 @@ class MainActivity : Activity() {
     private var starred = false
     private val compareVehicleIds = linkedSetOf<String>()
     private var swipeSeen = false
+    private var listingsLoaded = false
+    private var priceCurrency = "EUR"
+    private val exchangeRates = mutableMapOf("EUR" to 1.0)
+    private var fxUpdated = ""
     private var activeCountry = mutableSetOf<String>()
     private var keyword = ""
     private var make = ""
@@ -200,8 +204,11 @@ class MainActivity : Activity() {
         if (locale !in codes) locale = "de"
         starred = prefs.getBoolean("favorite", false)
         swipeSeen = prefs.getBoolean("swipeSeen", false)
+        priceCurrency = prefs.getString("displayCurrency", "EUR").orEmpty().takeIf { it in listOf("EUR", "MKD", "ALL", "RSD", "CHF") } ?: "EUR"
         activeCountry = (prefs.getStringSet("countries", emptySet()) ?: emptySet()).toMutableSet()
         backend = LimbaFirebase(this)
+        listingsLoaded = !backend.ready
+        if (priceCurrency != "EUR") loadExchangeRates()
         if (BuildConfig.DEBUG && !backend.ready) {
             previewUser = prefs.getString("previewUser", "").orEmpty().takeUnless { it == "limba" }.orEmpty()
             val stored = runCatching { JSONArray(prefs.getString("previewCars", "[]")) }.getOrDefault(JSONArray())
@@ -284,8 +291,9 @@ class MainActivity : Activity() {
                 render()
             }
             backend.watchPublic({ cars ->
+                listingsLoaded = true
                 cloudCars.clear();cloudCars.addAll(cars);render()
-            }, { error -> toast(error) })
+            }, { error -> listingsLoaded = true; toast(error); render() })
         }
         render()
         if (!prefs.contains("language")) root.post { chooseFirstLanguage() }
@@ -386,7 +394,56 @@ class MainActivity : Activity() {
     private fun space(height: Int) = View(this).apply { layoutParams = lp(-1, height) }
     private fun pad(v: View, x: Int = 18, y: Int = 16) { v.setPadding(px(x), px(y), px(x), px(y)) }
     private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
-    private fun euro(n: Int) = NumberFormat.getNumberInstance(Locale.GERMANY).format(n) + " €"
+    private fun euro(n: Int): String {
+        val rate = exchangeRates[priceCurrency]
+        val currency = if (rate != null && rate > 0.0) priceCurrency else "EUR"
+        val value = n.toDouble() * (if (currency == "EUR") 1.0 else rate!!)
+        val formatted = NumberFormat.getNumberInstance(Locale.GERMANY).apply { maximumFractionDigits = 0 }.format(value)
+        return formatted + if (currency == "EUR") " €" else " " + currency + " ≈"
+    }
+    private fun loadExchangeRates() {
+        Thread {
+            val values = runCatching {
+                val connection = java.net.URL("https://open.er-api.com/v6/latest/EUR").openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 6000
+                connection.readTimeout = 6000
+                connection.setRequestProperty("Accept", "application/json")
+                try {
+                    if (connection.responseCode != 200) throw IllegalStateException("FX network")
+                    val payload = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                    if (payload.optString("result") != "success") throw IllegalStateException("FX response")
+                    val data = payload.getJSONObject("rates")
+                    val rates = listOf("MKD", "ALL", "RSD", "CHF").associateWith { data.optDouble(it, 0.0) }
+                    if (rates.values.any { !it.isFinite() || it <= 0.0 }) throw IllegalStateException("FX incomplete")
+                    rates to payload.optString("time_last_update_utc")
+                } finally { connection.disconnect() }
+            }
+            runOnUiThread {
+                values.onSuccess { (rates, date) ->
+                    exchangeRates.putAll(rates)
+                    fxUpdated = date
+                    if (screen in listOf("home","details","favorites","performance","mine","swipe")) render()
+                }.onFailure {
+                    priceCurrency = "EUR"
+                    prefs.edit().putString("displayCurrency", "EUR").apply()
+                    toast("Wechselkurs nicht verfügbar – Anzeige in EUR")
+                    if (screen == "home") renderHome()
+                }
+            }
+        }.start()
+    }
+    private fun showCurrencyPicker() {
+        val currencies = listOf("EUR", "MKD", "ALL", "RSD", "CHF")
+        AlertDialog.Builder(this).setTitle("Währung anzeigen (Basispreis EUR)")
+            .setSingleChoiceItems(currencies.toTypedArray(), currencies.indexOf(priceCurrency)) { dialog, index ->
+                priceCurrency = currencies[index]
+                prefs.edit().putString("displayCurrency", priceCurrency).apply()
+                dialog.dismiss()
+                if (priceCurrency != "EUR" && exchangeRates[priceCurrency] == null) loadExchangeRates()
+                render()
+            }
+            .setNegativeButton(t("cancel"), null).show()
+    }
     private fun number(n: Int) = NumberFormat.getIntegerInstance(Locale.GERMANY).format(n)
     private fun navigate(next: String) {
         if (next != screen) navigationHistory.addLast(screen)
