@@ -674,34 +674,7 @@ body { overflow-x:clip; }
   .car-card .car-specs span { font-size:.72rem; }
 }
 
-/* Marketplace entry, regional filters and card hierarchy */
-.market-hero {
-  padding: clamp(25px, 4.5vw, 62px) 0 clamp(20px, 3vw, 38px);
-  background: linear-gradient(120deg, #0d2e3b 3%, #153d50 64%, #20586c);
-  color: #f5fbff;
-}
-.market-hero-heading h1 {margin: 0; font-size: clamp(29px, 4.2vw, 58px); letter-spacing: -.04em; line-height: 1.07}
-.market-hero-heading p {margin: 9px 0 0; color: #d4e7ef; font-size: clamp(14px, 1.6vw, 17px)}
-.market-hero .search-wrap {margin: clamp(16px, 2.8vw, 26px) auto 0; color: var(--ink)}
-.market-hero .search-panel {margin: 0; padding: clamp(14px, 2.4vw, 23px)}
-.market-hero .search-top h2 {font-size: clamp(17px, 2vw, 22px)}
-.marketplace-sell {min-height: 44px; white-space: nowrap}
-.header-right .marketplace-sell span:first-child {font-size: 1.3em}
-.country-bar {display: grid; gap: 7px; margin: 15px 0 10px}
-.country-bar h3 {margin: 0; font-size: 15px}
-.country-quick {display: flex; gap: 8px; overflow-x: auto; padding: 3px 3px 9px; scrollbar-width: thin}
-.country-quick button {
-  color: var(--ink); background: var(--paper); border: 1px solid var(--border);
-  border-radius: 999px; flex: none; min-height: 44px; padding: 0 14px; font-weight: 700;
-}
-.country-quick button[aria-pressed="true"] {background: var(--accent2); border-color: var(--accent2); color: #fff}
-.price-toolbar {display: flex; flex-wrap: wrap; align-items: center; column-gap: 14px; margin: 6px 0 13px}
-.price-toolbar label {display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 750}
-.price-toolbar select {min-height: 44px; padding: 5px 10px; color: var(--ink); background: var(--paper); border: 1px solid var(--border); border-radius: 9px}
-.price-toolbar small {color: var(--muted)}
-.card-badges {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px}
-.customs-badge, .tuning-badge {border-radius: 6px; padding: 4px 7px; background: var(--soft); color: var(--ink); font-size: 12px; font-weight: 650}
-.car-card .car-location {margin-top: 10px}
+/* Marketplace layout shared with the native app. */
 .empty-actions, .empty-suggestions {display: flex; flex-wrap: wrap; justify-content: center; gap: 9px}
 #emptyResults > .empty-actions {margin-top: 17px}
 #retryListings, #loadMorePerformance {margin: 12px 0}
@@ -711,16 +684,6 @@ body { overflow-x:clip; }
 .car-skeleton > span:nth-child(2) {height: 21px; width: 37%; margin-top: 19px}
 .car-skeleton > span:nth-child(3) {width: 71%}
 @keyframes cards-loading {from {opacity: 1} to {opacity: .46}}
-@media (min-width: 900px) {.country-quick {flex-wrap: wrap}}
-@media (max-width: 760px) {
-  .marketplace-sell {display: none}
-  .mobile-nav #navSell {background: var(--selection); color: var(--accent-ink)}
-  .market-hero .search-top {margin-bottom: 8px}
-  .market-hero .search-grid {gap: 9px}
-  .market-hero .search-top .compact-btn {max-width: 50%; min-height: 44px}
-  .mobile-nav small {overflow-wrap: anywhere}
-}
-
 /* Limba Drive stages the photograph, controls and first-use hints together. */
 .swipe-full {display: grid; place-items: center; padding: 64px 16px max(16px, env(safe-area-inset-bottom)); grid-template-rows: minmax(0, 1fr) auto; row-gap: 12px}
 .swipe-photo {position: relative; inset: auto; width: min(100%, 880px); height: 100%; border-radius: 24px; background: #102835}
@@ -768,3 +731,162 @@ body { overflow-x:clip; }
 #performanceView :is(.dark-overline, .car-price, .car-price-overview) {color: #ffbe68}
 #performanceView :is(.outline-btn,.empty-panel) {color: var(--ink); background: #32363e; border-color: var(--border)}
 #performanceView .tuning-badge {color: #ffdd9b; background: #4b3719}
+
+.brand-limba .brand-mobile-section {display: none}
+.market-hero {
+  background: #0c2838;
+  color: #f4faff;
+  padding-block: clamp(17px, 2.5vw, 29px);
+}
+.market-hero-heading .market-hero-brand {
+  margin: 0 0 6px;
+  color: #88c7f6;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .07em;
+}
+.market-hero-heading h1 {margin: 0; font-size: clamp(23px, 3.1vw, 38px); letter-spacing: -.025em; line-height: 1.15}
+.market-hero-heading p {margin: 5px 0 0; color: #d8e9f5; font-size: clamp(13px, 1.4vw, 15px)}
+
+#searchForm .search-top {margin-bottom: 8px}
+#searchForm .search-top h2 {margin: 0; font-size: 18px}
+#searchForm .search-grid {grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px 10px}
+#searchForm .search-keyword {grid-column: 1 / 4}
+#searchForm .search-main {grid-column: 4; grid-row: auto; min-height: 44px; padding-block: 8px}
+#searchForm .search-grid :is(input,.search-country-toggle) {min-height: 46px}
+#searchForm .search-grid .search-country-toggle span {min-width: 0; overflow: hidden; text-overflow: ellipsis}
+#searchForm .filter-ext {margin: 8px 0 0}
+#advancedToggle {border: 1px solid var(--border); border-radius: 10px; padding-inline: 11px; min-height: 44px}
+.search-form-actions {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 8px}
+.search-form-actions button {min-height: 44px; padding: 7px 10px; text-align: center}
+.search-form-actions .ui-icon {width: 19px; height: 19px}
+.marketplace-sell {min-height: 44px; white-space: nowrap}
+.header-right .marketplace-sell span:first-child {font-size: 1.3em}
+
+.market-result-heading {display: flex; align-items: center; justify-content: space-between; gap: 10px}
+.market-result-heading h2 {font-size: clamp(20px, 2.4vw, 28px); line-height: 1.15; margin: 0; overflow-wrap: anywhere}
+.market-result-heading .sort-select {
+  width: fit-content; max-width: min(45%, 12rem); flex: none; min-height: 44px;
+  padding: 7px 9px; font-size: 13px;
+}
+.market-result-meta {display: flex; gap: 10px; align-items: center; justify-content: space-between; margin: 1px 0 5px}
+.market-result-meta .result-count {flex: 1; color: var(--accent-ink); font-weight: 700; font-size: 12px}
+.market-result-meta button {min-height: 44px; padding-inline: 7px; font-size: 13px}
+#resultsSection .seller-segments {display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin: 0 0 5px}
+#resultsSection .seller-segments button {min-height: 44px; padding: 6px 7px; border-radius: 10px; font-size: 13px; overflow-wrap: anywhere}
+#resultsSection .seller-segments button[aria-pressed="true"] {
+  color: var(--accent-ink); background: var(--selection); border-color: var(--accent-ink); box-shadow: none;
+}
+
+.country-bar {min-width: 0; max-width: 100%; margin-bottom: 5px}
+.country-bar-heading {display: flex; align-items: center; justify-content: space-between; gap: 4px}
+.country-control {min-height: 44px; padding: 3px 0; font-size: 13px; text-align: start}
+#resultCountries {color: var(--ink)}
+#resultCountries span:last-child {color: var(--accent-ink)}
+#quickAllCountries {padding-left: 8px; text-align: end}
+.country-quick {
+  display: flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.country-quick::-webkit-scrollbar {display: none}
+.country-quick button {
+  flex: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0;
+  color: var(--ink); background: transparent; border: 0; font-size: 12px; font-weight: 650; white-space: nowrap;
+}
+.country-quick button span {
+  padding: 6px 9px; line-height: 16px; border-radius: 9px;
+  background: var(--paper); border: 1px solid var(--border);
+}
+.country-quick button[aria-pressed="true"] span {color: var(--accent-ink); background: var(--selection); border-color: var(--accent-ink)}
+.country-quick button:focus-visible {outline-offset: -2px}
+.country-dialog {
+  position: fixed; inset: 0; width: min(400px, calc(100% - 24px)); max-height: min(80dvh, 600px); padding: 0;
+  border: 1px solid var(--border); border-radius: 15px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow);
+}
+.country-dialog::backdrop {background: #06182399}
+.country-dialog-content {display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; max-height: min(80dvh, 600px); padding: 12px; gap: 6px; overflow: hidden}
+.country-dialog h2 {margin: 2px 5px; font-size: 19px}
+.country-dialog .country-choices {display: block; overflow-y: auto; min-height: 0; margin: 0; overscroll-behavior: contain}
+.country-dialog .country-choice {
+  min-height: 44px; padding: 5px 7px; border: 0; border-bottom: 1px solid var(--border);
+  border-radius: 0; font-size: 14px; gap: 9px; overflow-wrap: anywhere;
+}
+.country-dialog .country-choice input {width: 18px; height: 18px; flex: none; accent-color: var(--accent2)}
+.country-dialog #prefsStatus {margin: 1px 4px; font-size: 11px}
+.country-dialog #prefsStatus:empty {display: none}
+.country-dialog-actions {display: flex; flex-wrap: wrap; justify-content: end; gap: 5px}
+.country-dialog-actions button {min-height: 44px; padding: 5px 9px; font-size: 13px}
+.country-dialog #allCountries {margin-inline-end: auto}
+
+.price-toolbar {display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; margin: 2px 0 9px}
+.price-toolbar label {display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 650}
+.price-toolbar select {min-height: 44px; padding: 5px 10px; color: var(--ink); background: var(--paper); border: 1px solid var(--border); border-radius: 9px}
+.price-toolbar small {color: var(--muted)}
+
+.car-card {box-shadow: none}
+.car-card .card-body {padding: 12px 15px}
+.car-price-row {display: flex; align-items: center; justify-content: space-between; gap: 8px}
+.car-price-row .car-price {min-width: 0; overflow-wrap: anywhere; color: var(--ink); margin: 0}
+.car-price-row .card-heart {
+  position: static; flex: none; width: 44px; height: 44px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--paper); color: var(--accent-ink);
+}
+.car-price-row .card-heart.active {background: var(--selection); border-color: var(--accent-ink)}
+.car-card .car-title {margin: 3px 0 5px; min-height: 0; font-size: 19px; line-height: 1.2}
+.car-card .car-specs {display: flex; gap: 0; flex-wrap: wrap; margin: 0}
+.car-card .car-specs span {padding: 0; min-width: 0; border: 0; background: none; color: var(--muted); font-size: 13px}
+.car-card .car-specs span + span::before {content: "·"; display: inline-block; margin-inline: 6px}
+.car-card .car-location {margin-top: 5px; font-size: 13px; overflow-wrap: anywhere}
+.card-badges {display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 7px}
+.customs-badge {font-size: 12px; color: var(--muted)}
+.tuning-badge {border-radius: 6px; padding: 4px 7px; background: var(--soft); color: var(--ink); font-size: 12px; font-weight: 650}
+.card-details {width: 100%; min-height: 44px; margin-top: 9px; text-align: center; font-size: 13px}
+.card-details .ui-icon {width: 19px; height: 19px}
+#performanceView .car-price-row .car-price {color: #ffbe68}
+
+@media (max-width: 760px) {
+  .site-header {height: 65px; box-shadow: none}
+  .head-row {width: calc(100% - 24px)}
+  .brand-limba {flex-direction: column; align-items: flex-start; gap: 0}
+  .brand-limba .limba-wordmark {width: 135px; height: 36px; object-fit: contain; object-position: left center}
+  .brand-limba .brand-desktop-label {display: none}
+  .brand-limba .brand-mobile-section {display: block; background: none; padding: 0; margin: 0; color: var(--muted); font-size: 10px; letter-spacing: normal}
+  .marketplace-sell {display: none}
+  .market-hero .wrap {width: calc(100% - 32px)}
+  #searchAnchor {margin: 0; width: 100%}
+  #searchForm {padding: 15px 16px 16px; border: 0; border-radius: 0; box-shadow: none}
+  #searchForm .search-grid {grid-template-columns: repeat(2,minmax(0,1fr))}
+  #searchForm :is(.search-keyword,.search-main) {grid-column: 1 / -1}
+  #searchForm .search-grid input {font-size: 16px}
+  #advancedToggle {width: 100%; justify-content: flex-start}
+  #filterChevron {margin-inline-start: auto}
+  #resultsSection {margin-top: 0; padding: 16px 0 20px}
+  #resultsSection .price-toolbar label {flex: 1 1 100%}
+  #resultsSection .price-toolbar small {flex-basis: 100%}
+  .mobile-nav {box-shadow: none; min-height: calc(64px + env(safe-area-inset-bottom))}
+  .mobile-nav button {min-height: 64px}
+  .mobile-nav button[aria-current="page"] {border-radius: 11px}
+  .mobile-nav button .ui-icon {width: 23px; height: 23px}
+  .mobile-nav small {font-size: 10px}
+  .account-actions {display: grid; gap: 8px}
+  .account-actions button {min-height: 44px}
+  :is(#carGrid,#performanceGrid,#favoritesGrid,#mineGrid) {grid-template-columns: minmax(0,1fr)}
+  .car-card .car-img {height: 208px; aspect-ratio: auto}
+  .car-price-row .car-price {font-size: 24px}
+  #performanceView {
+    width: 100%; margin-top: 0; margin-bottom: 0; padding: 22px 17px;
+    border-radius: 0; background: #0c2838;
+    --paper: #1b2935; --border: #456276;
+  }
+  #performanceView .section-intro {margin-bottom: 16px}
+  .swipe-full {padding: 0}
+  .swipe-photo {position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0}
+  .swipe-details {left: 18px; right: 18px; bottom: calc(88px + env(safe-area-inset-bottom))}
+  .swipe-actions {position: absolute; bottom: calc(20px + env(safe-area-inset-bottom)); gap: 9px}
+  .swipe-action {width: 52px; border: 0; color: #fff}
+  .swipe-skip, .swipe-skip:hover {background: #833a49}
+  .swipe-save, .swipe-save:hover {background: #a54d77}
+  .swipe-save.active {background: #ba5a81; color: #fff}
+  .swipe-info, .swipe-info:hover {background: #255977}
+  .swipe-similar, .swipe-similar:hover {background: #89601f}
+}

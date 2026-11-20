@@ -296,8 +296,8 @@ const marketplace19Translations = {
 
 const marketplaceUiTranslations = {
   en: {
-    marketNav: 'Marketplace', marketHeroTitle: 'Find your next car', marketHeroText: 'Discover vehicles across Southeastern Europe.',
-    quickSearch: 'Quick search', displayCurrency: 'Display currency', rateReference: 'Reference rate',
+    marketNav: 'Marketplace', marketHeroTitle: 'Your next car starts here', marketHeroText: 'Choose a make, model, price and country.',
+    applyCountrySelection: 'Apply', displayCurrency: 'Display currency', rateReference: 'Reference rate',
     rateUnavailable: 'Exchange rate unavailable. Prices shown in EUR.', emptySearchHint: 'Start a new search or try one of these options.',
     browsePerformance: 'Explore performance models',
     customsInListingCountry: 'Customs in the listing country (seller’s statement)', customsUnknown: 'Customs status unknown',
@@ -305,8 +305,8 @@ const marketplaceUiTranslations = {
     stage1: 'Stage 1', stage2: 'Stage 2', suspension: 'Coilovers', exhaust: 'Exhaust system',
   },
   de: {
-    marketNav: 'Marktplatz', marketHeroTitle: 'Finde dein nächstes Auto', marketHeroText: 'Fahrzeuge aus Südosteuropa entdecken.',
-    quickSearch: 'Schnellsuche', displayCurrency: 'Anzeigewährung', rateReference: 'Referenzkurs vom',
+    marketNav: 'Marktplatz', marketHeroTitle: 'Dein nächstes Auto beginnt hier.', marketHeroText: 'Marke, Modell, Preis und Suchland direkt wählen.',
+    applyCountrySelection: 'Übernehmen', displayCurrency: 'Anzeigewährung', rateReference: 'Referenzkurs vom',
     rateUnavailable: 'Kurs nicht verfügbar. Preise in EUR.', emptySearchHint: 'Starte eine neue Suche oder wähle einen Vorschlag.',
     browsePerformance: 'Performance-Modelle entdecken',
     customsInListingCountry: 'Zollstatus im Inseratsland laut Verkäufer', customsUnknown: 'Zollstatus unbekannt',
@@ -314,19 +314,19 @@ const marketplaceUiTranslations = {
     suspension: 'Gewindefahrwerk', exhaust: 'Abgasanlage',
   },
   sq: {
-    marketNav: 'Tregu', marketHeroTitle: 'Gjej makinën tënde të radhës', marketHeroText: 'Zbulo automjete në Europën Juglindore.',
-    quickSearch: 'Kërkim i shpejtë', displayCurrency: 'Monedha e shfaqur', rateReference: 'Kursi i referencës',
+    marketNav: 'Tregu', marketHeroTitle: 'Gjej makinën tënde të radhës', marketHeroText: 'Zgjidh markën, modelin, çmimin dhe shtetin.',
+    applyCountrySelection: 'Zbato', displayCurrency: 'Monedha e shfaqur', rateReference: 'Kursi i referencës',
     rateUnavailable: 'Kursi nuk është i disponueshëm. Çmimet shfaqen në EUR.', emptySearchHint: 'Fillo një kërkim të ri ose zgjidh një sugjerim.',
     browsePerformance: 'Zbulo modelet Performance',
     customsInListingCountry: 'Statusi doganor në vendin e shpalljes sipas shitësit', customsUnknown: 'Statusi doganor i panjohur',
     customsCleared: 'Zhdoganuar në vendin e shpalljes', customsRequired: 'Kërkohet import në vendin e shpalljes',
     suspension: 'Amortizatorë të rregullueshëm', exhaust: 'Sistemi i shkarkimit',
   },
-  mk: {marketNav: 'Пазар', quickSearch: 'Брзо пребарување'},
-  'sr-Latn': {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
-  'sr-Cyrl': {marketNav: 'Огласи', quickSearch: 'Брза претрага'},
-  hr: {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
-  bs: {marketNav: 'Oglasi', quickSearch: 'Brza pretraga'},
+  mk: {marketNav: 'Пазар'},
+  'sr-Latn': {marketNav: 'Oglasi'},
+  'sr-Cyrl': {marketNav: 'Огласи'},
+  hr: {marketNav: 'Oglasi'},
+  bs: {marketNav: 'Oglasi'},
 };
 
 export const RELEASE_TRANSLATIONS = Object.fromEntries(
