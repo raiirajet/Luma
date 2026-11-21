@@ -733,6 +733,7 @@ body { overflow-x:clip; }
 #performanceView .tuning-badge {color: #ffdd9b; background: #4b3719}
 
 .brand-limba .brand-mobile-section {display: none}
+.header-drive {display: none}
 .market-hero {
   background: #0c2838;
   color: #f4faff;
@@ -761,7 +762,7 @@ body { overflow-x:clip; }
 .search-form-actions button {min-height: 44px; padding: 7px 10px; text-align: center}
 .search-form-actions .ui-icon {width: 19px; height: 19px}
 .marketplace-sell {min-height: 44px; white-space: nowrap}
-.header-right .marketplace-sell span:first-child {font-size: 1.3em}
+.marketplace-sell .limba-3d-icon {width: 20px; height: 20px; margin-inline-end: 4px}
 
 .market-result-heading {display: flex; align-items: center; justify-content: space-between; gap: 10px}
 .market-result-heading h2 {font-size: clamp(20px, 2.4vw, 28px); line-height: 1.15; margin: 0; overflow-wrap: anywhere}
@@ -843,15 +844,24 @@ body { overflow-x:clip; }
 .card-details {width: 100%; min-height: 44px; margin-top: 9px; text-align: center; font-size: 13px}
 .card-details .ui-icon {width: 19px; height: 19px}
 #performanceView .car-price-row .car-price {color: #ffbe68}
+.swipe-action .limba-3d-icon {width: 24px; height: 24px}
 
 @media (max-width: 760px) {
   .site-header {height: 65px; box-shadow: none}
   .head-row {width: calc(100% - 24px)}
   .brand-limba {flex-direction: column; align-items: flex-start; gap: 0}
-  .brand-limba .limba-wordmark {width: 135px; height: 36px; object-fit: contain; object-position: left center}
-  .brand-limba .brand-desktop-label {display: none}
-  .brand-limba .brand-mobile-section {display: block; background: none; padding: 0; margin: 0; color: var(--muted); font-size: 10px; letter-spacing: normal}
-  .marketplace-sell {display: none}
+  .site-header .brand-limba .limba-wordmark {width: 135px; height: 38px; object-position: center}
+  .site-header .brand-limba .brand-mobile-section {
+    display: block; align-self: flex-start; background: none; padding: 0; margin: 0;
+    color: var(--muted); font-size: 10px; font-weight: 700; line-height: 14px; letter-spacing: normal;
+  }
+  .site-header .header-right {display: none}
+  .header-drive {
+    display: grid; place-items: center; width: 48px; height: 48px;
+    border-radius: 14px; background: var(--paper); border: 1px solid var(--border);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .header-drive .limba-3d-icon {width: 24px; height: 24px}
   .market-hero .wrap {width: calc(100% - 32px)}
   #searchAnchor {margin: 0; width: 100%}
   #searchForm {padding: 15px 16px 16px; border: 0; border-radius: 0; box-shadow: none}
@@ -864,10 +874,11 @@ body { overflow-x:clip; }
   #resultsSection .price-toolbar label {flex: 1 1 100%}
   #resultsSection .price-toolbar small {flex-basis: 100%}
   .mobile-nav {box-shadow: none; min-height: calc(64px + env(safe-area-inset-bottom))}
-  .mobile-nav button {min-height: 64px}
-  .mobile-nav button[aria-current="page"] {border-radius: 11px}
-  .mobile-nav button .ui-icon {width: 23px; height: 23px}
-  .mobile-nav small {font-size: 10px}
+  .mobile-nav button {min-height: 64px; padding: 6px 3px; gap: 0; color: var(--muted)}
+  .mobile-nav button[aria-current="page"] {border-radius: 11px; color: var(--ink); background: var(--soft)}
+  .mobile-nav button .limba-3d-icon {width: 23px; height: 23px; margin-block: 2px}
+  .mobile-nav small {font-size: 10px; font-weight: 400}
+  .mobile-nav button[aria-current="page"] small {font-weight: 700}
   .account-actions {display: grid; gap: 8px}
   .account-actions button {min-height: 44px}
   :is(#carGrid,#performanceGrid,#favoritesGrid,#mineGrid) {grid-template-columns: minmax(0,1fr)}
@@ -888,5 +899,5 @@ body { overflow-x:clip; }
   .swipe-save, .swipe-save:hover {background: #a54d77}
   .swipe-save.active {background: #ba5a81; color: #fff}
   .swipe-info, .swipe-info:hover {background: #255977}
-  .swipe-similar, .swipe-similar:hover {background: #89601f}
+  .swipe-similar, .swipe-similar:hover {background: #a16d21}
 }
