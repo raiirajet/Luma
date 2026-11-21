@@ -84,18 +84,21 @@ with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, sync_playwright()
     sort.select_option("priceLow")
     assert sort.input_value() == "priceLow"
 
-    page.locator("#loginBtn").click()
-    page.locator("#accountOpenBtn").click()
+    page.locator('.mobile-nav [data-view="account"]').tap()
+    page.locator("#accountSignIn").tap()
     assert page.locator("#authEmail").get_attribute("type") == "email"
     assert page.locator("#demoQuick, [data-i18n='singleDemoNotice']").count() == 0
     assert not errors, errors
     assert page.evaluate("window.violations") == []
-    page.evaluate("""
+    directive = page.evaluate("""() => new Promise(resolve => {
+        document.addEventListener('securitypolicyviolation',
+            event => resolve(event.effectiveDirective), {once: true});
+        setTimeout(() => resolve(null), 2000);
         const inline = document.createElement('script');
         inline.textContent = "document.body.dataset.inlineScriptRan = 'yes'";
         document.body.append(inline);
-    """)
-    page.wait_for_function("window.violations.includes('script-src-elem')")
+    })""")
+    assert directive == "script-src-elem"
     assert page.locator("body").get_attribute("data-inline-script-ran") is None
     browser.close()
     server.shutdown()

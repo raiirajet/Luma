@@ -225,7 +225,7 @@ async function resumeContact(){
   if(guard()){clearContact();closeModal();toast(L('listingUnavailable'))}
  }
 }
-function applyTranslations(){document.documentElement.lang=state.locale;document.title=`Limba Auto · ${T('heroTitle1')}`;document.querySelector('meta[name="description"]').content=T('footerCar');document.querySelector('meta[property="og:title"]').content=document.title;document.querySelector('meta[property="og:description"]').content=T('heroDescription');document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=T(el.dataset.i18n)});document.querySelectorAll('[data-release]').forEach(el=>{el.textContent=L(el.dataset.release)});marketUI.updateInboxButton();document.querySelectorAll('[data-lux]').forEach(el=>{el.textContent=X(el.dataset.lux)});document.querySelectorAll('[data-filter]').forEach(el=>{el.textContent=S(el.dataset.filter)});document.querySelectorAll('[data-filter-aria]').forEach(el=>{el.setAttribute('aria-label',S(el.dataset.filterAria))});document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',T(el.dataset.i18nAria)));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=T(el.dataset.i18nPlaceholder));$('loginText').textContent=state.user?(state.user.email?.split('@')[0]||T('logout')):T('login');$('loginBtn').setAttribute('aria-label',$('loginText').textContent);$('accountSignIn').textContent=state.user?L('accountNav'):T('login');$('accountOpenBtn').querySelector('span').textContent=$('accountSignIn').textContent;$('accountStatus').textContent=state.user?.isPreview?F('previewMode'):T(state.user?'profileSync':'guestSync');$('settingsLanguageLabel').textContent=F('chooseLanguage');$('swipeHelp').setAttribute('aria-label',T('learnSwipeAgain'));$('swipeHome').setAttribute('aria-label',T('backToMarket'));$('swipeFavorite').setAttribute('aria-label',T('saveFavourites'));$('modalClose').setAttribute('aria-label',T('cancel'));$('swipeTutorialBack').querySelector('span').textContent=D('backToCar');document.querySelector('.swipe-photo').setAttribute('aria-label',T('swipeTitle'));renderInputs();renderAll()}
+function applyTranslations(){document.documentElement.lang=state.locale;document.title=`Limba Auto · ${T('heroTitle1')}`;document.querySelector('meta[name="description"]').content=T('footerCar');document.querySelector('meta[property="og:title"]').content=document.title;document.querySelector('meta[property="og:description"]').content=T('heroDescription');document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=T(el.dataset.i18n)});document.querySelectorAll('[data-release]').forEach(el=>{el.textContent=L(el.dataset.release)});marketUI.updateInboxButton();document.querySelectorAll('[data-lux]').forEach(el=>{el.textContent=X(el.dataset.lux)});document.querySelectorAll('[data-filter]').forEach(el=>{el.textContent=S(el.dataset.filter)});document.querySelectorAll('[data-filter-aria]').forEach(el=>{el.setAttribute('aria-label',S(el.dataset.filterAria))});document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',T(el.dataset.i18nAria)));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=T(el.dataset.i18nPlaceholder));$('loginText').textContent=state.user?(state.user.email?.split('@')[0]||T('logout')):T('login');$('loginBtn').setAttribute('aria-label',$('loginText').textContent);$('accountSignIn').textContent=state.user?L('accountNav'):T('login');$('accountOpenBtn').querySelector('span').textContent=$('accountSignIn').textContent;$('accountStatus').textContent=state.user?.isPreview?F('previewMode'):T(state.user?'profileSync':'guestSync');$('settingsLanguageLabel').textContent=F('chooseLanguage');$('swipeHelp').setAttribute('aria-label',T('learnSwipeAgain'));$('swipeHome').setAttribute('aria-label',T('backToMarket'));$('swipeFavorite').setAttribute('aria-label',T('saveFavourites'));$('modalClose').setAttribute('aria-label',T('cancel'));$('swipeTutorialBack').querySelector('span').textContent=D('backToCar');document.querySelector('.swipe-photo').setAttribute('aria-label',T('swipeTitle'));renderHeaderSection();renderInputs();renderAll()}
 function opts(items,first,chosen){return `<option value="">${h(T(first))}</option>`+items.map(v=>`<option value="${h(v)}" ${chosen===v?'selected':''}>${h(T(v))}</option>`).join('')}
 let catalogChooser=null;
 function setupCatalogChooser(ids=['make','model']){const controller=new AbortController();
@@ -454,6 +454,11 @@ function restoreSearchAnchor(){
   window.scrollTo({top:card?scrollY+card.getBoundingClientRect().top-searchAnchor.offset:searchAnchor.y,behavior:'instant'});
  });
 }
+function renderHeaderSection(){
+ const labels={home:T('carsNav'),swipe:'Limba Drive',performance:X('performance'),favorites:X('garage'),
+  mine:T('myAds'),settings:T('settings'),account:L('accountNav')};
+ $('brandMobileSection').textContent=labels[state.view];
+}
 function showView(view,{fromHistory=false}={}){
  closeAccountMenu();closeSearchCountries();
  const views=['home','swipe','favorites','performance','mine','settings','account'];if(!views.includes(view))return;
@@ -462,6 +467,7 @@ function showView(view,{fromHistory=false}={}){
  if(changed&&view==='home')restoreAnchorPending=true;
  if(changed&&!fromHistory)history.pushState({lumaView:view},'',location.pathname+location.search);
  state.view=view;
+ renderHeaderSection();
  views.forEach(v=>$(v==='home'?'homeView':`${v}View`).classList.toggle('hidden',v!==view));
  document.querySelectorAll('.nav-link,.mobile-nav [data-view]').forEach(b=>{
   const active=b.dataset.view===view||(b.dataset.view==='account'&&['mine','favorites','settings'].includes(view));
@@ -517,7 +523,6 @@ function renderSwipe(pending = marketplaceSearch.pending) {
  const favorite = $('swipeFavorite');
  favorite.classList.toggle('active', liked);
  favorite.setAttribute('aria-pressed', String(liked));
- favorite.textContent = liked ? '♥' : '♡';
  if (!tutorialOffered && !state.swipeSeen && $('modal').classList.contains('hidden')) showTutorial();
 }
 function swipeAction(dir){
